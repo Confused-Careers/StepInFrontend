@@ -1,0 +1,737 @@
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Briefcase, Sparkles, CheckCircle, RefreshCw, Bookmark } from "lucide-react";
+import QuestionBox from "./QuestionBox";
+import { jobServices } from "../../services/jobServices";
+import { formatDistanceToNow } from "date-fns";
+import JobCard, { JobCardProps } from "./InteractiveJobCard";
+import {
+  getUserProgress,
+  getQuestionsForTier,
+  submitAnswer,
+  getAnswerHistory,
+  QuestionResponseDto,
+  UserProgressResponseDto,
+  GetQuestionsResponseDto,
+  AnswerResponseDto,
+  categoryIcons,
+} from "../../services/questionServices";
+
+interface Insight {
+  id: string;
+  questionText: string;
+  text: string;
+  category: string;
+  tier: number;
+}
+
+interface BackendJob {
+  id: string;
+  title: string;
+  company: {
+    companyName: string;
+    companyDescription?: string;
+  };
+  location: string;
+  category?: {
+    name: string;
+  };
+  employmentType: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  matchScore?: number;
+  description: string;
+  responsibilities: string;
+  createdAt: string;
+  matchExplanation?: {
+    explanation?: string;
+  };
+  isSaved?: boolean;
+  hasApplied?: boolean;
+}
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 15, mass: 0.8 } },
+  exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
+};
+
+const mapJobToJobCardProps = (job: BackendJob): JobCardProps => ({
+  id: job.id,
+  logo: "/placeholder.svg?height=40&width=40",
+  title: job.title,
+  company: job.company.companyName,
+  location: job.location,
+  tags: [job.category?.name || "Unknown", job.employmentType],
+  salaryRange: job.salaryMin && job.salaryMax ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr` : "Not specified",
+  matchPercentage: job.matchScore ? Math.round(job.matchScore * 2) : 80,
+  description: job.description,
+  responsibilities: job.responsibilities,
+  jobType: job.employmentType,
+  postedDate: `Posted ${formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}`,
+  whyYouFit: job.matchExplanation?.explanation || "Your skills and preferences align with this role.",
+  aiSummary: job.matchExplanation?.explanation || "Your profile matches this job's requirements.",
+  fullJobDescription: job.description,
+  fullResponsibilities: job.responsibilities,
+  companyDescription: job.company.companyDescription || "No company description available.",
+  isTargetedRecommendation: job.matchScore !== undefined ? job.matchScore > 40 : undefined,
+  applyButtonText: "Apply",
+  isSaved: job.isSaved ?? false,
+  isApplied: job.hasApplied ?? false,
+});
+
+export function DynamicJobMatching() {
+  const [, setAnswers] = useState<Record<string, string>>({});
+  const [columnInsights, setColumnInsights] = useState<Insight[][]>([[], [], []]);
+  const [columnQuestions, setColumnQuestions] = useState<(QuestionResponseDto | null)[]>([null, null, null]);
+  const [availableQuestions, setAvailableQuestions] = useState<QuestionResponseDto[]>([]);
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
+  const [historicalQuestions, setHistoricalQuestions] = useState<Record<number, QuestionResponseDto[]>>({});
+  const [currentTier, setCurrentTier] = useState<number>(1);
+  const [profileCompletion, setProfileCompletion] = useState<number>(0);
+  const [matchedJobs, setMatchedJobs] = useState<JobCardProps[]>([]);
+  const [expandedJob, setExpandedJob] = useState<string | null>(null);
+  const [savedJobs, setSavedJobs] = useState<string[]>([]);
+  const [appliedJobs, setAppliedJobs] = useState<string[]>([]);
+  const [rejectedJobs, setRejectedJobs] = useState<string[]>([]);
+  const [currentMobileQuestionIndex, setCurrentMobileQuestionIndex] = useState<number>(0);
+  const jobsRef = useRef<HTMLDivElement>(null);
+
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
+  const distributeQuestions = (questions: QuestionResponseDto[]) => {
+    const filteredQuestions = questions.filter((q) => !answeredQuestionIds.has(q.id));
+    const newColumnQuestions: (QuestionResponseDto | null)[] = [null, null, null];
+    filteredQuestions.slice(0, 3).forEach((q, i) => {
+      newColumnQuestions[i] = q;
+    });
+    setColumnQuestions(newColumnQuestions);
+    setAvailableQuestions(filteredQuestions);
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const response = await jobServices.getJobs();
+      if (response?.jobs && Array.isArray(response.jobs)) {
+        const jobs = response.jobs.map(mapJobToJobCardProps);
+        setMatchedJobs(jobs.slice(0, 3));
+      } else {
+        setMatchedJobs([]);
+      }
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      setMatchedJobs([]);
+    }
+  };
+
+  const fetchSavedJobs = async () => {
+    try {
+      const response = await jobServices.getMySavedJobs();
+      if (response?.savedJobs && Array.isArray(response.savedJobs)) {
+        setSavedJobs(response.savedJobs.map((sj: { job: { id: string } }) => sj.job.id));
+      } else {
+        setSavedJobs([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch saved jobs:", error);
+      setSavedJobs([]);
+    }
+  };
+
+  const fetchAppliedJobs = async () => {
+    try {
+      const response = await jobServices.getMyApplications();
+      if (response?.applications && Array.isArray(response.applications)) {
+        setAppliedJobs(response.applications.map((app: { job: { id: string } }) => app.job.id));
+      } else {
+        setAppliedJobs([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch applied jobs:", error);
+      setAppliedJobs([]);
+    }
+  };
+
+  const fetchQuestions = async (tier: number) => {
+    try {
+      const response: GetQuestionsResponseDto = await getQuestionsForTier(tier);
+      if (response.questions && Array.isArray(response.questions) && response.questions.length > 0) {
+        distributeQuestions(response.questions);
+        setHistoricalQuestions((prev) => ({ ...prev, [tier]: response.questions }));
+      } else {
+        console.warn(`No questions returned for tier ${tier}`);
+        setAvailableQuestions([]);
+        setColumnQuestions([null, null, null]);
+        setHistoricalQuestions((prev) => ({ ...prev, [tier]: [] }));
+      }
+    } catch (error) {
+      console.error(`Failed to fetch questions for tier ${tier}:`, error);
+      setAvailableQuestions([]);
+      setColumnQuestions([null, null, null]);
+      setHistoricalQuestions((prev) => ({ ...prev, [tier]: [] }));
+    }
+  };
+
+  const fetchProgress = async () => {
+    try {
+      const progress: UserProgressResponseDto = await getUserProgress();
+      const tier = progress.currentTier || 1;
+      setCurrentTier(tier);
+
+      if (progress.tiers && Array.isArray(progress.tiers)) {
+        const currentTierData = progress.tiers[tier - 1];
+        const tierCompletion =
+          currentTierData && currentTierData.questionsRequiredToComplete > 0
+            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
+            : 0;
+        setProfileCompletion(tierCompletion);
+        if (currentTierData.isCompleted && tier < 5) {
+          setCurrentTier(tier + 1);
+          setProfileCompletion(0);
+          await fetchQuestions(tier + 1);
+          await fetchJobs();
+        } else {
+          await fetchQuestions(tier);
+        }
+      } else {
+        setProfileCompletion(0);
+        await fetchQuestions(1);
+      }
+    } catch (error) {
+      console.error("Failed to fetch progress:", error);
+      setProfileCompletion(0);
+      setCurrentTier(1);
+      await fetchQuestions(1);
+    }
+  };
+
+  const fetchAnswerHistory = async () => {
+    try {
+      const newAnswers: Record<string, string> = {};
+      const newInsights: Insight[][] = [[], [], []];
+      const newHistoricalQuestions: Record<number, QuestionResponseDto[]> = { ...historicalQuestions };
+      const newAnsweredQuestionIds = new Set<string>();
+
+      for (let tier = 1; tier <= currentTier; tier++) {
+        const history: AnswerResponseDto[] = await getAnswerHistory(tier);
+        if (!Array.isArray(history) || history.length === 0) {
+          console.warn(`No answer history for tier ${tier}`);
+          continue;
+        }
+
+        if (!newHistoricalQuestions[tier]) {
+          const response = await getQuestionsForTier(tier);
+          newHistoricalQuestions[tier] = response.questions || [];
+        }
+
+        history.forEach((answer, index) => {
+          if (!answer.questionId || !answer.selectedOption) {
+            console.warn(`Invalid answer data for tier ${tier}:`, answer);
+            return;
+          }
+          newAnsweredQuestionIds.add(answer.questionId);
+          newAnswers[answer.questionId] = answer.selectedOption.optionText || "Unknown";
+          const question = newHistoricalQuestions[tier]?.find((q) => q.id === answer.questionId) || {
+            id: answer.questionId,
+            questionText: answer.question?.questionText || "Unknown question",
+            insightCategory: answer.question?.insightCategory || "preferences",
+            options: [],
+          };
+          const insight: Insight = {
+            id: answer.questionId,
+            questionText: question.questionText,
+            text: `For "${question.questionText}", you selected "${answer.selectedOption.optionText || "Unknown"}".`,
+            category: question.insightCategory || "preferences",
+            tier,
+          };
+          newInsights[index % 3].push(insight);
+        });
+      }
+
+      setAnswers(newAnswers);
+      setColumnInsights(newInsights);
+      setHistoricalQuestions(newHistoricalQuestions);
+      setAnsweredQuestionIds(newAnsweredQuestionIds);
+    } catch (error) {
+      console.error("Failed to fetch answer history:", error);
+    }
+  };
+
+  useEffect(() => {
+    const initialize = async () => {
+      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress(), fetchAnswerHistory()]);
+    };
+    initialize();
+  }, []);
+
+  const handleAnswer = async (questionId: string, optionId: string, optionText: string, columnIndex: number) => {
+    try {
+      if (!isValidUUID(questionId)) throw new Error(`Invalid questionId UUID: ${questionId}`);
+      if (!isValidUUID(optionId)) throw new Error(`Invalid optionId UUID: ${optionId}`);
+
+      const payload = { questionId, selectedOptionId: optionId };
+      await submitAnswer(payload);
+
+      setAnswers((prev) => ({ ...prev, [questionId]: optionText }));
+      setAnsweredQuestionIds((prev) => new Set(prev).add(questionId));
+      const question = availableQuestions.find((q) => q.id === questionId);
+      if (!question) {
+        console.warn(`Question ${questionId} not found`);
+        return;
+      }
+
+      const insight: Insight = {
+        id: questionId,
+        questionText: question.questionText,
+        text: `For "${question.questionText}", you selected "${optionText}".`,
+        category: question.insightCategory || "preferences",
+        tier: currentTier,
+      };
+
+      setColumnInsights((prev) => {
+        const newInsights = [...prev];
+        newInsights[columnIndex] = [...newInsights[columnIndex], insight];
+        return newInsights;
+      });
+
+      setColumnQuestions((prev) => {
+        const newQuestions = [...prev];
+        const nextQuestionIndex = availableQuestions.findIndex((q) => q.id === questionId) + 1;
+        if (nextQuestionIndex < availableQuestions.length) {
+          newQuestions[columnIndex] = availableQuestions[nextQuestionIndex];
+          setAvailableQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== questionId));
+        } else {
+          newQuestions[columnIndex] = null;
+          setAvailableQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== questionId));
+        }
+        return newQuestions;
+      });
+
+      if (window.innerWidth < 640) {
+        setCurrentMobileQuestionIndex((prev) => prev + 1);
+      }
+
+      const progress = await getUserProgress();
+      setCurrentTier(progress.currentTier || 1);
+      if (progress.tiers && Array.isArray(progress.tiers)) {
+        const currentTierData = progress.tiers[progress.currentTier - 1];
+        const tierCompletion =
+          currentTierData && currentTierData.questionsRequiredToComplete > 0
+            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
+            : 0;
+        setProfileCompletion(tierCompletion);
+        if (currentTierData.isCompleted && progress.currentTier < 5) {
+          setCurrentTier(progress.currentTier + 1);
+          setProfileCompletion(0);
+          await fetchQuestions(progress.currentTier + 1);
+          await fetchJobs();
+        }
+      } else {
+        setProfileCompletion(0);
+      }
+    } catch (error) {
+      console.error("Failed to submit answer:", {
+        message: (error as Error)?.message,
+        response: (error as unknown as { response?: { data?: unknown } })?.response?.data,
+        payload,
+      });
+    }
+  };
+
+  const getNextJob = async () => {
+    try {
+      const response = await jobServices.getJobs();
+      if (response?.jobs && Array.isArray(response.jobs)) {
+        const availableJobs = response.jobs.filter(
+          (job: BackendJob) =>
+            !savedJobs.includes(job.id) &&
+            !appliedJobs.includes(job.id) &&
+            !rejectedJobs.includes(job.id) &&
+            !matchedJobs.some((j) => j.id === job.id)
+        );
+        return availableJobs.length > 0 ? mapJobToJobCardProps(availableJobs[0]) : null;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to get next job:", error);
+      return null;
+    }
+  };
+
+  const handleJobAction = async (
+    jobId: string,
+    action: "save" | "apply" | "reject",
+    payload?: { coverLetter?: string; notes?: string }
+  ) => {
+    try {
+      if (action === "save") {
+        await jobServices.saveJob(jobId, payload);
+        setSavedJobs((prev) => [...prev, jobId]);
+      } else if (action === "apply") {
+        await jobServices.applyToJob(jobId, payload);
+        setAppliedJobs((prev) => [...prev, jobId]);
+        setMatchedJobs((prev) => {
+          const filteredJobs = prev.filter((job) => job.id !== jobId);
+          getNextJob().then((nextJob) => {
+            if (nextJob) setMatchedJobs([...filteredJobs, nextJob]);
+          });
+          return filteredJobs;
+        });
+      } else if (action === "reject") {
+        setRejectedJobs((prev) => [...prev, jobId]);
+        setMatchedJobs((prev) => {
+          const filteredJobs = prev.filter((job) => job.id !== jobId);
+          getNextJob().then((nextJob) => {
+            if (nextJob) setMatchedJobs([...filteredJobs, nextJob]);
+          });
+          return filteredJobs;
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} job:`, error);
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      setAnswers({});
+      setColumnInsights([[], [], []]);
+      setColumnQuestions([null, null, null]);
+      setAvailableQuestions([]);
+      setAnsweredQuestionIds(new Set());
+      setHistoricalQuestions({});
+      setCurrentTier(1);
+      setProfileCompletion(0);
+      setMatchedJobs([]);
+      setExpandedJob(null);
+      setSavedJobs([]);
+      setAppliedJobs([]);
+      setRejectedJobs([]);
+      setCurrentMobileQuestionIndex(0);
+      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress(), fetchAnswerHistory()]);
+    } catch (error) {
+      console.error("Failed to reset:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        className="flex justify-between items-center"
+      >
+        <div className="space-y-0">
+          <h1 className="text-2xl font-bold">Interactive Job Management</h1>
+          <p className="text-muted-foreground">View your saved, applied, and available jobs</p>
+        </div>
+        <Button
+          variant="outline"
+          className="hover:bg-primary/10 hover:text-primary transition-colors"
+          onClick={handleReset}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />Reset
+        </Button>
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
+      >
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-muted-foreground">{`Profile Completion (Tier ${currentTier}/5)`}</span>
+          <span className="text-sm text-muted-foreground">{Math.round(profileCompletion)}%</span>
+        </div>
+        <Progress
+          value={profileCompletion}
+          className="h-2 bg-gradient-to-r from-primary/20 to-primary/5"
+        >
+          <motion.div
+            className="h-full bg-gradient-to-r from-primary to-primary/80"
+            initial={{ width: 0 }}
+            animate={{ width: `${profileCompletion}%` }}
+            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          />
+        </Progress>
+      </motion.div>
+      <div className="mb-12">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          className="text-xl font-semibold mb-6 flex items-center"
+        >
+          <Sparkles className="h-5 w-5 text-primary mr-2" />
+          Answer Questions
+        </motion.h2>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          {window.innerWidth < 640 ? (
+            (() => {
+              const currentQuestion = availableQuestions[currentMobileQuestionIndex];
+              if (!currentQuestion || answeredQuestionIds.has(currentQuestion.id)) return null;
+              return (
+                <motion.div
+                  key={currentQuestion.id}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <QuestionBox
+                    question={currentQuestion}
+                    onAnswer={(optionId, optionText) =>
+                      handleAnswer(currentQuestion.id, optionId, optionText, 0)
+                    }
+                  />
+                </motion.div>
+              );
+            })()
+          ) : (
+            [0, 1, 2].map((columnIndex) => (
+              <div key={`column-${columnIndex}`} className="space-y-4 min-h-[200px]">
+                <AnimatePresence mode="wait">
+                  {columnInsights[columnIndex].map((insight, idx) => (
+                    <motion.div
+                      key={`insight-${insight.id}-${idx}`}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="mb-4"
+                    >
+                      <Card className="bg-jobcardsecondary border-2 border-blue-500">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            {categoryIcons[insight.category] || categoryIcons.preferences}
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {insight.text} (Tier {insight.tier})
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                <AnimatePresence mode="wait">
+                  {columnQuestions[columnIndex] && !answeredQuestionIds.has(columnQuestions[columnIndex]!.id) && (
+                    <motion.div
+                      key={columnQuestions[columnIndex]!.id}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      <QuestionBox
+                        question={columnQuestions[columnIndex]!}
+                        onAnswer={(optionId, optionText) =>
+                          handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex)
+                        }
+                      />
+                    </motion.div>
+                  )}
+                  {!columnQuestions[columnIndex] && columnInsights[columnIndex].length > 0 && (
+                    <motion.div
+                      key={`placeholder-${columnIndex}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 0.5, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                      className="bg-jobcardsecondary rounded-lg p-6 border border-primary/10 h-48 flex items-center justify-center"
+                    >
+                      <p className="text-muted-foreground text-center">All questions completed!</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))
+          )}
+          {availableQuestions.length === 0 && columnQuestions.every((q) => q === null) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-full"
+            >
+              <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No questions available</h3>
+              <p className="text-muted-foreground text-center">
+                Please try again later or contact support.
+              </p>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+      <div ref={jobsRef}>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          className="flex flex-col md:flex-row-reverse md:items-center justify-between mb-6"
+        >
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              <Briefcase className="h-5 w-5 text-primary mr-2" />Your Jobs
+            </h2>
+            <p className="text-muted-foreground">View your saved, applied, and available jobs</p>
+          </div>
+        </motion.div>
+        <Tabs defaultValue="all" className="mb-6">
+          <TabsList className="flex justify-center gap-2">
+            <TabsTrigger value="all">All Jobs</TabsTrigger>
+            <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
+            <TabsTrigger value="applied">Applied Jobs</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="mt-4">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            >
+              <AnimatePresence>
+                {matchedJobs.map((job, index) => (
+                  <motion.div key={job.id} variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                    <JobCard
+                      {...job}
+                      onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                      delay={index * 0.1}
+                      expandedJobCard={expandedJob === job.id}
+                      onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
+                      isSaved={savedJobs.includes(job.id)}
+                      isApplied={appliedJobs.includes(job.id)}
+                      nextJob={getNextJob}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {matchedJobs.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
+                >
+                  <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No jobs found</h3>
+                  <p className="text-muted-foreground text-center">Apply to jobs to see job matches!</p>
+                </motion.div>
+              )}
+            </motion.div>
+          </TabsContent>
+          <TabsContent value="saved" className="mt-4">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            >
+              <AnimatePresence>
+                {matchedJobs
+                  .filter((job) => savedJobs.includes(job.id))
+                  ?.map((job, index) => (
+                    <motion.div
+                      key={job.id}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      <JobCard
+                        {...job}
+                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                        delay={index * 0.1}
+                        expanded={expandedJob === job.id}
+                        onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
+                        isSaved={true}
+                        isApplied={appliedJobs.includes(job.id)}
+                        nextJob={getNextJob}
+                      />
+                    </motion.div>
+                  ))}
+              </AnimatePresence>
+              {savedJobs.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
+                >
+                  <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No saved jobs</h3>
+                  <p className="text-muted-foreground text-center">
+                    Save jobs you are interested in to view later!
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          </TabsContent>
+          <TabsContent value="applied" className="mt-4">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            >
+              <AnimatePresence>
+                {matchedJobs
+                    .filter((job) => appliedJobs.includes(job.id))
+                    .map((job, index) => (
+                      <motion.div
+                        key={job.id}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                      >
+                        <JobCard
+                          {...job}
+                          onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                          delay={index * 0.1}
+                          expanded={expandedJob === job.id}
+                          onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
+                          isSaved={savedJobs.includes(job.id)}
+                          isApplied={true}
+                          nextJob={getNextJob}
+                        />
+                      </motion.div>
+                    ))}
+              </AnimatePresence>
+              {appliedJobs.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
+                >
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No applied jobs</h3>
+                  <p className="text-muted-foreground text-center">Apply to jobs to track them here!</p>
+                </motion.div>
+              )}
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
+
+export default DynamicJobMatching;
