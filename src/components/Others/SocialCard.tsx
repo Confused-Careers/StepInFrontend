@@ -12,16 +12,13 @@ import {
     Twitter,
     UserCheck,
     X,
-    XIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
 import { useCallback, useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
-import useDebounce from "@/hooks/use-debounce"
 import userServices from "@/services/userServices"
 import { Socials } from "@/utils/interfaces"
-import { Badge } from "../ui/badge"
 import { SocialPlatform } from "@/utils/constants"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { toTitleCase } from "@/utils/functions"

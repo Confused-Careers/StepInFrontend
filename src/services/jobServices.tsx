@@ -35,6 +35,71 @@ const sanitizePagination = (page?: number, limit?: number): { page: number; limi
 };
 
 export const jobServices = {
+  getJobs: async (filters: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: string;
+    search?: string;
+    employmentType?: string;
+    experienceLevel?: string;
+    categoryId?: string;
+    postedWithinDays?: number;
+    salaryMin?: number;
+    salaryMax?: number;
+    location?: string;
+    isRemote?: boolean;
+    skills?: string[];
+    languages?: string[];
+    languageProficiency?: string;
+    educationLevel?: string;
+    fieldOfStudy?: string;
+    useVectorSearch?: boolean;
+    vectorWeight?: number;
+  } = {}) => {
+    try {
+      const sanitizedFilters = {
+        ...filters,
+        ...sanitizePagination(filters.page, filters.limit),
+        sortOrder: sanitizeSortOrder(filters.sortOrder),
+        useVectorSearch: filters.useVectorSearch ?? true, // Enable vector search by default
+      };
+
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs`, {
+        headers: getAuthHeaders(),
+        params: sanitizedFilters,
+      });
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) return;
+      throw error;
+    }
+  },
+
+  getJobById: async (jobId: string) => {
+    try {
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs/${jobId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) return;
+      throw error;
+    }
+  },
+
+  getMatchExplanation: async (jobId: string) => {
+    try {
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs/matches/${jobId}/explanation`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) return;
+      throw error;
+    }
+  },
+
   getMySavedJobs: async (filters: {
     page?: number;
     limit?: number;

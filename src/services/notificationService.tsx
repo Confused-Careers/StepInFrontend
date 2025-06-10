@@ -9,13 +9,10 @@ interface GetNotificationsParams {
   type?: 'job_application' | 'system_announcement';
 }
 
-interface MarkAsReadDto {
-  notificationIds: string[];
-}
 
 // Interfaces for response data
 interface NotificationMetadata {
-  [key: string]: any;
+  [key: string]: string | number | boolean | object | null | undefined;
 }
 
 interface Notification {

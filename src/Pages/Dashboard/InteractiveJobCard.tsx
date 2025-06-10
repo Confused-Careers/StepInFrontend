@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import type { FC } from "react";
 import JobActionModal from "../../components/Modals/JobActionModal";
 
 export interface JobCardProps {
@@ -123,7 +122,7 @@ const newJobCardVariants: Variants = {
   },
 };
 
-const JobCard: FC<JobCardProps> = ({
+const JobCard = ({
   id,
   logo,
   title,
@@ -149,7 +148,7 @@ const JobCard: FC<JobCardProps> = ({
   isApplied,
   onApplyComplete,
   nextJob,
-}) => {
+}: JobCardProps) => {
   const [showPopup, setShowPopup] = useState(false);
   const [readMoreJobDesc, setReadMoreJobDesc] = useState(false);
   const [readMoreResp, setReadMoreResp] = useState(false);
@@ -206,17 +205,34 @@ const JobCard: FC<JobCardProps> = ({
             if (job) {
               setShowNextCard(true);
             }
-            onAction(modalState.action, id, payload || undefined);
+            if (modalState.action) {
+              if (modalState.action) {
+                if (onAction) {
+                  if (modalState.action) {
+                    if (onAction) {
+                      if (onAction) {
+                        if (onAction) {
+                          onAction(modalState.action, id, payload || undefined);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
             if (onApplyComplete) onApplyComplete();
           } catch (error) {
             console.error("Failed to fetch next job:", error);
           }
         }
         setIsApplying(false);
-      }, 2000);
-    } else if (onAction) {
-      onAction(modalState.action, id, payload || undefined);
-      setModalState({ open: false, action: null });
+      if (modalState.action) {
+        if (onAction) {
+          onAction(modalState.action, id, payload || undefined);
+        }
+        setModalState({ open: false, action: null });
+      }
+      }, 0);
     }
   };
 

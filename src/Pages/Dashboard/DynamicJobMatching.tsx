@@ -33,12 +33,15 @@ interface BackendJob {
   id: string;
   title: string;
   company: {
+    id: string;
     companyName: string;
     companyDescription?: string;
+    logoUrl?: string;
   };
   location: string;
   category?: {
-    name: string;
+    id: string;
+    categoryName: string;
   };
   employmentType: string;
   salaryMin?: number;
@@ -49,6 +52,9 @@ interface BackendJob {
   createdAt: string;
   matchExplanation?: {
     explanation?: string;
+    overallScore?: number;
+    skillsScore?: number;
+    cultureScore?: number;
   };
   isSaved?: boolean;
   hasApplied?: boolean;
@@ -65,29 +71,39 @@ const itemVariants: Variants = {
   exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
 };
 
-const mapJobToJobCardProps = (job: BackendJob): JobCardProps => ({
-  id: job.id,
-  logo: "/placeholder.svg?height=40&width=40",
-  title: job.title,
-  company: job.company.companyName,
-  location: job.location,
-  tags: [job.category?.name || "Unknown", job.employmentType],
-  salaryRange: job.salaryMin && job.salaryMax ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr` : "Not specified",
-  matchPercentage: job.matchScore ? Math.round(job.matchScore * 2) : 80,
-  description: job.description,
-  responsibilities: job.responsibilities,
-  jobType: job.employmentType,
-  postedDate: `Posted ${formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}`,
-  whyYouFit: job.matchExplanation?.explanation || "Your skills and preferences align with this role.",
-  aiSummary: job.matchExplanation?.explanation || "Your profile matches this job's requirements.",
-  fullJobDescription: job.description,
-  fullResponsibilities: job.responsibilities,
-  companyDescription: job.company.companyDescription || "No company description available.",
-  isTargetedRecommendation: job.matchScore !== undefined ? job.matchScore > 40 : undefined,
-  applyButtonText: "Apply",
-  isSaved: job.isSaved ?? false,
-  isApplied: job.hasApplied ?? false,
-});
+const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
+  let matchExplanation = job.matchExplanation?.explanation || "Your skills and preferences align with this role.";
+  try {
+    const explanationResponse = await jobServices.getMatchExplanation(job.id);
+    matchExplanation = explanationResponse.explanation || matchExplanation;
+  } catch (error) {
+    console.error(`Failed to fetch match explanation for job ${job.id}:`, error);
+  }
+
+  return {
+    id: job.id,
+    logo: job.company.logoUrl || "/placeholder.svg?height=40&width=40",
+    title: job.title,
+    company: job.company.companyName,
+    location: job.location,
+    tags: [job.category?.categoryName || "Unknown", job.employmentType],
+    salaryRange: job.salaryMin && job.salaryMax ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr` : "Not specified",
+    matchPercentage: job.matchScore ? Math.round(job.matchScore * 2) : 80,
+    description: job.description,
+    responsibilities: job.responsibilities,
+    jobType: job.employmentType,
+    postedDate: `Posted ${formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}`,
+    whyYouFit: matchExplanation,
+    aiSummary: matchExplanation,
+    fullJobDescription: job.description,
+    fullResponsibilities: job.responsibilities,
+    companyDescription: job.company.companyDescription || "No company description available.",
+    isTargetedRecommendation: job.matchScore !== undefined ? job.matchScore > 40 : undefined,
+    applyButtonText: "Apply",
+    isSaved: job.isSaved ?? false,
+    isApplied: job.hasApplied ?? false,
+  };
+};
 
 export function DynamicJobMatching() {
   const [, setAnswers] = useState<Record<string, string>>({});
@@ -123,10 +139,14 @@ export function DynamicJobMatching() {
 
   const fetchJobs = async () => {
     try {
-      const response = await jobServices.getJobs();
+      const response = await jobServices.getJobs({
+        limit: 3,
+        sortBy: 'relevance',
+        useVectorSearch: true,
+      });
       if (response?.jobs && Array.isArray(response.jobs)) {
-        const jobs = response.jobs.map(mapJobToJobCardProps);
-        setMatchedJobs(jobs.slice(0, 3));
+        const jobs = await Promise.all(response.jobs.map(mapJobToJobCardProps));
+        setMatchedJobs(jobs);
       } else {
         setMatchedJobs([]);
       }
@@ -245,8 +265,8 @@ export function DynamicJobMatching() {
           newAnswers[answer.questionId] = answer.selectedOption.optionText || "Unknown";
           const question = newHistoricalQuestions[tier]?.find((q) => q.id === answer.questionId) || {
             id: answer.questionId,
-            questionText: answer.question?.questionText || "Unknown question",
-            insightCategory: answer.question?.insightCategory || "preferences",
+            questionText: "Unknown question",
+            insightCategory: "preferences",
             options: [],
           };
           const insight: Insight = {
@@ -337,23 +357,35 @@ export function DynamicJobMatching() {
           setProfileCompletion(0);
           await fetchQuestions(progress.currentTier + 1);
           await fetchJobs();
+        } else {
+          await fetchJobs(); // Refetch jobs after answering
         }
       } else {
         setProfileCompletion(0);
+        await fetchJobs(); // Refetch jobs after answering
       }
     } catch (error) {
       console.error("Failed to submit answer:", {
         message: (error as Error)?.message,
-        response: (error as unknown as { response?: { data?: unknown } })?.response?.data,
-        payload,
+        response: (typeof error === "object" && error !== null && "response" in error && typeof (error as { response?: { data?: unknown } }).response === "object"
+          ? (error as { response?: { data?: unknown } }).response?.data
+          : undefined),
+        questionId,
+        optionId,
+        optionText,
+        columnIndex,
       });
     }
   };
 
   const getNextJob = async () => {
     try {
-      const response = await jobServices.getJobs();
-      if (response?.jobs && Array.isArray(response.jobs)) {
+      const response = await jobServices.getJobs({
+        limit: 1,
+        sortBy: 'relevance',
+        useVectorSearch: true,
+      });
+      if (response?.jobs && Array.isArray(response.jobs) && response.jobs.length > 0) {
         const availableJobs = response.jobs.filter(
           (job: BackendJob) =>
             !savedJobs.includes(job.id) &&
@@ -361,12 +393,12 @@ export function DynamicJobMatching() {
             !rejectedJobs.includes(job.id) &&
             !matchedJobs.some((j) => j.id === job.id)
         );
-        return availableJobs.length > 0 ? mapJobToJobCardProps(availableJobs[0]) : null;
+        return availableJobs.length > 0 ? await mapJobToJobCardProps(availableJobs[0]) : undefined;
       }
-      return null;
+      return undefined;
     } catch (error) {
       console.error("Failed to get next job:", error);
-      return null;
+      return undefined;
     }
   };
 
@@ -399,6 +431,7 @@ export function DynamicJobMatching() {
           return filteredJobs;
         });
       }
+      await fetchJobs(); // Refetch jobs after action
     } catch (error) {
       console.error(`Failed to ${action} job:`, error);
     }
@@ -520,7 +553,7 @@ export function DynamicJobMatching() {
                       <Card className="bg-jobcardsecondary border-2 border-blue-500">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-2">
-                            {categoryIcons[insight.category] || categoryIcons.preferences}
+                            {categoryIcons[insight.category as keyof typeof categoryIcons] || categoryIcons.preferences}
                             <p className="text-sm text-gray-700 dark:text-gray-300">
                               {insight.text} (Tier {insight.tier})
                             </p>
@@ -613,7 +646,7 @@ export function DynamicJobMatching() {
                       {...job}
                       onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
                       delay={index * 0.1}
-                      expandedJobCard={expandedJob === job.id}
+                      expanded={expandedJob === job.id}
                       onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
                       isSaved={savedJobs.includes(job.id)}
                       isApplied={appliedJobs.includes(job.id)}

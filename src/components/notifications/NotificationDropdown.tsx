@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { Bell, X } from 'lucide-react';
 import {
@@ -12,10 +13,11 @@ import notificationServices from '@/services/notificationService';
 import { format } from 'date-fns';
 
 export function NotificationDropdown() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage,] = useState(1);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedNotification, setSelectedNotification] = useState<any>(null);
 

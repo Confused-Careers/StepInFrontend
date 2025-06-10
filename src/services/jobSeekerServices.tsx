@@ -3,6 +3,7 @@ import { SERVER_BASE_URL } from '@/utils/config';
 
 // Profile interfaces
 interface JobSeekerProfile {
+  data: <T>(data: T) => T;
   id: string;
   userId: string;
   firstName: string;
@@ -28,6 +29,7 @@ interface UpdateProfileData {
 }
 
 interface ProfileResponse {
+  data: JobSeekerProfile;
   message?: string;
   profile: JobSeekerProfile;
 }

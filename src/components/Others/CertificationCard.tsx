@@ -1,10 +1,10 @@
-import { Award, Calendar, Delete, Edit, ExternalLink, Plus, Trash2 } from "lucide-react";
+import { Award, Calendar, Edit, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { TabsContent } from "../ui/tabs";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Certificates } from "@/utils/interfaces";
-import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import userServices from "@/services/userServices";
 import CreateUpdateCertificateModal from "../Modals/CreateUpdateCertificateModal";
@@ -12,7 +12,7 @@ import CreateUpdateCertificateModal from "../Modals/CreateUpdateCertificateModal
 export function CertificationCard() {
     const [addCertificate,setAddCertificate]=useState<Certificates | null>(null);
         const [addCertificateLoading,setAddCertificateLoading]=useState<boolean>(false);
-        const [getCertificateLoading,setGetCertificateLoading]=useState<boolean>(false);
+        const [,setGetCertificateLoading]=useState<boolean>(false);
         const [userCertificates, setUserCertificates] = useState<Certificates[]>([]);
  const defaultValue={
 certificationName:"",

@@ -1,18 +1,18 @@
-import { Award, Calendar, Delete, Edit, ExternalLink, FileText, Plus, Trash2 } from "lucide-react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Calendar,  Edit, ExternalLink, FileText, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { TabsContent } from "../ui/tabs";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Projects } from "@/utils/interfaces";
-import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
+import {  FormEvent, JSX, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import userServices from "@/services/userServices";
 import CreateUpdateProjectModal from "../Modals/CreateUpdateProjectModal";
 
-export function ProjectCard() {
+export function ProjectCard(): JSX.Element {
     const [addProject,setAddProject]=useState<Projects | null>(null);
         const [addProjectLoading,setAddProjectLoading]=useState<boolean>(false);
-        const [getProjectLoading,setGetProjectLoading]=useState<boolean>(false);
         const [userProjects, setUserProjects] = useState<Projects[]>([]);
  const defaultValue={
 id:"",
@@ -34,7 +34,7 @@ skills:[]
 
             if(addProject?.id){
                 const updatedProject: Projects = await userServices.updateUserProject({...addProject,completionYear:addProject.completionYear || 0});
-                let updatedProjects = userProjects.map(cert => {
+                const updatedProjects = userProjects.map(cert => {
                     if (cert.id === updatedProject.id) {
                         return { ...cert, ...updatedProject };
                     }
@@ -62,18 +62,11 @@ skills:[]
       },[addProject, userProjects]);
 
 
-      const deleteProject =  useCallback(async (id:string): Promise<void> => {
-        setGetProjectLoading(true);
-    
+      const deleteProject = useCallback(async (id: string): Promise<void> => {
         try {
-            await userServices.deleteUserProject(id);
-                let updatedProjects = userProjects.filter(cert => {
-                    if (cert.id !== id) {
-                        return true;
-                    }
-                    return false;
-                });
-                setUserProjects(updatedProjects);
+          await userServices.deleteUserProject(id);
+          const updatedProjects = userProjects.filter(cert => cert.id !== id);
+          setUserProjects(updatedProjects);
         } catch (err: unknown) {
           if (err instanceof Error) {
             toast.error(err.message);
@@ -82,23 +75,13 @@ skills:[]
           } else {
             toast.error("Failed to delete Project");
           }
-        } finally {
-          setGetProjectLoading(false);
         }
-      },[addProject, userProjects]);
+      }, [userProjects]);
 
-      useEffect(() => {
-        getProjects();
-      },[]);
-
-
-      const getProjects =  useCallback(async (): Promise<void> => {
-        setGetProjectLoading(true);
-    
+      const getProjects = useCallback(async (): Promise<void> => {
         try {
-            let Projects:Projects[]=await userServices.getUserProjects();
-                
-                setUserProjects(Projects);
+          const Projects: Projects[] = await userServices.getUserProjects();
+          setUserProjects(Projects);
         } catch (err: unknown) {
           if (err instanceof Error) {
             toast.error(err.message);
@@ -107,16 +90,18 @@ skills:[]
           } else {
             toast.error("Failed to get Projects");
           }
-        } finally {
-          setGetProjectLoading(false);
         }
-      },[addProject, userProjects]);
+      }, []);
 
-      const handleInputChange = (name:string,value:string | number): void => {
-          setAddProject((prev: Projects | null) => {if (prev) return { ...prev, [name]: value }; return null;});
-        };
-    return (
+      useEffect(() => {
+        getProjects();
+      }, [getProjects]);
       
+  function handleInputChange(name: string, value: string | number): void {
+    setAddProject(prev => prev ? { ...prev, [name]: value } : { ...defaultValue, [name]: value });
+  }
+
+    return (
         <TabsContent value="projects" className="space-y-6">
             <CreateUpdateProjectModal addProject={addProject} addProjectLoading={addProjectLoading}  handleInputChange={(name:string,value:string | number)=>handleInputChange(name,value)} handleSubmit={(e:FormEvent<HTMLFormElement>)=>{addUpdateProject(e)}} handleClose={()=>setAddProject(null)}/>
               <div className="flex justify-between items-center">
@@ -190,5 +175,5 @@ skills:[]
                 </Card>
               ))}
             </TabsContent>
-    )
+    );
 }

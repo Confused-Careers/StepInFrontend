@@ -31,8 +31,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SkillsCard } from "@/components/Others/SkillsCard"
 import { LanguagesCard } from "@/components/Others/LanguagesCard"
 import { SocialsCard } from "@/components/Others/SocialCard"
-import { CertificationCard } from "@/components/Others/CertificationCard"
-import { ProjectCard } from "@/components/Others/ProjectCard"
 import jobSeekerServices from '@/services/jobSeekerServices';
 import { toast } from 'sonner';
 import workExperienceServices from '@/services/workExperienceServices';
@@ -84,6 +82,7 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     try {
       const data = await jobSeekerServices.getProfile();
+      console.log('Profile data:', data);
       setProfile(data);
       if (data.resumeUrl) setResumePreview(data.resumeUrl);
       if (data.profilePictureUrl) setProfilePicturePreview(data.profilePictureUrl);
