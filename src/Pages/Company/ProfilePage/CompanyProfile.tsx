@@ -151,9 +151,17 @@ export default function CompanyProfile() {
       
       if (logoFile) {
         const logoResponse: LogoResponse = await companyServices.uploadLogo(logoFile);
-        setProfile((prev) => ({ ...prev, logoUrl: logoResponse.logoUrl }));
-        setLogoFile(null);
-        setLogoPreview(null);
+        if (logoResponse.logoUrl) {
+          setProfile((prev) => ({ ...prev, logoUrl: logoResponse.logoUrl }));
+          setLogoFile(null);
+          setLogoPreview(null);
+          // Refresh profile data to ensure we have the latest logo URL
+          const updatedProfile = await companyServices.getProfile();
+          setProfile(prev => ({
+            ...prev,
+            logoUrl: updatedProfile.logoUrl || prev.logoUrl
+          }));
+        }
       }
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -207,7 +215,7 @@ export default function CompanyProfile() {
                         alt="Company Logo"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = "https://via.placeholder.com/96?text=No+Logo";
+                          e.currentTarget.src = "/placeholder.svg?height=96&width=96";
                           e.currentTarget.alt = "Default Logo";
                         }}
                       />

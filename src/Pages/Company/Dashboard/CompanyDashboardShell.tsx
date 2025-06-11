@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Briefcase, User, Sparkles, Menu, X, LogOut, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,24 +8,48 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Logo from "../../../assets/StepIn Transparent Logo.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import companyServices from "@/services/companyServices";
 
 interface DashboardShellProps {
   children: ReactNode;
+}
+
+interface CompanyProfile {
+  companyName: string;
+  logoUrl: string;
 }
 
 export function CompanyDashboardShell({ children }: DashboardShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
 
   const navigation = [
     { name: "Job Postings", href: "/company/dashboard/jobposts", icon: Sparkles },
     { name: "Post a Job", href: "/company/dashboard/job/new", icon: Briefcase },
   ];
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await companyServices.getProfile();
+        setProfile({
+          companyName: data.companyName || "",
+          logoUrl: data.logoUrl || "",
+        });
+      } catch (error) {
+        console.error("Failed to fetch company profile:", error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("google_email");
+    localStorage.removeItem("userType");
     localStorage.removeItem("google_accessToken");
     navigate("/company/login", { replace: true });
   };
@@ -60,7 +84,7 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <NotificationDropdown />
             {/* <ModeToggle /> */}
 
@@ -68,13 +92,13 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hidden md:flex">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src={profile?.logoUrl || "/placeholder.svg?height=32&width=32"} alt={profile?.companyName || "Company"} />
+                    <AvatarFallback>{profile?.companyName?.[0] || "C"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{profile?.companyName || "My Account"}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/company/dashboard/profile")} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
@@ -101,7 +125,6 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
         {mobileMenuOpen && (
           <motion.div className="md:hidden" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
             <div className="container px-4 py-4 flex flex-col space-y-3 border-t">
-
               {navigation.map((item) => (
                 <Button key={item.name} variant={isActive(item.href) ? "default" : "ghost"} className="justify-start h-12 text-base" onClick={() => { navigate(item.href); setMobileMenuOpen(false); }}>
                   <item.icon className="mr-3 h-5 w-5" />
@@ -109,12 +132,12 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
                 </Button>
               ))}
 
-              <Button variant="ghost" className="justify-start h-12 text-base" onClick={() => { navigate("/dashboard/profile"); setMobileMenuOpen(false); }}>
+              <Button variant="ghost" className="justify-start h-12 text-base" onClick={() => { navigate("/company/dashboard/profile"); setMobileMenuOpen(false); }}>
                 <User className="mr-3 h-5 w-5" />
                 Profile
               </Button>
 
-              <Button variant="ghost" className="justify-start h-12 text-base text-destructive hover:text-destructive" onClick={() => navigate("/")}>
+              <Button variant="ghost" className="justify-start h-12 text-base text-destructive hover:text-destructive" onClick={() => handleLogout()}>
                 <LogOut className="mr-3 h-5 w-5" />
                 Log out
               </Button>

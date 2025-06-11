@@ -158,7 +158,7 @@ const JobCard = ({
   const [showNextCard, setShowNextCard] = useState(false);
   const [questionShifted, setQuestionShifted] = useState(false);
   const [nextJobData, setNextJobData] = useState<JobCardProps | undefined>(undefined);
-  const [modalState, setModalState] = useState<{ open: boolean; action: "save" | "apply" | null }>({ open: false, action: null });
+  const [modalState, setModalState] = useState<{ open: boolean; action: "save" | "apply" }>({ open: false, action: "save" });
 
   const handleCardClick = () => {
     setShowPopup(true);
@@ -179,60 +179,44 @@ const JobCard = ({
     }
   };
 
-  const handleModalSubmit = async (payload: { coverLetter?: string; notes?: string } | null) => {
-    if (!modalState.action) return;
-
-    if (modalState.action === "apply" && !isApplied) {
-      setIsApplying(true);
-      setModalState({ open: false, action: null });
-
-      setTimeout(() => {
-        setCardVisible(false);
-      }, 300);
-
-      setTimeout(() => {
-        setQuestionShifted(true);
-        setShowAppliedTag(true);
-      }, 500);
-
-      setTimeout(async () => {
-        setShowAppliedTag(false);
-        setQuestionShifted(false);
-        if (nextJob && onAction) {
-          try {
-            const job = await nextJob();
-            setNextJobData(job);
-            if (job) {
-              setShowNextCard(true);
-            }
-            if (modalState.action) {
-              if (modalState.action) {
-                if (onAction) {
-                  if (modalState.action) {
-                    if (onAction) {
-                      if (onAction) {
-                        if (onAction) {
-                          onAction(modalState.action, id, payload || undefined);
-                        }
-                      }
-                    }
-                  }
-                }
+  const handleModalClose = (payload: { coverLetter?: string; notes?: string } | null) => {
+    if (modalState.action && onAction) {
+      if (modalState.action === "apply" && !isApplied) {
+        setIsApplying(true);
+        setTimeout(() => {
+          setCardVisible(false);
+        }, 300);
+        setTimeout(() => {
+          setQuestionShifted(true);
+          setShowAppliedTag(true);
+        }, 500);
+        setTimeout(async () => {
+          setShowAppliedTag(false);
+          setQuestionShifted(false);
+          if (nextJob) {
+            try {
+              const job = await nextJob();
+              setNextJobData(job);
+              if (job) {
+                setShowNextCard(true);
               }
+            } catch (error) {
+              console.error("Failed to fetch next job:", error);
             }
-            if (onApplyComplete) onApplyComplete();
-          } catch (error) {
-            console.error("Failed to fetch next job:", error);
           }
-        }
-        setIsApplying(false);
-      if (modalState.action) {
-        if (onAction) {
+          setIsApplying(false);
           onAction(modalState.action, id, payload || undefined);
-        }
-        setModalState({ open: false, action: null });
+          if (onApplyComplete && modalState.action === "apply") {
+            onApplyComplete();
+          }
+          setModalState({ open: false, action: "save" });
+        }, 800);
+      } else {
+        onAction(modalState.action, id, payload || undefined);
+        setModalState({ open: false, action: "save" });
       }
-      }, 0);
+    } else {
+      setModalState({ open: false, action: "save" });
     }
   };
 
@@ -527,13 +511,13 @@ const JobCard = ({
                     <div className="bg-jobcardsummary rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
                       <p className="text-sm text-jobcardtext m-3">{aiSummary}</p>
                     </div>
-                    <div className="flex justify-start mt-4 mb-4">
+                    {/* <div className="flex justify-start mt-4 mb-4">
                       <Button
                         className="bg-primary text-white rounded-[6px] py-2 px-6 font-bold text-xl leading-[140%] text-center w-[235px] h-[35px]"
                       >
                         Talk To Company's AI
                       </Button>
-                    </div>
+                    </div> */}
                     <hr className="mt-3 border-blue-500 border-opacity-100" />
                   </div>
                 </motion.div>
@@ -542,7 +526,7 @@ const JobCard = ({
                     <h3 className="font-bold text-[18px] text-jobcardtext mb-0 ml-3">Job Description</h3>
                     <div className="bg-jobcardsummary2 rounded-lg p-3 border border-gray-400 border-opacity-20">
                       <p className="text-sm text-jobcardtext m-1">
-                        {readMoreJobDesc ? fullJobDescription : fullJobDescription.split(" ").slice(0, 15).join(" ") + "..."}
+                        {readMoreJobDesc ? fullJobDescription : fullJobDescription?.split(" ").slice(0, 15).join(" ") + "..."}
                         <button
                           className="text-primary text-sm mt-0 underline italic"
                           onClick={() => setReadMoreJobDesc(!readMoreJobDesc)}
@@ -558,7 +542,7 @@ const JobCard = ({
                     <h3 className="font-bold text-[18px] text-jobcardtext mb-0 ml-3">Responsibilities</h3>
                     <div className="bg-jobcardsummary2 rounded-lg p-3 border border-gray-400 border-opacity-20">
                       <p className="text-sm text-jobcardtext m-1">
-                        {readMoreResp ? fullResponsibilities : fullResponsibilities.split(" ").slice(0, 15).join(" ") + "..."}
+                        {readMoreResp ? fullResponsibilities : fullResponsibilities?.split(" ").slice(0, 15).join(" ") + "..."}
                         <button
                           className="text-primary text-sm mt-0 underline italic"
                           onClick={() => setReadMoreResp(!readMoreResp)}
@@ -606,8 +590,8 @@ const JobCard = ({
       </AnimatePresence>
       <JobActionModal
         open={modalState.open}
-        onClose={handleModalSubmit}
-        action={modalState.action ?? "save"} // Default to "save" if action is null
+        onClose={handleModalClose}
+        action={modalState.action}
         jobTitle={title}
       />
     </>

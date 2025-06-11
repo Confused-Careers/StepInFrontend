@@ -1,26 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Edit, Save, X } from "lucide-react"
+import { useProfile } from "@/Contexts/ProfileContext"
 
 export function AboutMe() {
-  const [isEditing, setIsEditing] = useState(false)
-  const [aboutText, setAboutText] = useState(
-    "I'm a passionate UX designer with 5+ years of experience creating user-centered digital experiences for various industries. My approach combines empathy, creativity, and analytical thinking to solve complex problems and deliver intuitive interfaces.\n\nI specialize in user research, wireframing, prototyping, and usability testing. I'm particularly interested in accessibility and inclusive design, ensuring that digital products are usable by everyone regardless of their abilities.\n\nOutside of work, I enjoy hiking, photography, and volunteering for design mentorship programs. I'm always looking to connect with like-minded professionals and explore new opportunities in the UX field.",
-  )
-  const [editText, setEditText] = useState(aboutText)
+  const { profile, loading, updateProfile } = useProfile();
+  const [isEditing, setIsEditing] = useState(false);
+  const [aboutText, setAboutText] = useState("");
+  const [editText, setEditText] = useState("");
 
-  const handleSave = () => {
-    setAboutText(editText)
-    setIsEditing(false)
-  }
+  useEffect(() => {
+    if (profile) {
+      setAboutText(profile.aboutMe || "");
+      setEditText(profile.aboutMe || "");
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({ aboutMe: editText });
+      setAboutText(editText);
+      setIsEditing(false);
+    } catch (error) {
+      // Error is already handled by the context
+    }
+  };
 
   const handleCancel = () => {
-    setEditText(aboutText)
-    setIsEditing(false)
+    setEditText(aboutText);
+    setIsEditing(false);
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            Loading...
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -67,6 +91,6 @@ export function AboutMe() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 

@@ -5,7 +5,7 @@ import { Upload, FileText, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface ResumeUploadProps {
-  onUpload: (file?: File) => void;
+  onUpload: (file: File) => void;
   uploaded: boolean;
 }
 
@@ -61,7 +61,7 @@ export function ResumeUpload({ onUpload, uploaded }: ResumeUploadProps) {
         className="text-center space-y-2"
       >
         <h2 className="text-2xl md:text-3xl font-bold">Upload Your Resume</h2>
-        <p className="text-muted-foreground">Our AI will analyze your skills and experience to find the best matches, or skip for now.</p>
+        <p className="text-muted-foreground">Our AI will analyze your skills and experience to find the best matches. A resume is required to proceed.</p>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
@@ -93,9 +93,6 @@ export function ResumeUpload({ onUpload, uploaded }: ResumeUploadProps) {
                   Browse Files
                 </Button>
               </div>
-              <Button variant="ghost" onClick={() => onUpload()}>
-                Skip for Now
-              </Button>
             </div>
           ) : (
             <div className="space-y-4">

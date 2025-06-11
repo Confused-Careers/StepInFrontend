@@ -1,34 +1,66 @@
-import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Edit, Mail, Phone, Calendar, MapPin, Globe, Save, X } from "lucide-react"
+import { Edit, Mail, Phone, MapPin, Globe, Save, X, Briefcase } from "lucide-react"
+import { useProfile } from "@/Contexts/ProfileContext"
 
 export function PersonalInfo() {
-  const [isEditing, setIsEditing] = useState(false)
+  const { profile, loading, updateProfile } = useProfile();
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: "Alex Johnson",
-    title: "Senior UX Designer",
-    email: "alex.johnson@example.com",
-    phone: "(555) 123-4567",
-    dob: "1990-05-15",
-    location: "San Francisco, CA",
-    website: "www.alexjohnson.design",
-    bio: "Passionate UX designer with 5+ years of experience creating user-centered digital experiences for various industries. Specialized in user research, wireframing, and prototyping.",
-  })
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    currentPosition: "",
+    currentCompany: "",
+    location: "",
+    portfolioUrl: "",
+  });
+
+  // Update form data when profile is loaded
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        currentPosition: profile.currentPosition || "",
+        currentCompany: profile.currentCompany || "",
+        location: profile.location || "",
+        portfolioUrl: profile.portfolioUrl || "",
+      });
+    }
+  }, [profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsEditing(false)
-    // Save changes logic would go here
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateProfile(formData);
+      setIsEditing(false);
+    } catch (error) {
+      // Error is already handled by the context
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            Loading...
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -58,47 +90,81 @@ export function PersonalInfo() {
       </CardHeader>
       <CardContent>
         {isEditing ? (
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleChange} />
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="title">Job Title</Label>
-                <Input id="title" name="title" value={formData.title} onChange={handleChange} />
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} />
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth</Label>
-                <Input id="dob" name="dob" type="date" value={formData.dob} onChange={handleChange} />
+                <Label htmlFor="currentPosition">Current Position</Label>
+                <Input
+                  id="currentPosition"
+                  name="currentPosition"
+                  value={formData.currentPosition}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currentCompany">Current Company</Label>
+                <Input
+                  id="currentCompany"
+                  name="currentCompany"
+                  value={formData.currentCompany}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" name="location" value={formData.location} onChange={handleChange} />
+                <Input
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input id="website" name="website" value={formData.website} onChange={handleChange} />
+                <Label htmlFor="portfolioUrl">Portfolio URL</Label>
+                <Input
+                  id="portfolioUrl"
+                  name="portfolioUrl"
+                  value={formData.portfolioUrl}
+                  onChange={handleChange}
+                />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                name="bio"
-                value={formData.bio}
-                onChange={handleChange}
-                rows={4}
-                className="resize-none"
-              />
             </div>
           </form>
         ) : (
@@ -120,10 +186,11 @@ export function PersonalInfo() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                  <Briefcase className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Date of Birth</p>
-                    <p>{new Date(formData.dob).toLocaleDateString()}</p>
+                    <p className="text-sm text-muted-foreground">Current Position</p>
+                    <p>{formData.currentPosition}</p>
+                    <p className="text-sm text-muted-foreground">{formData.currentCompany}</p>
                   </div>
                 </div>
               </div>
@@ -138,20 +205,23 @@ export function PersonalInfo() {
                 <div className="flex items-start gap-3">
                   <Globe className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Website</p>
-                    <p>{formData.website}</p>
+                    <p className="text-sm text-muted-foreground">Portfolio</p>
+                    <a
+                      href={formData.portfolioUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      {formData.portfolioUrl}
+                    </a>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-2">Bio</p>
-              <p className="text-sm">{formData.bio}</p>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 

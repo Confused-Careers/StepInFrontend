@@ -1,101 +1,83 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 import { Edit, Save, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { useProfile } from "@/Contexts/ProfileContext"
 
 export function JobPreferences() {
-  const [isEditing, setIsEditing] = useState(false)
+  const { profile, loading, updateProfile } = useProfile();
+  const [isEditing, setIsEditing] = useState(false);
   const [preferences, setPreferences] = useState({
-    jobTypes: ["Full-time", "Contract"],
-    desiredRoles: ["UX Designer", "Product Designer", "UI Designer", "UX Researcher"],
-    industries: ["Technology", "Healthcare", "Education", "E-commerce"],
-    minSalary: 100000,
-    maxSalary: 150000,
-    remotePreference: "Hybrid",
-    openToRelocate: true,
-  })
+    currentPosition: "",
+    currentCompany: "",
+    expectedSalaryMin: 0,
+    expectedSalaryMax: 0,
+    availability: "one_month",
+    preferredLocation: "",
+  });
 
-  const [newRole, setNewRole] = useState("")
-  const [newIndustry, setNewIndustry] = useState("")
-
-  const handleJobTypeChange = (type: string, checked: boolean) => {
-    if (checked) {
-      setPreferences((prev) => ({
-        ...prev,
-        jobTypes: [...prev.jobTypes, type],
-      }))
-    } else {
-      setPreferences((prev) => ({
-        ...prev,
-        jobTypes: prev.jobTypes.filter((t) => t !== type),
-      }))
+  useEffect(() => {
+    if (profile) {
+      setPreferences({
+        currentPosition: profile.currentPosition || "",
+        currentCompany: profile.currentCompany || "",
+        expectedSalaryMin: profile.expectedSalaryMin || 0,
+        expectedSalaryMax: profile.expectedSalaryMax || 0,
+        availability: profile.availability || "one_month",
+        preferredLocation: profile.preferredLocation || "",
+      });
     }
-  }
-
-  const handleAddRole = () => {
-    if (newRole.trim() && !preferences.desiredRoles.includes(newRole)) {
-      setPreferences((prev) => ({
-        ...prev,
-        desiredRoles: [...prev.desiredRoles, newRole],
-      }))
-      setNewRole("")
-    }
-  }
-
-  const handleRemoveRole = (role: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      desiredRoles: prev.desiredRoles.filter((r) => r !== role),
-    }))
-  }
-
-  const handleAddIndustry = () => {
-    if (newIndustry.trim() && !preferences.industries.includes(newIndustry)) {
-      setPreferences((prev) => ({
-        ...prev,
-        industries: [...prev.industries, newIndustry],
-      }))
-      setNewIndustry("")
-    }
-  }
-
-  const handleRemoveIndustry = (industry: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      industries: prev.industries.filter((i) => i !== industry),
-    }))
-  }
+  }, [profile]);
 
   const handleSalaryChange = (value: number[]) => {
-    setPreferences((prev) => ({
+    setPreferences(prev => ({
       ...prev,
-      minSalary: value[0],
-      maxSalary: value[1],
-    }))
-  }
+      expectedSalaryMin: value[0],
+      expectedSalaryMax: value[1],
+    }));
+  };
 
-  const handleRemotePreferenceChange = (value: string) => {
-    setPreferences((prev) => ({
+  const handleAvailabilityChange = (value: string) => {
+    setPreferences(prev => ({
       ...prev,
-      remotePreference: value,
-    }))
-  }
+      availability: value,
+    }));
+  };
 
-  const handleRelocateChange = (checked: boolean) => {
-    setPreferences((prev) => ({
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPreferences(prev => ({
       ...prev,
-      openToRelocate: checked,
-    }))
-  }
+      preferredLocation: e.target.value,
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateProfile(preferences);
+      setIsEditing(false);
+    } catch (error) {
+      // Error is already handled by the context
+    }
+  };
 
   const formatSalary = (value: number) => {
-    return `$${value.toLocaleString()}`
+    return `$${value.toLocaleString()}`;
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            Loading...
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -105,101 +87,63 @@ export function JobPreferences() {
           <CardTitle>Job Preferences</CardTitle>
           <CardDescription>Set your preferences for job opportunities</CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
-          {isEditing ? (
-            <>
+        {!isEditing ? (
+          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSave}>
               <Save className="h-4 w-4 mr-2" />
               Save
-            </>
-          ) : (
-            <>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </>
-          )}
-        </Button>
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {isEditing ? (
           <div className="space-y-6">
             <div className="space-y-3">
-              <Label>Employment Type</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {["Full-time", "Part-time", "Contract", "Freelance", "Internship"].map((type) => (
-                  <div key={type} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`job-type-${type}`}
-                      checked={preferences.jobTypes.includes(type)}
-                      onCheckedChange={(checked) => handleJobTypeChange(type, checked as boolean)}
-                    />
-                    <Label htmlFor={`job-type-${type}`}>{type}</Label>
-                  </div>
-                ))}
-              </div>
+              <Label>Current Position</Label>
+              <Input
+                value={preferences.currentPosition}
+                onChange={(e) => setPreferences(prev => ({ ...prev, currentPosition: e.target.value }))}
+                placeholder="Enter your current position"
+              />
             </div>
 
             <div className="space-y-3">
-              <Label>Desired Roles</Label>
-              <div className="flex gap-2">
-                <Input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Add a role" />
-                <Button onClick={handleAddRole} disabled={!newRole.trim()}>
-                  Add
-                </Button>
-              </div>
-              {preferences.desiredRoles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {preferences.desiredRoles.map((role) => (
-                    <Badge key={role} variant="secondary" className="flex items-center gap-1">
-                      {role}
-                      <button onClick={() => handleRemoveRole(role)} className="ml-1 rounded-full hover:bg-muted p-0.5">
-                        <X className="h-3 w-3" />
-                        <span className="sr-only">Remove {role}</span>
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <Label>Current Company</Label>
+              <Input
+                value={preferences.currentCompany}
+                onChange={(e) => setPreferences(prev => ({ ...prev, currentCompany: e.target.value }))}
+                placeholder="Enter your current company"
+              />
             </div>
 
             <div className="space-y-3">
-              <Label>Preferred Industries</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newIndustry}
-                  onChange={(e) => setNewIndustry(e.target.value)}
-                  placeholder="Add an industry"
-                />
-                <Button onClick={handleAddIndustry} disabled={!newIndustry.trim()}>
-                  Add
-                </Button>
-              </div>
-              {preferences.industries.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {preferences.industries.map((industry) => (
-                    <Badge key={industry} variant="secondary" className="flex items-center gap-1">
-                      {industry}
-                      <button
-                        onClick={() => handleRemoveIndustry(industry)}
-                        className="ml-1 rounded-full hover:bg-muted p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                        <span className="sr-only">Remove {industry}</span>
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <Label>Preferred Location</Label>
+              <Input
+                value={preferences.preferredLocation}
+                onChange={handleLocationChange}
+                placeholder="Enter your preferred location"
+              />
             </div>
 
             <div className="space-y-3">
               <div>
-                <Label>Salary Range</Label>
+                <Label>Expected Salary Range</Label>
                 <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                  <span>{formatSalary(preferences.minSalary)}</span>
-                  <span>{formatSalary(preferences.maxSalary)}</span>
+                  <span>{formatSalary(preferences.expectedSalaryMin)}</span>
+                  <span>{formatSalary(preferences.expectedSalaryMax)}</span>
                 </div>
                 <Slider
-                  value={[preferences.minSalary, preferences.maxSalary]}
+                  value={[preferences.expectedSalaryMin, preferences.expectedSalaryMax]}
                   min={30000}
                   max={250000}
                   step={5000}
@@ -210,84 +154,52 @@ export function JobPreferences() {
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="remote-preference">Remote Work Preference</Label>
-              <Select value={preferences.remotePreference} onValueChange={handleRemotePreferenceChange}>
-                <SelectTrigger id="remote-preference">
-                  <SelectValue placeholder="Select preference" />
+              <Label>Availability</Label>
+              <Select value={preferences.availability} onValueChange={handleAvailabilityChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select availability" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="On-site">On-site</SelectItem>
-                  <SelectItem value="Hybrid">Hybrid</SelectItem>
-                  <SelectItem value="Remote">Remote</SelectItem>
-                  <SelectItem value="No Preference">No Preference</SelectItem>
+                  <SelectItem value="immediate">Immediate</SelectItem>
+                  <SelectItem value="one_week">One Week</SelectItem>
+                  <SelectItem value="two_weeks">Two Weeks</SelectItem>
+                  <SelectItem value="one_month">One Month</SelectItem>
+                  <SelectItem value="two_months">Two Months</SelectItem>
+                  <SelectItem value="three_months">Three Months</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="relocate"
-                checked={preferences.openToRelocate}
-                onCheckedChange={(checked) => handleRelocateChange(checked as boolean)}
-              />
-              <Label htmlFor="relocate">I am open to relocation</Label>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <h3 className="font-medium">Employment Type</h3>
-                <div className="flex flex-wrap gap-2">
-                  {preferences.jobTypes.map((type) => (
-                    <Badge key={type} variant="outline" className="bg-primary/5">
-                      {type}
-                    </Badge>
-                  ))}
-                </div>
+                <h3 className="font-medium">Current Position</h3>
+                <p>{preferences.currentPosition || "Not specified"}</p>
+                <p className="text-sm text-muted-foreground">{preferences.currentCompany}</p>
               </div>
 
               <div className="space-y-3">
-                <h3 className="font-medium">Remote Work Preference</h3>
-                <p>{preferences.remotePreference}</p>
-                <p className="text-sm text-muted-foreground">
-                  {preferences.openToRelocate ? "Open to relocation" : "Not open to relocation"}
-                </p>
+                <h3 className="font-medium">Preferred Location</h3>
+                <p>{preferences.preferredLocation || "Not specified"}</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-medium">Desired Roles</h3>
-              <div className="flex flex-wrap gap-2">
-                {preferences.desiredRoles.map((role) => (
-                  <Badge key={role} variant="outline" className="bg-primary/5">
-                    {role}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-medium">Preferred Industries</h3>
-              <div className="flex flex-wrap gap-2">
-                {preferences.industries.map((industry) => (
-                  <Badge key={industry} variant="outline" className="bg-primary/5">
-                    {industry}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-medium">Salary Expectation</h3>
+              <h3 className="font-medium">Expected Salary</h3>
               <p>
-                {formatSalary(preferences.minSalary)} - {formatSalary(preferences.maxSalary)} per year
+                {formatSalary(preferences.expectedSalaryMin)} - {formatSalary(preferences.expectedSalaryMax)} per year
               </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-medium">Availability</h3>
+              <p>{preferences.availability.replace("_", " ")}</p>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 

@@ -43,6 +43,7 @@ const IndividualLogin: React.FC = () => {
       toast.success("Login successful!", {
         description: "Welcome back!",
       });
+      localStorage.setItem("userType", "individual");
       navigate("/dashboard/interactive");
     } catch (error: unknown) {
       setIsLoading(false);

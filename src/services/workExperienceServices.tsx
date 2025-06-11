@@ -5,32 +5,55 @@ import { SERVER_BASE_URL } from '@/utils/config';
 interface WorkExperience {
   id: string;
   jobSeekerId: string;
+  positionTitle: string;
   companyName: string;
-  position: string;
   location?: string;
   startDate: string;
   endDate?: string;
-  isCurrentRole: boolean;
+  isCurrent: boolean;
   description?: string;
-  achievements?: string[];
-  displayOrder?: number;
+  workEnvironmentTags?: string[];
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
+  achievements?: Array<{
+    id: string;
+    achievementText: string;
+    impactDescription: string;
+  }>;
 }
 
-interface CreateWorkExperienceData {
+export interface CreateWorkExperienceData {
+  positionTitle: string;
   companyName: string;
-  position: string;
   location?: string;
   startDate: string;
   endDate?: string;
-  isCurrentRole: boolean;
+  isCurrent: boolean;
   description?: string;
-  achievements?: string[];
+  workEnvironmentTags?: string[];
   displayOrder?: number;
+  achievements?: Array<{
+    achievementText: string;
+    impactDescription: string;
+  }>;
 }
 
-interface UpdateWorkExperienceData extends Partial<CreateWorkExperienceData> {}
+export interface UpdateWorkExperienceData {
+  positionTitle?: string;
+  companyName?: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  isCurrent?: boolean;
+  description?: string;
+  workEnvironmentTags?: string[];
+  displayOrder?: number;
+  achievements?: Array<{
+    achievementText: string;
+    impactDescription: string;
+  }>;
+}
 
 interface WorkExperienceResponse {
   message?: string;
@@ -46,6 +69,8 @@ const workExperienceServices = {
   async createWorkExperience(data: CreateWorkExperienceData): Promise<WorkExperience> {
     try {
       const token = localStorage.getItem('accessToken');
+      console.log('Creating work experience with data:', data);
+      
       const response: AxiosResponse<WorkExperienceResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/job-seeker/work-experiences`,
         data,
@@ -58,8 +83,15 @@ const workExperienceServices = {
       );
       return response.data.data;
     } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data;
+      if (axios.isAxiosError(error)) {
+        console.error('Work experience creation error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          requestData: data
+        });
+        if (error.response) {
+          throw error.response.data;
+        }
       }
       throw { message: 'Failed to create work experience' };
     }
@@ -130,14 +162,11 @@ const workExperienceServices = {
   async deleteWorkExperience(id: string): Promise<void> {
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.delete(
-        `${SERVER_BASE_URL}/api/v1/job-seeker/work-experiences/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.delete(`${SERVER_BASE_URL}/api/v1/job-seeker/work-experiences/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
         throw error.response.data;

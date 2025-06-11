@@ -39,6 +39,7 @@ const CompanyLogin: React.FC = () => {
       toast.success("Login successful!", {
         description: "Welcome back to your company dashboard!",
       });
+      localStorage.setItem('userType', 'company');
       navigate("/company/dashboard/jobposts");
     } catch (err: unknown) {
       if (err instanceof Error) {

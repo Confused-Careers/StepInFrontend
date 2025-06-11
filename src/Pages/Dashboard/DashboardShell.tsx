@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, Search, Menu, X, Sparkles, Briefcase, Settings, LogOut, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Logo from "../../assets/StepIn Transparent Logo.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import jobSeekerServices from "@/services/jobSeekerServices";
+import { toast } from "sonner";
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -18,18 +20,25 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await jobSeekerServices.getProfile();
+      setProfile(data);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch profile");
+    }
+  };
 
   const navigation = [
     { name: "Interactive", href: "/dashboard/interactive", icon: Sparkles },
     { name: "Applications", href: "/dashboard/applications", icon: Briefcase },
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("google_email");
-    localStorage.removeItem("google_accessToken");
-    navigate("/individual-login", { replace: true });
-  }
 
   const isActive = (path: string) => {
     if (path === "/dashboard" && location.pathname === "/dashboard") {
@@ -39,6 +48,19 @@ export function DashboardShell({ children }: DashboardShellProps) {
       return true;
     }
     return false;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("google_email");
+    localStorage.removeItem("userType");
+    localStorage.removeItem("google_accessToken");
+    navigate("/company/login", { replace: true });
+  };
+
+  const getInitials = () => {
+    if (!profile) return "...";
+    return `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`;
   };
 
   return (
@@ -69,13 +91,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hidden md:flex">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src={profile?.profilePictureUrl || "/placeholder.svg?height=32&width=32"} alt={profile ? `${profile.firstName} ${profile.lastName}` : "User"} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{profile ? `${profile.firstName} ${profile.lastName}` : "My Account"}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
@@ -90,7 +112,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   Reset Password
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/")} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => handleLogout()} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>

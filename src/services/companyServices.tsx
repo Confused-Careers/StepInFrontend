@@ -211,7 +211,7 @@ const companyServices = {
       const token = localStorage.getItem('accessToken');
       const formData = new FormData();
       formData.append('file', file);
-      const response: AxiosResponse<UploadResponse> = await axios.post(
+      const response: AxiosResponse<{ data: UploadResponse }> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/company/logo/upload`,
         formData,
         {
@@ -221,7 +221,7 @@ const companyServices = {
           },
         }
       );
-      return response.data;
+      return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) {
         return Promise.reject('Unauthorized access, redirecting to login');

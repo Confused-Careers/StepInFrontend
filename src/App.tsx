@@ -1,8 +1,9 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './Contexts/ThemeContext';
+import { ProtectedRoute } from './utils/ProtectedRoutes';
 import LandingPage from './Pages/Landing/Landing';
 import { OnboardingFlow } from './Pages/Onboarding/OnboardingFlow';
-import { ThemeProvider } from './Contexts/ThemeContext';
 import IndividualLogin from './Pages/Auth/IndividualLogin';
 import IndividualRegister from './Pages/Auth/IndividualRegister';
 import CompanyLogin from './Pages/Auth/CompanyLogin';
@@ -10,7 +11,6 @@ import CompanyRegister from './Pages/Auth/CompanyRegister';
 import ProfilePage from './Pages/Profile/Profile';
 import { DashboardShell } from './Pages/Dashboard/DashboardShell';
 import { DynamicJobMatching } from './Pages/Dashboard/DynamicJobMatching';
-{/*import Dashboard from './Pages/Dashboard/DashBoard';*/}
 import ApplicationsPage from './Pages/Applications/ApplicationPage';
 import SettingsPage from './Pages/Settings/SettingsPage';
 import { JobsPostPage } from './Pages/Company/JobPost/JobPostPage';
@@ -29,6 +29,7 @@ function App() {
     <ThemeProvider>
       <Router>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/individual-login" element={<IndividualLogin />} />
           <Route path="/individual-register" element={<IndividualRegister />} />
@@ -38,17 +39,26 @@ function App() {
           <Route path="/company/forgot-password" element={<ForgotPassword />} />
           <Route path="/onboarding/*" element={<OnboardingFlow />} />
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
-          {/*<Route path="/dashboard" element={<DashboardShell><Dashboard /></DashboardShell>} />*/}
-          <Route path="/dashboard/profile" element={<DashboardShell><ProfilePage /></DashboardShell>} />
-          <Route path="/dashboard/interactive" element={<DashboardShell><DynamicJobMatching /></DashboardShell>} />
-          <Route path="/dashboard/applications" element={<DashboardShell><ApplicationsPage /></DashboardShell>} />
-          <Route path="/dashboard/settings" element={<DashboardShell><SettingsPage /></DashboardShell>} />
-          <Route path="/company/dashboard/profile" element={<CompanyDashboardShell><CompanyProfile /></CompanyDashboardShell>} />
-          <Route path="/company/dashboard/jobposts" element={<CompanyDashboardShell><JobsPostPage /></CompanyDashboardShell>} />
-          <Route path="/company/dashboard/job/new" element={<CompanyDashboardShell><JobPostForm /></CompanyDashboardShell>} />
-          <Route path="/company/dashboard/job/:jobId" element={<CompanyDashboardShell><JobPostForm /></CompanyDashboardShell>} />
-          <Route path="/company/dashboard/:jobId/applications" element={<CompanyDashboardShell><CompanyApplicationsPage /></CompanyDashboardShell>} />
-          <Route path="/company/dashboard/availability" element={<CompanyDashboardShell><AvailabilityPage /></CompanyDashboardShell>} />
+
+          {/* Protected Individual Routes */}
+          <Route element={<ProtectedRoute allowedUserType="individual" />}>
+            <Route path="/dashboard/profile" element={<DashboardShell><ProfilePage /></DashboardShell>} />
+            <Route path="/dashboard/interactive" element={<DashboardShell><DynamicJobMatching /></DashboardShell>} />
+            <Route path="/dashboard/applications" element={<DashboardShell><ApplicationsPage /></DashboardShell>} />
+            <Route path="/dashboard/settings" element={<DashboardShell><SettingsPage /></DashboardShell>} />
+          </Route>
+
+          {/* Protected Company Routes */}
+          <Route element={<ProtectedRoute allowedUserType="company" />}>
+            <Route path="/company/dashboard/profile" element={<CompanyDashboardShell><CompanyProfile /></CompanyDashboardShell>} />
+            <Route path="/company/dashboard/jobposts" element={<CompanyDashboardShell><JobsPostPage /></CompanyDashboardShell>} />
+            <Route path="/company/dashboard/job/new" element={<CompanyDashboardShell><JobPostForm /></CompanyDashboardShell>} />
+            <Route path="/company/dashboard/job/:jobId" element={<CompanyDashboardShell><JobPostForm /></CompanyDashboardShell>} />
+            <Route path="/company/dashboard/:jobId/applications" element={<CompanyDashboardShell><CompanyApplicationsPage /></CompanyDashboardShell>} />
+            <Route path="/company/dashboard/availability" element={<CompanyDashboardShell><AvailabilityPage /></CompanyDashboardShell>} />
+          </Route>
+
+          {/* Catch-all Route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster />

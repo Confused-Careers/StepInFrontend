@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -10,6 +11,7 @@ import { ApplicantsService, ApplicantCardDto, ListApplicantsRequestDto } from ".
 import debounce from "lodash/debounce";
 
 export interface Applicant {
+  latestExperience: any;
   id: string;
   name: string;
   education: string;
@@ -112,13 +114,15 @@ export default function CompanyApplicationsPage() {
         };
         const response = await ApplicantsService.getJobApplicants(request);
         const applicantData = Array.isArray(response.data) ? response.data : [];
+        console.log("Fetched Applicants Data:", applicantData);
         const mappedApplicants: Applicant[] = applicantData.map((dto: ApplicantCardDto) => ({
+          latestExperience: dto.latestExperience || {},
           id: dto.applicationId || dto.jobSeekerId || "",
           name: `${dto.firstName} ${dto.lastName}`,
           education: dto.latestEducation
             ? `${dto.latestEducation.degreeType} in ${dto.latestEducation.fieldOfStudy}, ${dto.latestEducation.institutionName}`
             : "Not specified",
-          currentCompany: dto.currentCompany || "Not specified",
+          currentCompany: dto.latestExperience?.companyName || "Not specified",
           currentPosition: dto.currentPosition || "Not specified",
           strength: dto.strengths || [],
           weakness: dto.weaknesses || [],
@@ -126,6 +130,7 @@ export default function CompanyApplicationsPage() {
           location: dto.location || "Not specified",
         }));
         setApplicants(mappedApplicants);
+        console.log("Mapped Applicants:", mappedApplicants);
         setAllApplicants(mappedApplicants);
 
         // Extract tags
@@ -165,7 +170,7 @@ export default function CompanyApplicationsPage() {
           !query ||
           app.name?.toLowerCase().includes(queryLower) ||
           app.education?.toLowerCase().includes(queryLower) ||
-          app.currentCompany?.toLowerCase().includes(queryLower) ||
+          app.latestExperience.companyName?.toLowerCase().includes(queryLower) ||
           app.currentPosition?.toLowerCase().includes(queryLower) ||
           app.location?.toLowerCase().includes(queryLower) ||
           app.strength?.some((s) => s.toLowerCase().includes(queryLower)) ||

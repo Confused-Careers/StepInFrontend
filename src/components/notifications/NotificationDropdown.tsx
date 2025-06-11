@@ -9,39 +9,75 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import notificationServices from '@/services/notificationService';
+import notificationServices, { 
+  Notification, 
+  NotificationType,
+  NotificationMetadata,
+  ApplicationStatusMetadata,
+  JobRecommendationMetadata,
+  InterviewReminderMetadata,
+  SystemAnnouncementMetadata
+} from '@/services/notificationService';
 import { format } from 'date-fns';
 
+type ActiveTabType = 'all' | 'unread' | 'jobs' | 'system';
+
 export function NotificationDropdown() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [currentPage,] = useState(1);
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<ActiveTabType>('all');
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       let response;
+      const currentLimit = activeTab === 'unread' ? 20 : activeTab === 'system' ? 5 : 10;
+      
       switch (activeTab) {
         case 'unread':
-          response = await notificationServices.getUnreadNotifications(currentPage);
+          response = await notificationServices.getAllNotifications({ 
+            status: 'unread',
+            page: currentPage,
+            limit: currentLimit
+          });
           break;
         case 'jobs':
-          response = await notificationServices.getJobApplicationNotifications(currentPage);
+          response = await notificationServices.getAllNotifications({ 
+            type: 'job_application',
+            page: currentPage,
+            limit: currentLimit
+          });
           break;
         case 'system':
-          response = await notificationServices.getSystemAnnouncements(currentPage);
+          response = await notificationServices.getAllNotifications({ 
+            type: 'system_announcement',
+            page: currentPage,
+            limit: currentLimit
+          });
           break;
         default:
-          response = await notificationServices.getAllNotifications({ page: currentPage });
+          response = await notificationServices.getAllNotifications({ 
+            page: currentPage,
+            limit: currentLimit
+          });
       }
-      setNotifications(response.notifications);
-      setUnreadCount(response.counts.unreadCount);
+
+      if (response?.notifications) {
+        setNotifications(prev => 
+          currentPage === 1 ? response.notifications : [...prev, ...response.notifications]
+        );
+        setUnreadCount(response.counts?.unreadCount || 0);
+      } else {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -88,7 +124,7 @@ export function NotificationDropdown() {
     }
   };
 
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: Notification) => {
     try {
       const details = await notificationServices.getSingleNotification(notification.id);
       setSelectedNotification(details);
@@ -97,6 +133,66 @@ export function NotificationDropdown() {
       }
     } catch (error) {
       console.error('Failed to fetch notification details:', error);
+    }
+  };
+
+  const renderMetadata = (type: NotificationType, metadata: NotificationMetadata) => {
+    switch (type) {
+      case 'application_status_update': {
+        const data = metadata as ApplicationStatusMetadata;
+        return (
+          <>
+            <p>Company: {data.companyName}</p>
+            <p>Job Title: {data.jobTitle}</p>
+            <p>Status Change: {data.previousStatus} → {data.newStatus}</p>
+          </>
+        );
+      }
+      case 'job_recommendation': {
+        const data = metadata as JobRecommendationMetadata;
+        return (
+          <>
+            <p>Company: {data.companyName}</p>
+            <p>Job Title: {data.jobTitle}</p>
+            <p>Match Score: {data.matchScore}%</p>
+            <p>Location: {data.location}</p>
+            <p>Salary: {data.salaryRange}</p>
+            <p>Matching Skills: {data.matchingSkills.join(', ')}</p>
+          </>
+        );
+      }
+      case 'interview_reminder': {
+        const data = metadata as InterviewReminderMetadata;
+        return (
+          <>
+            <p>Company: {data.companyName}</p>
+            <p>Interview Type: {data.interviewType}</p>
+            <p>Date: {format(new Date(data.interviewDate), 'PPp')}</p>
+            <p>Interviewer: {data.interviewerName}</p>
+            <p>Interviewer Title: {data.interviewerTitle}</p>
+            {data.meetingLink && (
+              <Button
+                variant="outline"
+                className="mt-2"
+                onClick={() => window.open(data.meetingLink, '_blank')}
+              >
+                Join Meeting
+              </Button>
+            )}
+          </>
+        );
+      }
+      case 'system_announcement': {
+        const data = metadata as SystemAnnouncementMetadata;
+        return data.maintenanceStart && data.maintenanceEnd ? (
+          <>
+            <p>Start: {format(new Date(data.maintenanceStart), 'PPp')}</p>
+            <p>End: {format(new Date(data.maintenanceEnd), 'PPp')}</p>
+          </>
+        ) : null;
+      }
+      default:
+        return null;
     }
   };
 
@@ -130,6 +226,7 @@ export function NotificationDropdown() {
               <div className="flex flex-col gap-2 text-xs text-muted-foreground">
                 <p>Type: {selectedNotification.type}</p>
                 <p>Status: {selectedNotification.status}</p>
+                {renderMetadata(selectedNotification.type, selectedNotification.metadata)}
                 <p>Created: {format(new Date(selectedNotification.createdAt), 'PPp')}</p>
                 {selectedNotification.readAt && (
                   <p>Read: {format(new Date(selectedNotification.readAt), 'PPp')}</p>
@@ -161,12 +258,12 @@ export function NotificationDropdown() {
                 </Button>
               )}
             </div>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full">
-                <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-                <TabsTrigger value="unread" className="flex-1">Unread</TabsTrigger>
-                <TabsTrigger value="jobs" className="flex-1">Jobs</TabsTrigger>
-                <TabsTrigger value="system" className="flex-1">Announcements</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTabType)}>
+              <TabsList className="w-full grid grid-cols-4">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="unread">Unread</TabsTrigger>
+                <TabsTrigger value="jobs">Jobs</TabsTrigger>
+                <TabsTrigger value="system">System</TabsTrigger>
               </TabsList>
               <TabsContent value={activeTab}>
                 <div className="max-h-[400px] overflow-y-auto">
@@ -177,49 +274,59 @@ export function NotificationDropdown() {
                       No notifications
                     </div>
                   ) : (
-                    notifications.map((notification) => (
-                      <DropdownMenuItem
-                        key={notification.id}
-                        className="flex flex-col items-start p-4 border-b last:border-b-0 cursor-pointer"
-                        onClick={() => handleNotificationClick(notification)}
-                      >
-                        <div className="flex items-start justify-between w-full">
-                          <div>
-                            <h5 className="font-medium">{notification.title}</h5>
-                            <p className="text-sm text-muted-foreground">
-                              {notification.message}
-                            </p>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(notification.createdAt), 'PPp')}
-                            </span>
-                          </div>
-                          <div className="flex gap-2">
-                            {notification.status === 'unread' && (
+                    <>
+                      {notifications.map((notification) => (
+                        <DropdownMenuItem
+                          key={notification.id}
+                          className="flex flex-col items-start p-4 border-b last:border-b-0 cursor-pointer"
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <div className="flex items-start justify-between w-full">
+                            <div className="flex-1 mr-4">
+                              <h5 className="font-medium">{notification.title}</h5>
+                              <p className="text-sm text-muted-foreground">
+                                {notification.message}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(notification.createdAt), 'PPp')}
+                              </span>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                              {notification.status === 'unread' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                >
+                                  Mark as read
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleMarkAsRead(notification.id);
+                                  handleDelete(notification.id);
                                 }}
                               >
-                                Mark as read
+                                Delete
                               </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(notification.id);
-                              }}
-                            >
-                              Delete
-                            </Button>
+                            </div>
                           </div>
-                        </div>
-                      </DropdownMenuItem>
-                    ))
+                        </DropdownMenuItem>
+                      ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                      >
+                        Load More
+                      </Button>
+                    </>
                   )}
                 </div>
               </TabsContent>

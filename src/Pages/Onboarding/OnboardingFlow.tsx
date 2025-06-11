@@ -1,65 +1,46 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 import { X } from "lucide-react";
 import { OnboardingQuestion } from "./OnboardingQuestion";
 import { ResumeUpload } from "./ResumeUpload";
 import { OnboardingRegister } from "./OnboardingRegister";
-import { JobMatches } from "./JobMatches";
 import VerifyEmailModal from "../../components/Modals/VerifyEmailModal";
 import Logo from "../../assets/StepIn Transparent Logo.png";
 import StarryBackground from "@/components/Others/StarryBackground";
 import authServices from "@/services/authServices";
+import { getOnboardingQuestions } from "@/services/questionServices";
 import { toast } from "sonner";
 
-type StepType = "intro" | "register" | "resume" | "question" | "matches" | "verify";
+type StepType = "intro" | "register" | "resume" | "question" | "verify";
 
 interface OnboardingAnswer {
   questionId: string;
   selectedOptionId: string;
 }
 
-interface JobMatch {
-  jobId: string;
-  title: string;
-  company: string;
-  location: string;
-  matchPercentage: number;
-  employmentType: string;
-  salary?: string;
-  category?: string;
+interface Question {
+  id: string;
+  questionText: string;
+  options: Array<{
+    id: string;
+    optionText: string;
+  }>;
+  onboardingOrder: number;
 }
 
 interface Step {
   id: string;
   type: StepType;
   content?: string;
-  question?: string;
-  options?: string[];
-  insight?: string;
+  questionId?: string;
+  questionText?: string;
+  options?: Array<{ id: string; optionText: string }>;
   progress: number;
-  followUp?: string;
-  companyMatch?: { name: string; reason: string };
-  jobMatches?: JobMatch[];
 }
-
-// Predefined steps with static questions
-const steps: Step[] = [
-  { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
-  { id: "q1", type: "question", question: "When was the last time you completely lost track of time doing something?", options: ["Solving a complex problem", "Creating something new", "Collaborating with others", "Learning a new skill", "Organizing a project", "Relaxing with a hobby"], insight: "You're a deep work thinker — not a surface-level doer.", progress: 10 },
-  { id: "q2", type: "question", question: "What kind of energy makes you come alive in a team?", options: ["Calm and quiet", "Fast-paced and collaborative", "Playful and creative", "Structured and focused", "Chaotic but full of ideas", "Independent and self-driven"], insight: "You bring heat to fast-moving teams.", progress: 20 },
-  { id: "q3", type: "question", question: "When you've worked with a team that just didn't click, what was the main issue?", options: ["Lack of clear communication", "Too much chaos", "No shared goals", "Poor leadership", "Conflicting personalities", "Not enough autonomy"], insight: "You thrive when people say what they mean.", progress: 30, followUp: "You've answered a few real questions — not just checkbox stuff. Want to see roles that actually match how you think and work? Let's get your info locked in and keep moving." },
-  { id: "register", type: "register", content: "Let's save your progress – and send your matches straight to you", progress: 40 },
-  { id: "resume", type: "resume", content: "Now let's connect your experience — we'll use it to show matches that actually fit.", progress: 50 },
-  { id: "q4", type: "question", question: "How would you describe your career stage?", options: ["High school student", "College student", "Recent grad", "Career switcher", "Mid-career professional", "Other"], insight: "You're at a key inflection point in your journey.", progress: 60 },
-  { id: "q5", type: "question", question: "When no one gives direction, what do you naturally do?", options: ["Start building something", "Organize the chaos", "Ask questions", "Check in with others", "Wait and observe", "Get anxious"], insight: "You don't wait — you create.", progress: 70, followUp: "Based on what you've shared so far — and your background — one team stands out", companyMatch: { name: "ExampleCorp", reason: "Why? Collaborative, fast-paced, ownership-heavy. Feels like you" } },
-  { id: "q6", type: "question", question: "What kind of pressure actually makes you better?", options: ["A deadline", "A team counting on me", "Owning the whole outcome", "Solving a hard problem", "Competitive stakes", "Minimal pressure — I do better in calm"], insight: "You rise when people count on you.", progress: 80, followUp: "You're almost there — and this next moment is the one that matters." },
-  { id: "q7", type: "question", question: "What makes you feel proud at the end of the day?", options: ["Finishing a tough task", "Helping a teammate succeed", "Seeing measurable progress", "Solving a tricky problem", "Leading a project", "Learning something new"], insight: "You're not chasing status. You're chasing progress.", progress: 90, followUp: "Here's where you'd actually thrive. Not just jobs you can do — Roles that match how you think, work, and grow. This is what fit feels like." },
-  { id: "verify", type: "verify", content: "Verify your email to continue", progress: 92 },
-  { id: "matches", type: "matches", content: "Here are your personalized job matches!", progress: 95 },
-];
 
 export function OnboardingFlow() {
   const navigate = useNavigate();
@@ -75,7 +56,7 @@ export function OnboardingFlow() {
     const savedOnboardingAnswers = localStorage.getItem('onboarding_onboardingAnswers');
     return savedOnboardingAnswers ? JSON.parse(savedOnboardingAnswers) : [];
   });
-  const [, setResumeFile] = useState<File | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeUploaded, setResumeUploaded] = useState<boolean>(() => {
     const savedResumeUploaded = localStorage.getItem('onboarding_resumeUploaded');
     return savedResumeUploaded ? JSON.parse(savedResumeUploaded) : false;
@@ -83,10 +64,88 @@ export function OnboardingFlow() {
   const [progress, setProgress] = useState<number>(0);
   const [, setIsTransitioning] = useState<boolean>(false);
   const [showContent, setShowContent] = useState<boolean>(true);
-  const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [, setIsLoading] = useState(false);
+  const [dynamicSteps, setDynamicSteps] = useState<Step[]>([
+    { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
+  ]);
+
+  // Fetch onboarding questions and build dynamic steps
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const response = await getOnboardingQuestions();
+        const questions: Question[] = response.data.questions.sort(
+          (a: { onboardingOrder: number; }, b: { onboardingOrder: number; }) => a.onboardingOrder - b.onboardingOrder
+        );
+        const totalQuestions = questions.length;
+
+        // Calculate questions before and after registration
+        const questionsBefore = totalQuestions % 2 === 0
+          ? totalQuestions / 2
+          : Math.ceil(totalQuestions / 2);
+
+        // Build dynamic steps
+        const newSteps: Step[] = [
+          { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
+        ];
+
+        // Add questions before registration
+        questions.slice(0, questionsBefore).forEach((q, index) => {
+          newSteps.push({
+            id: `q${index + 1}`,
+            type: "question",
+            questionId: q.id,
+            questionText: q.questionText,
+            options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText })),
+            progress: ((index + 1) / (totalQuestions + 3)) * 80,
+          });
+        });
+
+        // Add registration
+        newSteps.push({
+          id: "register",
+          type: "register",
+          content: "Let's save your progress – and send your matches straight to you",
+          progress: (questionsBefore / (totalQuestions + 3)) * 80,
+        });
+
+        // Add resume
+        newSteps.push({
+          id: "resume",
+          type: "resume",
+          content: "Now let's connect your experience — we'll use it to show matches that actually fit.",
+          progress: ((questionsBefore + 1) / (totalQuestions + 3)) * 80,
+        });
+
+        // Add questions after registration
+        questions.slice(questionsBefore).forEach((q, index) => {
+          newSteps.push({
+            id: `q${questionsBefore + index + 1}`,
+            type: "question",
+            questionId: q.id,
+            questionText: q.questionText,
+            options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText })),
+            progress: ((questionsBefore + 1 + index + 1) / (totalQuestions + 3)) * 80,
+          });
+        });
+
+        // Add verify
+        newSteps.push({
+          id: "verify",
+          type: "verify",
+          content: "Verify your email to continue",
+          progress: 90,
+        });
+
+        setDynamicSteps(newSteps);
+      } catch {
+        toast.error("Failed to load onboarding questions.");
+      }
+    };
+    fetchQuestions();
+  }, []);
 
   // Persist state to localStorage
   useEffect(() => {
@@ -108,7 +167,7 @@ export function OnboardingFlow() {
   // Update progress and handle intro auto-advance
   useEffect(() => {
     const timer = setTimeout(() => {
-      setProgress(steps[currentStep]?.progress || 0);
+      setProgress(dynamicSteps[currentStep]?.progress || 0);
     }, 300);
     if (currentStep === 0) {
       const introTimer = setTimeout(() => {
@@ -120,45 +179,30 @@ export function OnboardingFlow() {
       };
     }
     return () => clearTimeout(timer);
-  }, [currentStep]);
+  }, [currentStep, dynamicSteps]);
 
-  // Fetch job matches at the matches step
-  useEffect(() => {
-    if (steps[currentStep]?.type === 'matches' && onboardingAnswers.length > 0) {
-      const fetchMatches = async () => {
-        try {
-          const data = await authServices.getJobMatches({
-            k: 20,
-            salaryMin: 80000,
-            salaryMax: 150000,
-            employmentType: 'full_time',
-            isRemote: true,
-          });
-          setJobMatches(data.matches);
-        } catch {
-          toast.error("Failed to load job matches.");
-        }
-      };
-      fetchMatches();
-    }
-  }, [currentStep, onboardingAnswers]);
+  const handleAnswer = async (stepId: string, optionId: string) => {
+    const questionId = dynamicSteps.find(step => step.id === stepId)?.questionId;
+    if (!questionId) return;
 
-  const handleAnswer = async (stepId: string, answer: string) => {
-    setAnswers(prev => ({ ...prev, [stepId]: answer }));
-    const questionId = stepId;
-    const selectedOptionId = `option-${answer.toLowerCase().replace(/\s/g, '-')}`;
-    const newAnswer = { questionId, selectedOptionId };
-    setOnboardingAnswers(prev => [...prev, newAnswer]);
+    setAnswers(prev => ({ ...prev, [stepId]: optionId }));
+    const newAnswer = { questionId, selectedOptionId: optionId };
+    setOnboardingAnswers(prev => [...prev.filter(a => a.questionId !== questionId), newAnswer]);
 
     setIsTransitioning(true);
     setShowContent(false);
 
-    if (stepId === "q7") {
+    const questionIndex = dynamicSteps.findIndex(step => step.id === stepId);
+    const totalQuestions = dynamicSteps.filter(step => step.type === "question").length;
+    const questionCount = dynamicSteps.slice(0, questionIndex + 1).filter(step => step.type === "question").length;
+    const isLastQuestion = questionCount === totalQuestions && totalQuestions > 0;
+
+    if (isLastQuestion) {
       setIsLoading(true);
       try {
         const isGoogleAuth = !!localStorage.getItem("google_accessToken");
         const registerData = JSON.parse(localStorage.getItem("registerData") || "{}");
-        const updatedAnswers = [...onboardingAnswers, newAnswer];
+        const updatedAnswers = [...onboardingAnswers.filter(a => a.questionId !== questionId), newAnswer];
 
         if (isGoogleAuth) {
           const googleAccessToken = localStorage.getItem("google_accessToken");
@@ -167,26 +211,38 @@ export function OnboardingFlow() {
             onboardingAnswers: updatedAnswers,
           });
         } else {
-          await authServices.register({
-            email: registerData.email,
-            password: registerData.password,
-            firstName: registerData.firstName,
-            lastName: registerData.lastName,
-            phone: registerData.phone,
-            onboardingAnswers: updatedAnswers,
+          const formData = new FormData();
+          formData.append("email", registerData.email || "");
+          formData.append("password", registerData.password || "");
+          formData.append("firstName", registerData.firstName || "");
+          formData.append("lastName", registerData.lastName || "");
+          formData.append("phone", registerData.phone || "");
+          updatedAnswers.forEach((answer, index) => {
+            formData.append(`onboardingAnswers[${index}][questionId]`, answer.questionId);
+            formData.append(`onboardingAnswers[${index}][selectedOptionId]`, answer.selectedOptionId);
           });
+          if (resumeFile) {
+            formData.append("resume", resumeFile);
+          } else {
+            throw new Error("Resume file is required");
+          }
+          console.log("Submitting registration data:", formData);
+          await authServices.register(formData);
         }
         setUserEmail(registerData.email || localStorage.getItem("google_email") || "");
-        setShowVerifyModal(true);
-        setCurrentStep(prev => prev + 1);
+        setShowVerifyModal(true); // Show modal only after successful POST
+        setCurrentStep(prev => prev + 1); // Advance to verify step
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Registration failed.");
-      } finally {
-        setIsLoading(false);
         setIsTransitioning(false);
         setShowContent(true);
+        setIsLoading(false);
+        return; // Stay on current question if POST fails
+      } finally {
+        setIsLoading(false);
       }
     } else {
+      // Advance to next step
       setTimeout(() => {
         setCurrentStep(prev => prev + 1);
         setTimeout(() => {
@@ -197,10 +253,10 @@ export function OnboardingFlow() {
     }
   };
 
-  const handleResumeUpload = async (file?: File) => {
-    setResumeFile(file || null);
+  const handleResumeUpload = (file: File) => {
+    setResumeFile(file);
     setResumeUploaded(true);
-    if (!file) {
+    setTimeout(() => {
       setIsTransitioning(true);
       setShowContent(false);
       setTimeout(() => {
@@ -208,38 +264,19 @@ export function OnboardingFlow() {
         setIsTransitioning(false);
         setShowContent(true);
       }, 1000);
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      await authServices.uploadResume(formData);
-      setTimeout(() => {
-        setIsTransitioning(true);
-        setShowContent(false);
-        setTimeout(() => {
-          setCurrentStep(prev => prev + 1);
-          setIsTransitioning(false);
-          setShowContent(true);
-        }, 1000);
-      }, 2000);
-    } catch {
-      toast.error("Failed to upload resume. Please try again.");
-      setResumeUploaded(false);
-    }
+    }, 1500);
   };
 
-  const handleMatchesComplete = () => {
+  const handleVerifyComplete = () => {
     setShowContent(false);
-    // Clear localStorage on completion
     localStorage.removeItem('onboarding_currentStep');
-    localStorage.removeItem('onboarding_answers');
-    localStorage.removeItem('onboarding_onboardingAnswers');
+    localStorage.setItem('onboarding_answers', JSON.stringify({}));
+    localStorage.setItem('onboarding_onboardingAnswers', JSON.stringify([]));
     localStorage.removeItem('onboarding_resumeUploaded');
     localStorage.removeItem('registerData');
     localStorage.removeItem('google_accessToken');
     localStorage.removeItem('google_email');
-    navigate("/dashboard");
+    navigate("/individual-login");
   };
 
   const handleContinue = () => {
@@ -255,7 +292,7 @@ export function OnboardingFlow() {
   };
 
   const renderStep = () => {
-    const step = steps[currentStep];
+    const step = dynamicSteps[currentStep];
     if (!step) return null;
 
     switch (step.type) {
@@ -315,21 +352,11 @@ export function OnboardingFlow() {
           >
             <OnboardingQuestion
               questionId={step.id}
-              question={step.question || ""}
+              backendQuestionId={step.questionId || ""}
+              question={step.questionText || ""}
               options={step.options || []}
-              onAnswer={(answer: string) => handleAnswer(step.id, answer)}
+              onAnswer={(optionId: string) => handleAnswer(step.id, optionId)}
             />
-          </motion.div>
-        );
-      case "matches":
-        return (
-          <motion.div
-            initial="hidden"
-            animate={showContent ? "visible" : "hidden"}
-            exit="exit"
-            variants={contentVariants}
-          >
-            <JobMatches matches={jobMatches} onComplete={handleMatchesComplete} />
           </motion.div>
         );
       case "verify":
@@ -365,17 +392,16 @@ export function OnboardingFlow() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
-                Step {currentStep + 1} of {steps.length - 1}
+                Step {currentStep + 1}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => {
-                  // Clear localStorage on manual exit
                   localStorage.removeItem('onboarding_currentStep');
-                  localStorage.removeItem('onboarding_answers');
-                  localStorage.removeItem('onboarding_onboardingAnswers');
+                  localStorage.setItem('onboarding_answers', JSON.stringify({}));
+                  localStorage.setItem('onboarding_onboardingAnswers', JSON.stringify([]));
                   localStorage.removeItem('onboarding_resumeUploaded');
                   localStorage.removeItem('registerData');
                   localStorage.removeItem('google_accessToken');
@@ -405,9 +431,9 @@ export function OnboardingFlow() {
         </div>
         <VerifyEmailModal
           isOpen={showVerifyModal}
-          onClose={() => setShowVerifyModal(false)}
+          onClose={handleVerifyComplete}
           email={userEmail}
-          navigation={() => navigate("/individual-login")}
+          navigation={handleVerifyComplete}
         />
       </div>
     </div>

@@ -8,37 +8,50 @@ interface JobSeekerProfile {
   userId: string;
   firstName: string;
   lastName: string;
-  email: string;
   phone: string;
-  headline?: string;
-  summary?: string;
-  currentLocation?: string;
-  preferredLocations?: string[];
-  profilePictureUrl?: string;
-  resumeUrl?: string;
-  resumeMetadata?: any;
+  profilePictureUrl: string | null;
+  resumeUrl: string | null;
+  portfolioUrl: string | null;
+  aboutMe: string | null;
+  currentPosition: string | null;
+  currentCompany: string | null;
+  location: string | null;
+  preferredLocation: string | null;
+  expectedSalaryMin: number | null;
+  expectedSalaryMax: number | null;
+  availability: string | null;
+  profileViewsCount: number;
+  onboardingCompleted: boolean;
+  currentTier: number;
+  questionsAnsweredInCurrentTier: number;
+  totalQuestionsAnswered: number;
   createdAt: string;
   updatedAt: string;
 }
 
 interface UpdateProfileData {
-  headline?: string;
-  summary?: string;
-  currentLocation?: string;
-  preferredLocations?: string[];
+  aboutMe?: string;
+  currentPosition?: string;
+  currentCompany?: string;
+  location?: string;
+  preferredLocation?: string;
+  expectedSalaryMin?: number;
+  expectedSalaryMax?: number;
+  availability?: string;
+  portfolioUrl?: string;
 }
 
-interface ProfileResponse {
-  data: JobSeekerProfile;
-  message?: string;
-  profile: JobSeekerProfile;
+interface ApiResponse<T> {
+  statusCode: number;
+  message: string;
+  data: T;
 }
 
 const jobSeekerServices = {
   async getProfile(): Promise<JobSeekerProfile> {
     try {
       const token = localStorage.getItem('accessToken');
-      const response: AxiosResponse<ProfileResponse> = await axios.get(
+      const response: AxiosResponse<ApiResponse<JobSeekerProfile>> = await axios.get(
         `${SERVER_BASE_URL}/api/v1/job-seeker/profile`,
         {
           headers: {
@@ -46,7 +59,8 @@ const jobSeekerServices = {
           },
         }
       );
-      return response.data.profile;
+      
+      return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
         throw error.response.data;
@@ -58,7 +72,17 @@ const jobSeekerServices = {
   async updateProfile(data: UpdateProfileData): Promise<JobSeekerProfile> {
     try {
       const token = localStorage.getItem('accessToken');
-      const response: AxiosResponse<ProfileResponse> = await axios.put(
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Validate salary range if both values are provided
+      if (data.expectedSalaryMin && data.expectedSalaryMax && 
+          data.expectedSalaryMin > data.expectedSalaryMax) {
+        throw new Error('Minimum salary cannot be greater than maximum salary');
+      }
+
+      const response: AxiosResponse<ApiResponse<JobSeekerProfile>> = await axios.put(
         `${SERVER_BASE_URL}/api/v1/job-seeker/profile`,
         data,
         {
@@ -68,7 +92,7 @@ const jobSeekerServices = {
           },
         }
       );
-      return response.data.profile;
+      return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
         throw error.response.data;

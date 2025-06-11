@@ -64,6 +64,7 @@ interface AnswerResponseDto {
 }
 
 interface OnboardingQuestionsResponseDto {
+  data: any;
   questions: QuestionResponseDto[];
   totalQuestions: number;
 }
@@ -146,8 +147,11 @@ const getAnswerHistory = async (tierNumber?: number): Promise<AnswerResponseDto[
 const getOnboardingQuestions = async (): Promise<OnboardingQuestionsResponseDto> => {
   try {
     const response = await axios.get(`${SERVER_BASE_URL}/api/v1/questions/onboarding`, {
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+    console.log('Onboarding questions fetched successfully:', response.data);
     return response.data;
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {

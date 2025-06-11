@@ -5,36 +5,36 @@ import { SERVER_BASE_URL } from '@/utils/config';
 interface Education {
   id: string;
   jobSeekerId: string;
-  school: string;
-  degree: string;
+  degreeType: string;
   fieldOfStudy: string;
+  institutionName: string;
   location?: string;
   startDate: string;
   endDate?: string;
-  isCurrentlyStudying: boolean;
-  grade?: string;
+  gpa?: number;
+  gpaScale?: string;
   description?: string;
-  coursework?: string[];
-  displayOrder?: number;
+  thesisProject?: string;
+  displayOrder: number;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
-interface CreateEducationData {
-  school: string;
-  degree: string;
+export interface CreateEducationData {
+  degreeType: string;
   fieldOfStudy: string;
+  institutionName: string;
   location?: string;
   startDate: string;
   endDate?: string;
-  isCurrentlyStudying: boolean;
-  grade?: string;
+  gpa?: number;
+  gpaScale?: string;
   description?: string;
-  coursework?: string[];
+  thesisProject?: string;
   displayOrder?: number;
 }
 
-interface UpdateEducationData extends Partial<CreateEducationData> {}
+export interface UpdateEducationData extends Partial<CreateEducationData> {}
 
 interface EducationResponse {
   message?: string;
@@ -50,6 +50,17 @@ const educationServices = {
   async createEducation(data: CreateEducationData): Promise<Education> {
     try {
       const token = localStorage.getItem('accessToken');
+      
+      // Debug log
+      console.log('Creating education with data:', {
+        endpoint: `${SERVER_BASE_URL}/api/v1/job-seeker/education`,
+        requestData: data,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      
       const response: AxiosResponse<EducationResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/job-seeker/education`,
         data,
@@ -60,9 +71,20 @@ const educationServices = {
           },
         }
       );
+      
+      // Debug log
+      console.log('Education creation response:', response.data);
+      
       return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
+        console.error('Education creation error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers,
+          requestData: data
+        });
         throw error.response.data;
       }
       throw { message: 'Failed to create education' };

@@ -5,44 +5,64 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, Plus, X } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "sonner";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface EducationFormData {
-  school: string;
-  degree: string;
+  institutionName: string;
+  degreeType: string;
   fieldOfStudy: string;
   location?: string;
   startDate?: Date;
   endDate?: Date;
   isCurrentlyStudying: boolean;
-  grade?: string;
+  gpa?: string;
+  gpaScale?: string;
   description?: string;
-  coursework: string[];
+  thesisProject?: string;
+  displayOrder?: number;
+}
+
+interface EducationApiData {
+  institutionName: string;
+  degreeType: string;
+  fieldOfStudy: string;
+  location?: string;
+  startDate: string;
+  endDate?: string;
+  gpa?: number;
+  gpaScale?: string;
+  description?: string;
+  thesisProject?: string;
+  displayOrder: number;
 }
 
 interface EducationFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: EducationFormData) => Promise<void>;
+  onSubmit: (data: EducationApiData) => Promise<void>;
   initialData?: EducationFormData;
 }
 
 export function EducationForm({ isOpen, onClose, onSubmit, initialData }: EducationFormProps) {
   const [formData, setFormData] = useState<EducationFormData>({
-    school: initialData?.school || "",
-    degree: initialData?.degree || "",
+    institutionName: initialData?.institutionName || "",
+    degreeType: initialData?.degreeType || "",
     fieldOfStudy: initialData?.fieldOfStudy || "",
     location: initialData?.location || "",
     startDate: initialData?.startDate ? new Date(initialData.startDate) : undefined,
     endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
     isCurrentlyStudying: initialData?.isCurrentlyStudying || false,
-    grade: initialData?.grade || "",
+    gpa: initialData?.gpa?.toString() || "",
+    gpaScale: initialData?.gpaScale || "4.00",
     description: initialData?.description || "",
-    coursework: initialData?.coursework || [""],
+    thesisProject: initialData?.thesisProject || "",
+    displayOrder: initialData?.displayOrder,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,36 +74,74 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
     }));
   };
 
-  const handleCourseworkChange = (index: number, value: string) => {
-    const newCoursework = [...formData.coursework];
-    newCoursework[index] = value;
-    handleInputChange("coursework", newCoursework);
-  };
-
-  const addCoursework = () => {
-    handleInputChange("coursework", [...formData.coursework, ""]);
-  };
-
-  const removeCoursework = (index: number) => {
-    const newCoursework = formData.coursework.filter((_: string, i: number) => i !== index);
-    handleInputChange("coursework", newCoursework);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Filter out empty coursework
-      const cleanedData = {
-        ...formData,
-        coursework: formData.coursework.filter((course: string) => course.trim() !== ""),
+      // Validate required fields
+      if (!formData.institutionName || !formData.degreeType || !formData.fieldOfStudy || !formData.startDate) {
+        const missingFields = [];
+        if (!formData.institutionName) missingFields.push('Institution Name');
+        if (!formData.degreeType) missingFields.push('Degree Type');
+        if (!formData.fieldOfStudy) missingFields.push('Field of Study');
+        if (!formData.startDate) missingFields.push('Start Date');
+        
+        toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Format data for submission
+      const cleanedData: EducationApiData = {
+        institutionName: formData.institutionName.trim(),
+        degreeType: formData.degreeType.trim(),
+        fieldOfStudy: formData.fieldOfStudy.trim(),
+        startDate: formData.startDate.toISOString().split('T')[0],
+        displayOrder: formData.displayOrder ?? 0,
+        ...(formData.location && { location: formData.location.trim() }),
+        ...(!formData.isCurrentlyStudying && formData.endDate && {
+          endDate: formData.endDate.toISOString().split('T')[0]
+        }),
+        ...(formData.gpa && { 
+          gpa: parseFloat(formData.gpa),
+          gpaScale: formData.gpaScale || "4.00"
+        }),
+        ...(formData.description && { description: formData.description.trim() }),
+        ...(formData.thesisProject && { thesisProject: formData.thesisProject.trim() })
       };
+
+      // Debug log
+      console.log('Form data before submission:', {
+        rawFormData: formData,
+        cleanedData: cleanedData
+      });
 
       await onSubmit(cleanedData);
       onClose();
     } catch (error) {
-      console.error("Form submission error:", error);
+      console.error("Form submission error:", {
+        error,
+        formData,
+        cleanedData: {
+          institutionName: formData.institutionName.trim(),
+          degreeType: formData.degreeType.trim(),
+          fieldOfStudy: formData.fieldOfStudy.trim(),
+          startDate: formData.startDate?.toISOString().split('T')[0],
+          displayOrder: formData.displayOrder ?? 0,
+          ...(formData.location && { location: formData.location.trim() }),
+          ...(!formData.isCurrentlyStudying && formData.endDate && {
+            endDate: formData.endDate.toISOString().split('T')[0]
+          }),
+          ...(formData.gpa && { 
+            gpa: parseFloat(formData.gpa),
+            gpaScale: formData.gpaScale || "4.00"
+          }),
+          ...(formData.description && { description: formData.description.trim() }),
+          ...(formData.thesisProject && { thesisProject: formData.thesisProject.trim() })
+        }
+      });
+      toast.error("Failed to save education record");
     } finally {
       setIsSubmitting(false);
     }
@@ -91,7 +149,7 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto no-scrollbar">
         <DialogHeader>
           <DialogTitle>{initialData ? "Edit Education" : "Add Education"}</DialogTitle>
         </DialogHeader>
@@ -99,37 +157,45 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="school">School/Institution *</Label>
+              <Label htmlFor="institutionName">Institution Name *</Label>
               <Input
-                id="school"
-                value={formData.school}
-                onChange={(e) => handleInputChange("school", e.target.value)}
-                placeholder="Enter school or institution name"
+                id="institutionName"
+                value={formData.institutionName}
+                onChange={(e) => handleInputChange("institutionName", e.target.value)}
+                placeholder="Enter institution name"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="degree">Degree *</Label>
-                <Input
-                  id="degree"
-                  value={formData.degree}
-                  onChange={(e) => handleInputChange("degree", e.target.value)}
-                  placeholder="Enter degree"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fieldOfStudy">Field of Study *</Label>
-                <Input
-                  id="fieldOfStudy"
-                  value={formData.fieldOfStudy}
-                  onChange={(e) => handleInputChange("fieldOfStudy", e.target.value)}
-                  placeholder="Enter field of study"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="degreeType">Degree Type *</Label>
+              <Select
+                value={formData.degreeType}
+                onValueChange={(value) => handleInputChange("degreeType", value)}
+              >
+                <SelectTrigger id="degreeType">
+                  <SelectValue placeholder="Select degree type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="associate">Associate's</SelectItem>
+                  <SelectItem value="bachelor">Bachelor's</SelectItem>
+                  <SelectItem value="master">Master's</SelectItem>
+                  <SelectItem value="doctorate">Doctorate</SelectItem>
+                  <SelectItem value="diploma">Diploma</SelectItem>
+                  <SelectItem value="certificate">Certificate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fieldOfStudy">Field of Study *</Label>
+              <Input
+                id="fieldOfStudy"
+                value={formData.fieldOfStudy}
+                onChange={(e) => handleInputChange("fieldOfStudy", e.target.value)}
+                placeholder="Enter field of study"
+                required
+              />
             </div>
 
             <div className="space-y-2">
@@ -216,12 +282,22 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="grade">Grade/GPA</Label>
+              <Label htmlFor="gpa">GPA</Label>
               <Input
-                id="grade"
-                value={formData.grade}
-                onChange={(e) => handleInputChange("grade", e.target.value)}
-                placeholder="Enter grade or GPA (optional)"
+                id="gpa"
+                value={formData.gpa}
+                onChange={(e) => handleInputChange("gpa", e.target.value)}
+                placeholder="Enter GPA (optional)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gpaScale">GPA Scale</Label>
+              <Input
+                id="gpaScale"
+                value={formData.gpaScale}
+                onChange={(e) => handleInputChange("gpaScale", e.target.value)}
+                placeholder="Enter GPA scale (optional)"
               />
             </div>
 
@@ -237,37 +313,14 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
             </div>
 
             <div className="space-y-2">
-              <Label>Coursework</Label>
-              <div className="space-y-2">
-                {formData.coursework.map((course: string, index: number) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={course}
-                      onChange={(e) => handleCourseworkChange(index, e.target.value)}
-                      placeholder="Enter a course"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeCoursework(index)}
-                      disabled={formData.coursework.length === 1}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={addCoursework}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Course
-                </Button>
-              </div>
+              <Label htmlFor="thesisProject">Thesis/Project</Label>
+              <Textarea
+                id="thesisProject"
+                value={formData.thesisProject}
+                onChange={(e) => handleInputChange("thesisProject", e.target.value)}
+                placeholder="Enter thesis or project description"
+                className="h-24"
+              />
             </div>
           </div>
 

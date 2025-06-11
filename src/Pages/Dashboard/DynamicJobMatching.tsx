@@ -106,12 +106,10 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
 };
 
 export function DynamicJobMatching() {
-  const [, setAnswers] = useState<Record<string, string>>({});
   const [columnInsights, setColumnInsights] = useState<Insight[][]>([[], [], []]);
   const [columnQuestions, setColumnQuestions] = useState<(QuestionResponseDto | null)[]>([null, null, null]);
   const [availableQuestions, setAvailableQuestions] = useState<QuestionResponseDto[]>([]);
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
-  const [historicalQuestions, setHistoricalQuestions] = useState<Record<number, QuestionResponseDto[]>>({});
   const [currentTier, setCurrentTier] = useState<number>(1);
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [matchedJobs, setMatchedJobs] = useState<JobCardProps[]>([]);
@@ -144,8 +142,15 @@ export function DynamicJobMatching() {
         sortBy: 'relevance',
         useVectorSearch: true,
       });
-      if (response?.jobs && Array.isArray(response.jobs)) {
-        const jobs = await Promise.all(response.jobs.map(mapJobToJobCardProps));
+      if (response?.data && Array.isArray(response.data)) {
+        if (response.data.length === 0) {
+          setMatchedJobs([]);
+          return;
+        } else if (response.data.length > 3) {
+          console.warn("More than 3 jobs returned, truncating to 3.");
+          response.data = response.data.slice(0, 3);
+        }
+        const jobs = await Promise.all(response.data.map(mapJobToJobCardProps));
         setMatchedJobs(jobs);
       } else {
         setMatchedJobs([]);
@@ -189,18 +194,15 @@ export function DynamicJobMatching() {
       const response: GetQuestionsResponseDto = await getQuestionsForTier(tier);
       if (response.questions && Array.isArray(response.questions) && response.questions.length > 0) {
         distributeQuestions(response.questions);
-        setHistoricalQuestions((prev) => ({ ...prev, [tier]: response.questions }));
       } else {
         console.warn(`No questions returned for tier ${tier}`);
         setAvailableQuestions([]);
         setColumnQuestions([null, null, null]);
-        setHistoricalQuestions((prev) => ({ ...prev, [tier]: [] }));
       }
     } catch (error) {
       console.error(`Failed to fetch questions for tier ${tier}:`, error);
       setAvailableQuestions([]);
       setColumnQuestions([null, null, null]);
-      setHistoricalQuestions((prev) => ({ ...prev, [tier]: [] }));
     }
   };
 
@@ -220,78 +222,80 @@ export function DynamicJobMatching() {
         if (currentTierData.isCompleted && tier < 5) {
           setCurrentTier(tier + 1);
           setProfileCompletion(0);
+          setColumnInsights([[], [], []]);
+          setAnsweredQuestionIds(new Set());
           await fetchQuestions(tier + 1);
+          await fetchAnswerHistory();
           await fetchJobs();
         } else {
           await fetchQuestions(tier);
+          await fetchAnswerHistory();
         }
       } else {
         setProfileCompletion(0);
         await fetchQuestions(1);
+        await fetchAnswerHistory();
       }
     } catch (error) {
       console.error("Failed to fetch progress:", error);
       setProfileCompletion(0);
       setCurrentTier(1);
       await fetchQuestions(1);
+      await fetchAnswerHistory();
     }
   };
 
   const fetchAnswerHistory = async () => {
     try {
-      const newAnswers: Record<string, string> = {};
-      const newInsights: Insight[][] = [[], [], []];
-      const newHistoricalQuestions: Record<number, QuestionResponseDto[]> = { ...historicalQuestions };
-      const newAnsweredQuestionIds = new Set<string>();
-
-      for (let tier = 1; tier <= currentTier; tier++) {
-        const history: AnswerResponseDto[] = await getAnswerHistory(tier);
-        if (!Array.isArray(history) || history.length === 0) {
-          console.warn(`No answer history for tier ${tier}`);
-          continue;
-        }
-
-        if (!newHistoricalQuestions[tier]) {
-          const response = await getQuestionsForTier(tier);
-          newHistoricalQuestions[tier] = response.questions || [];
-        }
-
-        history.forEach((answer, index) => {
-          if (!answer.questionId || !answer.selectedOption) {
-            console.warn(`Invalid answer data for tier ${tier}:`, answer);
-            return;
-          }
-          newAnsweredQuestionIds.add(answer.questionId);
-          newAnswers[answer.questionId] = answer.selectedOption.optionText || "Unknown";
-          const question = newHistoricalQuestions[tier]?.find((q) => q.id === answer.questionId) || {
-            id: answer.questionId,
-            questionText: "Unknown question",
-            insightCategory: "preferences",
-            options: [],
-          };
-          const insight: Insight = {
-            id: answer.questionId,
-            questionText: question.questionText,
-            text: `For "${question.questionText}", you selected "${answer.selectedOption.optionText || "Unknown"}".`,
-            category: question.insightCategory || "preferences",
-            tier,
-          };
-          newInsights[index % 3].push(insight);
-        });
+      const history: AnswerResponseDto[] = await getAnswerHistory(currentTier);
+      if (!Array.isArray(history) || history.length === 0) {
+        console.warn(`No answer history for tier ${currentTier}`);
+        setAnsweredQuestionIds(new Set());
+        setColumnInsights([[], [], []]);
+        return;
       }
 
-      setAnswers(newAnswers);
-      setColumnInsights(newInsights);
-      setHistoricalQuestions(newHistoricalQuestions);
+      const response = await getQuestionsForTier(currentTier);
+      const tierQuestions = response.questions || [];
+      const questionMap = new Map(tierQuestions.map(q => [q.id, q]));
+
+      const newAnsweredQuestionIds = new Set<string>();
+      const newInsights: Insight[][] = [[], [], []];
+
+      history.forEach((answer, index) => {
+        if (!answer.questionId || !answer.selectedOption) {
+          console.warn(`Invalid answer data for tier ${currentTier}:`, answer);
+          return;
+        }
+        newAnsweredQuestionIds.add(answer.questionId);
+        const question = questionMap.get(answer.questionId) || {
+          id: answer.questionId,
+          questionText: "Unknown question",
+          insightCategory: "preferences",
+          options: [],
+        };
+        const insight: Insight = {
+          id: answer.questionId,
+          questionText: question.questionText,
+          text: `You selected "${answer.selectedOption.optionText || "Unknown"}" for "${question.questionText}".`,
+          category: question.insightCategory || "preferences",
+          tier: currentTier,
+        };
+        newInsights[index % 3].push(insight);
+      });
+
       setAnsweredQuestionIds(newAnsweredQuestionIds);
+      setColumnInsights(newInsights);
     } catch (error) {
       console.error("Failed to fetch answer history:", error);
+      setAnsweredQuestionIds(new Set());
+      setColumnInsights([[], [], []]);
     }
   };
 
   useEffect(() => {
     const initialize = async () => {
-      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress(), fetchAnswerHistory()]);
+      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress()]);
     };
     initialize();
   }, []);
@@ -304,7 +308,6 @@ export function DynamicJobMatching() {
       const payload = { questionId, selectedOptionId: optionId };
       await submitAnswer(payload);
 
-      setAnswers((prev) => ({ ...prev, [questionId]: optionText }));
       setAnsweredQuestionIds((prev) => new Set(prev).add(questionId));
       const question = availableQuestions.find((q) => q.id === questionId);
       if (!question) {
@@ -315,7 +318,7 @@ export function DynamicJobMatching() {
       const insight: Insight = {
         id: questionId,
         questionText: question.questionText,
-        text: `For "${question.questionText}", you selected "${optionText}".`,
+        text: `You selected "${optionText}" for "${question.questionText}".`,
         category: question.insightCategory || "preferences",
         tier: currentTier,
       };
@@ -355,14 +358,21 @@ export function DynamicJobMatching() {
         if (currentTierData.isCompleted && progress.currentTier < 5) {
           setCurrentTier(progress.currentTier + 1);
           setProfileCompletion(0);
+          setColumnInsights([[], [], []]);
+          setAnsweredQuestionIds(new Set());
           await fetchQuestions(progress.currentTier + 1);
+          await fetchAnswerHistory();
           await fetchJobs();
         } else {
-          await fetchJobs(); // Refetch jobs after answering
+          await fetchQuestions(progress.currentTier);
+          await fetchAnswerHistory();
+          await fetchJobs();
         }
       } else {
         setProfileCompletion(0);
-        await fetchJobs(); // Refetch jobs after answering
+        await fetchQuestions(1);
+        await fetchAnswerHistory();
+        await fetchJobs();
       }
     } catch (error) {
       console.error("Failed to submit answer:", {
@@ -404,15 +414,14 @@ export function DynamicJobMatching() {
 
   const handleJobAction = async (
     jobId: string,
-    action: "save" | "apply" | "reject",
-    payload?: { coverLetter?: string; notes?: string }
+    action: "save" | "apply" | "reject"
   ) => {
     try {
       if (action === "save") {
-        await jobServices.saveJob(jobId, payload);
+        await jobServices.saveJob(jobId);
         setSavedJobs((prev) => [...prev, jobId]);
       } else if (action === "apply") {
-        await jobServices.applyToJob(jobId, payload);
+        await jobServices.applyToJob(jobId);
         setAppliedJobs((prev) => [...prev, jobId]);
         setMatchedJobs((prev) => {
           const filteredJobs = prev.filter((job) => job.id !== jobId);
@@ -431,7 +440,7 @@ export function DynamicJobMatching() {
           return filteredJobs;
         });
       }
-      await fetchJobs(); // Refetch jobs after action
+      await fetchJobs();
     } catch (error) {
       console.error(`Failed to ${action} job:`, error);
     }
@@ -439,12 +448,10 @@ export function DynamicJobMatching() {
 
   const handleReset = async () => {
     try {
-      setAnswers({});
+      setAnsweredQuestionIds(new Set());
       setColumnInsights([[], [], []]);
       setColumnQuestions([null, null, null]);
       setAvailableQuestions([]);
-      setAnsweredQuestionIds(new Set());
-      setHistoricalQuestions({});
       setCurrentTier(1);
       setProfileCompletion(0);
       setMatchedJobs([]);
@@ -453,7 +460,7 @@ export function DynamicJobMatching() {
       setAppliedJobs([]);
       setRejectedJobs([]);
       setCurrentMobileQuestionIndex(0);
-      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress(), fetchAnswerHistory()]);
+      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress()]);
     } catch (error) {
       console.error("Failed to reset:", error);
     }
@@ -647,7 +654,7 @@ export function DynamicJobMatching() {
                       onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
                       delay={index * 0.1}
                       expanded={expandedJob === job.id}
-                      onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
+                      onAction={(action, jobId) => handleJobAction(jobId, action)}
                       isSaved={savedJobs.includes(job.id)}
                       isApplied={appliedJobs.includes(job.id)}
                       nextJob={getNextJob}
@@ -692,7 +699,7 @@ export function DynamicJobMatching() {
                         onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
                         delay={index * 0.1}
                         expanded={expandedJob === job.id}
-                        onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
+                        onAction={(action, jobId) => handleJobAction(jobId, action)}
                         isSaved={true}
                         isApplied={appliedJobs.includes(job.id)}
                         nextJob={getNextJob}
@@ -725,27 +732,27 @@ export function DynamicJobMatching() {
             >
               <AnimatePresence>
                 {matchedJobs
-                    .filter((job) => appliedJobs.includes(job.id))
-                    .map((job, index) => (
-                      <motion.div
-                        key={job.id}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                      >
-                        <JobCard
-                          {...job}
-                          onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
-                          delay={index * 0.1}
-                          expanded={expandedJob === job.id}
-                          onAction={(action, jobId, payload) => handleJobAction(jobId, action, payload)}
-                          isSaved={savedJobs.includes(job.id)}
-                          isApplied={true}
-                          nextJob={getNextJob}
-                        />
-                      </motion.div>
-                    ))}
+                  .filter((job) => appliedJobs.includes(job.id))
+                  .map((job, index) => (
+                    <motion.div
+                      key={job.id}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      <JobCard
+                        {...job}
+                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                        delay={index * 0.1}
+                        expanded={expandedJob === job.id}
+                        onAction={(action, jobId) => handleJobAction(jobId, action)}
+                        isSaved={savedJobs.includes(job.id)}
+                        isApplied={true}
+                        nextJob={getNextJob}
+                      />
+                    </motion.div>
+                  ))}
               </AnimatePresence>
               {appliedJobs.length === 0 && (
                 <motion.div

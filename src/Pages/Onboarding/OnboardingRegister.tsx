@@ -136,6 +136,7 @@ export function OnboardingRegister({ onComplete, onboardingAnswers }: Onboarding
                 onChange={handleInputChange}
                 placeholder="name@example.com"
                 required
+                typeof="email"
               />
             </div>
             <div className="space-y-2">
@@ -157,6 +158,8 @@ export function OnboardingRegister({ onComplete, onboardingAnswers }: Onboarding
                 value={formData.password}
                 onChange={handleInputChange}
                 required
+                typeof="password"
+                placeholder="At least 8 characters"
               />
             </div>
             <div className="space-y-2">

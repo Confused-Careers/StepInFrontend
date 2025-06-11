@@ -149,13 +149,14 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
               <div className="flex justify-center items-center gap-2 pr-5">
                 <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3">{applicant.name}</h3>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-sm text-[rgba(209,209,214,1)]">{applicant.location}</p>
-                <span className="text-[rgba(209,209,214,1)] text-sm">•</span>
-                <p className="px-1 py-0.5 rounded-md bg-[#0A84FF] text-white text-xs font-medium flex items-center justify-center">
-                  {applicant.match}% Match
-                </p>
-              </div>
+                {/* Responsive: stack in column for screens < 1920px (15.6" FHD), row otherwise */}
+                <div className="flex flex-col [@media(min-width:1920px)]:flex-row items-center justify-center gap-2">
+                  <p className="text-sm text-[rgba(209,209,214,1)]">{applicant.location}</p>
+                  <span className="text-[rgba(209,209,214,1)] text-sm [@media(min-width:1920px)]:block hidden">•</span>
+                  <p className="px-1 py-0.5 rounded-md bg-[#0A84FF] text-white text-xs font-medium flex items-center justify-center">
+                    {applicant.match}% Match
+                  </p>
+                </div>
             </div>
           </div>
 

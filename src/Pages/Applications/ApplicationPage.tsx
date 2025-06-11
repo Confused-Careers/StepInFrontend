@@ -187,10 +187,12 @@ export default function ApplicationsPage() {
         limit: 100,
       });
       // Fetch job details for each application
+
       const enrichedApplications = await Promise.all(
         applications.map(async (app) => {
           try {
             const jobDetails = await applicationServices.getJobDetails(app.job.id);
+            console.log(`Fetched job details for job ${app.job.id}:`, app);
             return {
               ...app,
               job: {
@@ -219,6 +221,7 @@ export default function ApplicationsPage() {
   };
 
   const filteredApplications = allApplications.filter(app => {
+
     if (activeTab === "all") return true;
     if (activeTab === "active") return app.status === "applied" || app.status === "under-review";
     if (activeTab === "interviews") return app.status === "interview" || app.status === "first-round";

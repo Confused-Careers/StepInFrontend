@@ -1,18 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { SERVER_BASE_URL } from '@/utils/config';
 
-interface RegisterData {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  onboardingAnswers?: Array<{
-    questionId: string;
-    selectedOptionId: string;
-  }>;
-}
-
 interface LoginData {
   email: string;
   password: string;
@@ -63,7 +51,7 @@ interface ResetPasswordData {
 }
 
 interface AuthResponse {
-  data: AuthResponse | PromiseLike<AuthResponse>;
+  data?: AuthResponse;
   message: string;
   accessToken?: string;
   user?: {
@@ -113,14 +101,15 @@ interface JobMatchExplanation {
 }
 
 const authServices = {
-  async register(data: RegisterData): Promise<AuthResponse> {
+  async register(data: FormData): Promise<AuthResponse> {
     try {
+      console.log('Registering with data:', data);
       const response: AxiosResponse<AuthResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/auth/register`,
         data,
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
@@ -144,6 +133,12 @@ const authServices = {
           },
         }
       );
+      if (!response.data.data) {
+        throw new Error('Invalid response from server');
+      }
+      if (!response.data.data) {
+        throw new Error('Invalid response from server');
+      }
       return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
@@ -184,6 +179,9 @@ const authServices = {
           },
         }
       );
+      if (!response.data.data) {
+        throw new Error('Invalid response from server');
+      }
       return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {

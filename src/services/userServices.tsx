@@ -8,8 +8,9 @@ interface UploadResponse {
   fileId?: string;
 }
 
+// Updated interface to accept File object instead of base64 string
 interface FilePayload {
-  file: string;
+  file: File;
 }
 
 export function handleAuthError(error: unknown): boolean {
@@ -19,14 +20,6 @@ export function handleAuthError(error: unknown): boolean {
   }
   return false;
 }
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('accessToken');
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-};
 
 const userServices = {
   async getAllSkills(data: string): Promise<Skills[]> {
@@ -491,12 +484,18 @@ const userServices = {
     }
   },
 
+  // Fixed upload functions to use FormData
   async uploadResume(payload: FilePayload): Promise<UploadResponse> {
     try {
+      const formData = new FormData();
+      formData.append('file', payload.file);
+
       const response = await axios.post(
         `${SERVER_BASE_URL}/api/v1/job-seeker/resume/upload`,
-        payload,
-        { headers: getAuthHeaders() }
+        formData,
+        { headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        } }
       );
       return response.data.data;
     } catch (error) {
@@ -514,11 +513,15 @@ const userServices = {
   },
 
   async uploadProfilePicture(payload: FilePayload): Promise<UploadResponse> {
+    console.log('Uploading profile picture:', payload);
     try {
+      const formData = new FormData();
+      formData.append('file', payload.file);
+
       const response = await axios.post(
         `${SERVER_BASE_URL}/api/v1/job-seeker/profile-picture/upload`,
-        payload,
-        { headers: getAuthHeaders() }
+        formData,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } }
       );
       return response.data.data;
     } catch (error) {
@@ -533,7 +536,7 @@ const userServices = {
           : undefined;
       throw new Error(errorMessage || 'Failed to upload profile picture');
     }
-  },
+  }
 };
 
 export default userServices;

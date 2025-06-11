@@ -15,11 +15,8 @@ const JobActionModal: React.FC<JobActionModalProps> = ({ open, onClose, action, 
   const [notes, setNotes] = useState("");
 
   const handleSubmit = () => {
-    if (action === "apply") {
-      onClose({ coverLetter: coverLetter || undefined, notes: notes || undefined });
-    } else {
-      onClose({ notes: notes || undefined });
-    }
+    const payload = action === "apply" ? { coverLetter: coverLetter || undefined, notes: notes || undefined } : { notes: notes || undefined };
+    onClose(payload);
     setCoverLetter("");
     setNotes("");
   };
@@ -31,7 +28,7 @@ const JobActionModal: React.FC<JobActionModalProps> = ({ open, onClose, action, 
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose(null)}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose(null)}>
       <DialogContent className="sm:max-w-[425px] bg-jobcardsecondary border-primary/10">
         <DialogHeader>
           <DialogTitle>{action === "apply" ? `Apply to ${jobTitle}` : `Save ${jobTitle}`}</DialogTitle>

@@ -65,11 +65,11 @@ export const jobServices = {
         useVectorSearch: filters.useVectorSearch ?? true, // Enable vector search by default
       };
 
-      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs`, {
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs/matches/top`, {
         headers: getAuthHeaders(),
         params: sanitizedFilters,
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) return;
       throw error;
@@ -121,7 +121,7 @@ export const jobServices = {
         headers: getAuthHeaders(),
         params: sanitizedFilters,
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) return;
       throw error;
@@ -149,7 +149,7 @@ export const jobServices = {
         headers: getAuthHeaders(),
         params: sanitizedFilters,
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) return;
       throw error;

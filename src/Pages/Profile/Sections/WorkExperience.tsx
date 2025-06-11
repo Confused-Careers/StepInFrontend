@@ -1,13 +1,12 @@
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Edit, Plus, Trash2, Briefcase, Calendar, MapPin } from "lucide-react"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -16,78 +15,67 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import workExperienceServices, { CreateWorkExperienceData } from "@/services/workExperienceServices"
 
 interface WorkExperienceItem {
   id: string
-  title: string
-  company: string
-  location: string
+  positionTitle: string
+  companyName: string
+  location?: string
   startDate: string
-  endDate: string
-  current: boolean
-  description: string
+  endDate?: string
+  isCurrent: boolean
+  description?: string
+  workEnvironmentTags?: string[]
+  displayOrder?: number
 }
 
 export function WorkExperience() {
-  const [experiences, setExperiences] = useState<WorkExperienceItem[]>([
-    {
-      id: "1",
-      title: "Senior UX Designer",
-      company: "TechVision Inc.",
-      location: "San Francisco, CA",
-      startDate: "2020-06",
-      endDate: "",
-      current: true,
-      description:
-        "Lead UX design for flagship products, conduct user research, and collaborate with cross-functional teams to deliver intuitive user experiences. Manage a team of 3 designers and implement design systems.",
-    },
-    {
-      id: "2",
-      title: "UX Designer",
-      company: "InnovateCorp",
-      location: "New York, NY",
-      startDate: "2018-03",
-      endDate: "2020-05",
-      current: false,
-      description:
-        "Designed user interfaces for web and mobile applications. Conducted usability testing and created wireframes, prototypes, and high-fidelity designs.",
-    },
-    {
-      id: "3",
-      title: "UI/UX Intern",
-      company: "DesignLabs",
-      location: "Boston, MA",
-      startDate: "2017-06",
-      endDate: "2018-02",
-      current: false,
-      description:
-        "Assisted senior designers with research and prototyping. Created visual assets and contributed to design systems.",
-    },
-  ])
-
+  const [experiences, setExperiences] = useState<WorkExperienceItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [isEditing, setIsEditing] = useState<string | null>(null)
   const [formData, setFormData] = useState<WorkExperienceItem>({
     id: "",
-    title: "",
-    company: "",
+    positionTitle: "",
+    companyName: "",
     location: "",
     startDate: "",
     endDate: "",
-    current: false,
+    isCurrent: false,
     description: "",
+    workEnvironmentTags: [],
+    displayOrder: 0
   })
+
+  useEffect(() => {
+    fetchExperiences()
+  }, [])
+
+  const fetchExperiences = async () => {
+    try {
+      setIsLoading(true)
+      const data = await workExperienceServices.getAllWorkExperiences()
+      setExperiences(data)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch work experiences")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleAddNew = () => {
     setFormData({
       id: Date.now().toString(),
-      title: "",
-      company: "",
+      positionTitle: "",
+      companyName: "",
       location: "",
       startDate: "",
       endDate: "",
-      current: false,
+      isCurrent: false,
       description: "",
+      workEnvironmentTags: [],
+      displayOrder: experiences.length
     })
     setIsAddingNew(true)
   }
@@ -100,8 +88,14 @@ export function WorkExperience() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    setExperiences(experiences.filter((exp) => exp.id !== id))
+  const handleDelete = async (id: string) => {
+    try {
+      await workExperienceServices.deleteWorkExperience(id)
+      toast.success("Work experience deleted successfully")
+      fetchExperiences()
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete work experience")
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -110,22 +104,68 @@ export function WorkExperience() {
   }
 
   const handleCheckboxChange = (checked: boolean) => {
-    setFormData((prev) => ({ ...prev, current: checked, endDate: checked ? "" : prev.endDate }))
+    setFormData((prev) => ({
+      ...prev,
+      isCurrent: checked,
+      endDate: checked ? undefined : prev.endDate
+    }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const formatDateForApi = (dateString: string) => {
+    if (!dateString) return undefined
+    return new Date(dateString).toISOString().split('T')[0]
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!formData.startDate) {
+      toast.error("Start date is required")
+      return
+    }
+
+    try {
+      const startDate = formatDateForApi(formData.startDate)
+      if (!startDate) {
+        toast.error("Invalid start date format")
+        return
+      }
+
+      const submitData: CreateWorkExperienceData = {
+        positionTitle: formData.positionTitle,
+        companyName: formData.companyName,
+        startDate,
+        isCurrent: formData.isCurrent,
+        ...(formData.location && { location: formData.location }),
+        ...(!formData.isCurrent && formData.endDate && { 
+          endDate: formatDateForApi(formData.endDate) 
+        }),
+        ...(formData.description && { description: formData.description }),
+        ...(formData.workEnvironmentTags?.length && { 
+          workEnvironmentTags: formData.workEnvironmentTags 
+        }),
+        ...(typeof formData.displayOrder === 'number' && { 
+          displayOrder: formData.displayOrder 
+        })
+      }
+
     if (isEditing) {
-      setExperiences(experiences.map((exp) => (exp.id === isEditing ? formData : exp)))
+        await workExperienceServices.updateWorkExperience(formData.id, submitData)
+        toast.success("Work experience updated successfully")
+      } else {
+        await workExperienceServices.createWorkExperience(submitData)
+        toast.success("Work experience added successfully")
+      }
+
+      fetchExperiences()
       setIsEditing(null)
-    } else if (isAddingNew) {
-      setExperiences([...experiences, formData])
       setIsAddingNew(false)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save work experience")
     }
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return ""
     const date = new Date(dateString)
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -146,7 +186,11 @@ export function WorkExperience() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {experiences.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading...
+              </div>
+            ) : experiences.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-20" />
                 <p>No work experience added yet</p>
@@ -163,30 +207,54 @@ export function WorkExperience() {
                         <Briefcase className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{experience.title}</h3>
-                        <p className="text-muted-foreground">{experience.company}</p>
+                        <h3 className="font-medium">{experience.positionTitle}</h3>
+                        <p className="text-muted-foreground">{experience.companyName}</p>
                         <div className="flex flex-wrap gap-x-4 mt-1 text-sm">
+                          {experience.location && (
                           <div className="flex items-center text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5 mr-1" />
                             {experience.location}
                           </div>
+                          )}
                           <div className="flex items-center text-muted-foreground">
                             <Calendar className="h-3.5 w-3.5 mr-1" />
                             {formatDate(experience.startDate)} -{" "}
-                            {experience.current ? "Present" : formatDate(experience.endDate)}
+                            {experience.isCurrent ? "Present" : formatDate(experience.endDate)}
                           </div>
                         </div>
+                        {experience.description && (
                         <p className="mt-3 text-sm">{experience.description}</p>
+                        )}
+                        {experience.workEnvironmentTags && experience.workEnvironmentTags.length > 0 && (
+                          <div className="mt-3">
+                            <div className="flex flex-wrap gap-2">
+                              {experience.workEnvironmentTags.map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2 md:flex-col">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(experience.id)}>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(experience.id)}
+                      >
                         <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(experience.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(experience.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
                       </Button>
                     </div>
                   </div>
@@ -217,50 +285,79 @@ export function WorkExperience() {
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Job Title</Label>
-                <Input id="title" name="title" value={formData.title} onChange={handleChange} required />
+                <Label htmlFor="positionTitle">Position Title *</Label>
+                <input
+                  id="positionTitle"
+                  name="positionTitle"
+                  value={formData.positionTitle}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="Enter your position title"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="company">Company</Label>
-                  <Input id="company" name="company" value={formData.company} onChange={handleChange} required />
+                  <Label htmlFor="companyName">Company Name *</Label>
+                  <input
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border rounded-md"
+                    placeholder="Enter company name"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" name="location" value={formData.location} onChange={handleChange} required />
+                  <input
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-md"
+                    placeholder="Enter location (optional)"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
+                  <Label htmlFor="startDate">Start Date *</Label>
+                  <input
                     id="startDate"
                     name="startDate"
                     type="month"
                     value={formData.startDate}
                     onChange={handleChange}
                     required
+                    className="w-full px-3 py-2 border rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date</Label>
-                  <Input
+                  <input
                     id="endDate"
                     name="endDate"
                     type="month"
                     value={formData.endDate}
                     onChange={handleChange}
-                    disabled={formData.current}
-                    required={!formData.current}
+                    disabled={formData.isCurrent}
+                    required={!formData.isCurrent}
+                    className="w-full px-3 py-2 border rounded-md"
                   />
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="current" checked={formData.current} onCheckedChange={handleCheckboxChange} />
-                <Label htmlFor="current">I currently work here</Label>
+                <Checkbox
+                  id="isCurrent"
+                  checked={formData.isCurrent}
+                  onCheckedChange={handleCheckboxChange}
+                />
+                <Label htmlFor="isCurrent">I currently work here</Label>
               </div>
 
               <div className="space-y-2">
@@ -271,7 +368,8 @@ export function WorkExperience() {
                   value={formData.description}
                   onChange={handleChange}
                   rows={4}
-                  placeholder="Describe your responsibilities and achievements..."
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="Describe your role and responsibilities..."
                 />
               </div>
             </div>
@@ -287,7 +385,9 @@ export function WorkExperience() {
               >
                 Cancel
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit">
+                {isAddingNew ? "Add Experience" : "Update Experience"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
