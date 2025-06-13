@@ -67,7 +67,6 @@ export default function CompanyProfile() {
         logoUrl: data.logoUrl || "",
       });
       
-      console.log("Fetched Profile Data:", data);
     } catch (error) {
       if (signal.aborted) return;
       toast.error(

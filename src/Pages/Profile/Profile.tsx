@@ -210,7 +210,6 @@ export default function ProfilePage() {
         achievements: data.achievements || []
       };
       
-      console.log('Submitting experience data:', experienceData);
       const response = await workExperienceServices.createWorkExperience(experienceData);
       setExperiences([...experiences, response]);
       setIsExperienceFormOpen(false);

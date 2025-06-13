@@ -44,7 +44,6 @@ export function SocialsCard() {
 
     const addUserSocials = useCallback(async () => {
         try {
-            console.log(addSocial);
             setSocialsLoader(true);
             if (addSocial?.id) {
                 const social: Socials = await userServices.updateUserSocial(addSocial.id, addSocial?.platform || '', addSocial?.profileUrl || '');

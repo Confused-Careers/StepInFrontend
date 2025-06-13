@@ -192,7 +192,6 @@ export default function ApplicationsPage() {
         applications.map(async (app) => {
           try {
             const jobDetails = await applicationServices.getJobDetails(app.job.id);
-            console.log(`Fetched job details for job ${app.job.id}:`, app);
             return {
               ...app,
               job: {

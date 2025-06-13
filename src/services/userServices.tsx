@@ -513,7 +513,6 @@ const userServices = {
   },
 
   async uploadProfilePicture(payload: FilePayload): Promise<UploadResponse> {
-    console.log('Uploading profile picture:', payload);
     try {
       const formData = new FormData();
       formData.append('file', payload.file);

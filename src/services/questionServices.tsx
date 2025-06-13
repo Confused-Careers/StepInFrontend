@@ -15,6 +15,7 @@ const getAuthHeaders = () => {
 };
 
 interface QuestionOptionResponseDto {
+  insight: string;
   id: string;
   optionText: string;
   optionOrder: number;
@@ -56,6 +57,7 @@ interface UserProgressResponseDto {
 }
 
 interface AnswerResponseDto {
+  question: QuestionResponseDto;
   id: string;
   questionId: string;
   selectedOptionId: string;
@@ -151,7 +153,6 @@ const getOnboardingQuestions = async (): Promise<OnboardingQuestionsResponseDto>
         'Content-Type': 'application/json',
       },
     });
-    console.log('Onboarding questions fetched successfully:', response.data);
     return response.data;
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {

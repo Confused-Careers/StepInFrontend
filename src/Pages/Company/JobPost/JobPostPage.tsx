@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -188,7 +189,6 @@ export function JobsPostPage() {
       try {
         for (const job of jobs) {
           const insights = await companyServices.getJobInsights(job.id);
-          console.log(`Insights for job ${job.id}:`, insights);
         }
       } catch (error) {
         toast.error(

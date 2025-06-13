@@ -190,14 +190,11 @@ const applicationServices = {
         }
       );
 
-      console.log('API Response:', response.data);
-
       const responseData = response.data.data || response.data;
       const applications = responseData.applications || [];
 
       return {
         applications: applications.map((app): Application => {
-          console.log('Mapping application:', app);
           return {
             id: app?.id ?? '',
             job: {
@@ -275,7 +272,6 @@ const applicationServices = {
         }
       );
 
-      console.log('Job Details Response:', response.data);
 
       const jobData = response.data.data;
 

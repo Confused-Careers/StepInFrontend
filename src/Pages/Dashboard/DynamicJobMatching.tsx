@@ -255,31 +255,53 @@ export function DynamicJobMatching() {
         return;
       }
 
-      const response = await getQuestionsForTier(currentTier);
-      const tierQuestions = response.questions || [];
-      const questionMap = new Map(tierQuestions.map(q => [q.id, q]));
+      // Collect all tiers from answer history
+      const tiers = [...new Set(history.map((answer) => answer.tierWhenAnswered))];
+
+      // Fetch questions for all relevant tiers
+      let allQuestions: QuestionResponseDto[] = [];
+      for (const tier of tiers) {
+        const response: GetQuestionsResponseDto = await getQuestionsForTier(tier);
+        if (response.questions && Array.isArray(response.questions)) {
+          allQuestions = [...allQuestions, ...response.questions];
+        }
+      }
+
+      // Build question map, prioritizing question data from answer history
+      const questionMap = new Map<string, QuestionResponseDto>();
+      history.forEach((answer) => {
+        if (answer.question && answer.questionId) {
+          questionMap.set(answer.questionId, answer.question);
+        }
+      });
+      allQuestions.forEach((q) => {
+        if (!questionMap.has(q.id)) {
+          questionMap.set(q.id, q);
+        }
+      });
 
       const newAnsweredQuestionIds = new Set<string>();
       const newInsights: Insight[][] = [[], [], []];
 
       history.forEach((answer, index) => {
         if (!answer.questionId || !answer.selectedOption) {
-          console.warn(`Invalid answer data for tier ${currentTier}:`, answer);
+          console.warn(`Invalid answer data for tier ${answer.tierWhenAnswered}:`, answer);
           return;
         }
+
+        const question = questionMap.get(answer.questionId);
+        if (!question) {
+          console.warn(`Question ${answer.questionId} not found in question map`);
+          return;
+        }
+
         newAnsweredQuestionIds.add(answer.questionId);
-        const question = questionMap.get(answer.questionId) || {
-          id: answer.questionId,
-          questionText: "Unknown question",
-          insightCategory: "preferences",
-          options: [],
-        };
         const insight: Insight = {
           id: answer.questionId,
           questionText: question.questionText,
-          text: `You selected "${answer.selectedOption.optionText || "Unknown"}" for "${question.questionText}".`,
+          text: `${answer.selectedOption.insight || "No insight available"} (Selected: "${answer.selectedOption.optionText || "Unknown"}" for "${question.questionText}")`,
           category: question.insightCategory || "preferences",
-          tier: currentTier,
+          tier: answer.tierWhenAnswered,
         };
         newInsights[index % 3].push(insight);
       });
@@ -315,10 +337,14 @@ export function DynamicJobMatching() {
         return;
       }
 
+      // Fetch the latest answer to get the insight
+      const latestAnswer = (await getAnswerHistory(currentTier)).find((a) => a.questionId === questionId);
+      const insightText = latestAnswer?.selectedOption?.insight || `You selected "${optionText}" for "${question.questionText}".`;
+
       const insight: Insight = {
         id: questionId,
         questionText: question.questionText,
-        text: `You selected "${optionText}" for "${question.questionText}".`,
+        text: insightText,
         category: question.insightCategory || "preferences",
         tier: currentTier,
       };

@@ -103,7 +103,6 @@ interface JobMatchExplanation {
 const authServices = {
   async register(data: FormData): Promise<AuthResponse> {
     try {
-      console.log('Registering with data:', data);
       const response: AxiosResponse<AuthResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/auth/register`,
         data,

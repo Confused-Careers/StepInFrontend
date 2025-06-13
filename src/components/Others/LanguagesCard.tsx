@@ -66,7 +66,6 @@ export function LanguagesCard() {
     const addUserLanguages = useCallback(async (languageId: string, proficiency: string) => {
         try {
             setLanguagesLoader(true);
-            console.log("hi")
             const language: { id: string, proficiency?: string, language: Languages } = await userServices.addUserLanguage(languageId, proficiency);
             setUserLanguages(prevLanguages => [...prevLanguages, { ...language }]);
 

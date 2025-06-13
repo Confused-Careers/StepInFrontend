@@ -69,7 +69,6 @@ const workExperienceServices = {
   async createWorkExperience(data: CreateWorkExperienceData): Promise<WorkExperience> {
     try {
       const token = localStorage.getItem('accessToken');
-      console.log('Creating work experience with data:', data);
       
       const response: AxiosResponse<WorkExperienceResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/job-seeker/work-experiences`,
