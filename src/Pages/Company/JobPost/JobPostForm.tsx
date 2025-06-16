@@ -41,7 +41,6 @@ interface JobFormData {
   department: string;
 }
 
-// Custom Confirmation Modal Component
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -67,13 +66,11 @@ const ConfirmationModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
         onClick={onClose}
       />
       
-      {/* Modal */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -181,7 +178,7 @@ export default function JobPostForm() {
     }
   }, [jobId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setJob((prev) => ({ ...prev, [id]: value }));
   };
@@ -293,32 +290,50 @@ export default function JobPostForm() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="title" className="text-white">Job Title</Label>
-                    <Input
+                    <textarea
                       id="title"
                       value={job.title}
                       onChange={handleInputChange}
                       required
-                      className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      rows={1}
+                      style={{ height: 'auto', minHeight: '40px' }}
+                      onInput={(e) => {
+                        e.currentTarget.style.height = 'auto';
+                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description" className="text-white">Description</Label>
-                    <Input
+                    <textarea
                       id="description"
                       value={job.description}
                       onChange={handleInputChange}
                       required
-                      className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      rows={1}
+                      style={{ height: 'auto', minHeight: '40px' }}
+                      onInput={(e) => {
+                        e.currentTarget.style.height = 'auto';
+                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="requirements" className="text-white">Requirements</Label>
-                    <Input
+                    <textarea
                       id="requirements"
                       value={job.requirements}
                       onChange={handleInputChange}
                       required
-                      className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      rows={1}
+                      style={{ height: 'auto', minHeight: '40px' }}
+                      onInput={(e) => {
+                        e.currentTarget.style.height = 'auto';
+                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -327,7 +342,7 @@ export default function JobPostForm() {
                       onValueChange={(value) => handleSelectChange("employmentType", value)}
                       value={job.employmentType}
                     >
-                      <SelectTrigger className="bg-black border-[rgba(209,209,214,0.2)] text-white">
+                      <SelectTrigger className="bg-black border border-[rgba(209,209,214,0.2)] text-white">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
@@ -344,10 +359,10 @@ export default function JobPostForm() {
                       onValueChange={(value) => handleSelectChange("experienceLevel", value)}
                       value={job.experienceLevel}
                     >
-                      <SelectTrigger className="bg-black border-[rgba(209,209,214,0.2)] text-white">
+                      <SelectTrigger className="bg-black border border-[rgba(209,209,214,0.2)] text-white">
                         <SelectValue placeholder="Select level" />
                       </SelectTrigger>
-                      <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
+                      <SelectContent className="bg-black text-white border border-[rgba(209,209,214,0.2)]">
                         <SelectItem value="entry">Entry</SelectItem>
                         <SelectItem value="mid">Mid</SelectItem>
                         <SelectItem value="senior">Senior</SelectItem>
@@ -358,12 +373,18 @@ export default function JobPostForm() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="location" className="text-white">Location</Label>
-                    <Input
+                    <textarea
                       id="location"
                       value={job.location}
                       onChange={handleInputChange}
                       required
-                      className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      rows={1}
+                      style={{ height: 'auto', minHeight: '40px' }}
+                      onInput={(e) => {
+                        e.currentTarget.style.height = 'auto';
+                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      }}
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -371,18 +392,24 @@ export default function JobPostForm() {
                       id="isRemote"
                       checked={job.isRemote}
                       onCheckedChange={handleCheckboxChange}
-                      className="border-[rgba(209,209,214,0.2)]"
+                      className="border border-[rgba(209,209,214,0.2)]"
                     />
                     <Label htmlFor="isRemote" className="text-white">Remote</Label>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department" className="text-white">Department</Label>
-                    <Input
+                    <textarea
                       id="department"
                       value={job.department}
                       onChange={handleInputChange}
                       required
-                      className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      rows={1}
+                      style={{ height: 'auto', minHeight: '40px' }}
+                      onInput={(e) => {
+                        e.currentTarget.style.height = 'auto';
+                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -393,7 +420,7 @@ export default function JobPostForm() {
                         type="number"
                         value={job.salaryMin}
                         onChange={handleInputChange}
-                        className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                        className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
                       />
                     </div>
                     <div className="space-y-2">
@@ -403,7 +430,7 @@ export default function JobPostForm() {
                         type="number"
                         value={job.salaryMax}
                         onChange={handleInputChange}
-                        className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                        className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
                       />
                     </div>
                   </div>
@@ -414,7 +441,7 @@ export default function JobPostForm() {
                       type="date"
                       value={job.applicationDeadline}
                       onChange={handleInputChange}
-                      className="bg-black border-[rgba(209,209,214,0.2)] text-white"
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -444,7 +471,6 @@ export default function JobPostForm() {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteModal}
         onClose={handleDeleteCancel}

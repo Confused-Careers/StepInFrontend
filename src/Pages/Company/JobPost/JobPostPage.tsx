@@ -168,7 +168,7 @@ export function JobsPostPage() {
           salary: job.salaryMin && job.salaryMax ? `$${parseFloat(String(job.salaryMin)).toLocaleString()} - $${parseFloat(String(job.salaryMax)).toLocaleString()}/yr` : "Negotiable",
           matchPercentage: "N/A",
           skills: job.requirements ? job.requirements.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0) : [],
-          applications: "0",
+          applications: job.totalApplications,
           responsiblities: job.requirements || "No responsibilities provided.",
         }));
 

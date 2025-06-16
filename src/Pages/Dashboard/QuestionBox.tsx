@@ -54,7 +54,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
       className="relative overflow-hidden"
     >
       <Card className="rounded-lg border-2 border-blue-500 bg-white dark:bg-black">
-        <CardContent className="p-6 relative">
+        <CardContent className="px-6 py-1 relative">
           <AnimatePresence mode="wait">
             {!isSubmitted ? (
               <motion.div
@@ -65,7 +65,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                 transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               >
                 <div className="flex items-center justify-center mb-4">
-                  <h3 className="text-lg font-medium text-center text-gray-900 dark:text-white">{question.questionText}</h3>
+                  <h3 className="text-[16px] font-medium text-center text-gray-900 dark:text-white">{question.questionText}</h3>
                 </div>
                 <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 gap-2">
                   {question.options.map((option, index) => (
@@ -75,7 +75,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                       className={question.options.length % 2 === 1 && index === question.options.length - 1 ? "col-span-2 flex justify-center" : ""}
                     >
                       <motion.button
-                        className={`w-full justify-center rounded-md transition-all duration-200 ${
+                        className={`w-full h-20 flex items-center justify-center rounded-md transition-all duration-200 text-center text-sm ${
                           selectedAnswer === option.id
                             ? "bg-blue-500 hover:bg-blue-600 text-white"
                             : "border-2 border-blue-500 text-blue-500 dark:text-white bg-transparent hover:bg-blue-100 hover:bg-opacity-15 dark:hover:bg-gray-900"
@@ -84,12 +84,13 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                         style={{
                           boxShadow: selectedAnswer === option.id ? "none" : "0 2px 4px rgba(10, 132, 255, 0.2)",
                           backgroundColor: selectedAnswer === option.id ? "rgba(10, 132, 255, 0.4)" : "",
+                          minHeight: "80px",
                         }}
                         whileHover={{ boxShadow: "0 4px 8px rgba(10, 132, 255, 0.2)", scale: 1.03 }}
                         whileTap={{ scale: 0.98 }}
                         animate={{ scale: selectedAnswer === option.id ? 1 : 1, transition: { duration: 0.1 } }}
                       >
-                        {option.optionText}
+                        <span className="w-full text-center px-2">{option.optionText}</span>
                       </motion.button>
                     </motion.div>
                   ))}

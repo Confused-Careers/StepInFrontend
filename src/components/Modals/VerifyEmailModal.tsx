@@ -72,7 +72,7 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
       if (err && typeof err === "object" && "message" in err && typeof (err as ErrorWithMessage).message === "string") {
         setError((err as ErrorWithMessage).message);
       } else {
-        setError('Failed to resend OTP');
+        setError('Failed to resend Authentication Code');
       }
     } finally {
       setIsLoading(false);
@@ -123,7 +123,7 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Verify Email</CardTitle>
           <CardDescription className="text-center">
-            Enter the OTP sent to {email} to complete registration
+            Enter the Authentication Code sent to {email} to complete registration
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -135,7 +135,7 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
               <div className="text-green-500 text-sm text-center">{success}</div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="otpCode">OTP Code</Label>
+              <Label htmlFor="otpCode">Authentication Code</Label>
               <div className="flex gap-2 justify-center">
                 {otpDigits.map((digit, index) => (
                   <Input
@@ -163,7 +163,7 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
               onClick={handleResendOtp}
               disabled={isLoading}
             >
-              Resend OTP
+              Resend Authentication Code
             </Button>
             <Button
               type="button"

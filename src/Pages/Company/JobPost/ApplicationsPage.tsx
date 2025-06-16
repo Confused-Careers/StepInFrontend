@@ -5,7 +5,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ApplicantsCard } from "./ApplicantsCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ApplicantsService, ApplicantCardDto, ListApplicantsRequestDto } from "../../../services/applicantServices";
 import debounce from "lodash/debounce";
@@ -84,7 +84,7 @@ const mockSchedules: Schedule[] = [
 
 export default function CompanyApplicationsPage() {
   const [activeTab, setActiveTab] = useState<string>("all");
-  const [openSchedule, setOpenSchedule] = useState<boolean>(false);
+  const [openSchedule, ] = useState<boolean>(false);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [allApplicants, setAllApplicants] = useState<Applicant[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -92,7 +92,6 @@ export default function CompanyApplicationsPage() {
   const [schedules, setSchedules] = useState<Schedule[]>(mockSchedules);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
 
   useEffect(() => {
@@ -152,13 +151,13 @@ export default function CompanyApplicationsPage() {
     fetchData();
   }, [jobId]);
 
-  const handleScheduleSection = () => {
-    setOpenSchedule(!openSchedule);
-  };
+  // const handleScheduleSection = () => {
+  //   setOpenSchedule(!openSchedule);
+  // };
 
-  const handleAddAvailability = () => {
-    navigate("/company/availability");
-  };
+  //const handleAddAvailability = () => {
+   // navigate("/company/availability");
+  //};
 
   const filterApplicants = useCallback(
     (query: string, tags: string[], applicants: Applicant[]) => {
@@ -261,6 +260,7 @@ export default function CompanyApplicationsPage() {
             )}
           </div>
         </div>
+        {/** 
         <div className="relative flex justify-center flex-row max-h-[45px] gap-7">
           <Button
             className="text-white rounded-[10px] min-w-[198px] font-bold text-[20px] bg-gradient-to-r from-[#0A84FF] to-[rgb(51,191,255)] py-1 px-1 shadow-[0_0_12px_rgba(10,132,255,0.4)]"
@@ -275,6 +275,7 @@ export default function CompanyApplicationsPage() {
             Add Availability
           </Button>
         </div>
+        */}
       </div>
       {openSchedule && (
         <div className="relative w-full flex justify-center flex-col mt-10">

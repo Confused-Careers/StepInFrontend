@@ -268,11 +268,13 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     <div className="bg-[rgba(10,132,255,0.05)] rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
                       <p className="text-[13px] text-white m-3">{aiSummary}</p>
                     </div>
+                    {/** 
                     <div className="flex justify-start mt-4 mb-4">
                       <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]">
                         Talk To {applicant.name}’s AI
                       </button>
                     </div>
+                    */}
                   </div>
                 </motion.div>
                 <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">

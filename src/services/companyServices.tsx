@@ -16,6 +16,7 @@ interface CompanyProfile {
 }
 
 interface Job {
+  totalApplications: any;
   department: string;
   data: Job | PromiseLike<Job>;
   id: string;

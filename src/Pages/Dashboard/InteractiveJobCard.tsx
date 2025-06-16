@@ -377,7 +377,7 @@ const JobCard = ({
                   <div>
                     <h3 className="font-bold text-xl text-jobcardtext flex justify-center">{nextJobData.title}</h3>
                     <p className="text-sm text-jobcardforeground flex justify-center">
-                      {nextJobData.company} • {nextJobData.location} • {nextJobData.jobType}
+                      {nextJobData.company} • {nextJobData.location}
                     </p>
                   </div>
                 </div>

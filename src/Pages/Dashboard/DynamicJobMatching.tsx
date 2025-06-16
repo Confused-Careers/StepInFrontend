@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Briefcase, Sparkles, CheckCircle, RefreshCw, Bookmark } from "lucide-react";
 import QuestionBox from "./QuestionBox";
@@ -18,7 +17,6 @@ import {
   UserProgressResponseDto,
   GetQuestionsResponseDto,
   AnswerResponseDto,
-  categoryIcons,
 } from "../../services/questionServices";
 
 interface Insight {
@@ -79,6 +77,14 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
   } catch (error) {
     console.error(`Failed to fetch match explanation for job ${job.id}:`, error);
   }
+  const employmentTypeMap: Record<string, string> = {
+    full_time: "Full-Time",
+    part_time: "Part-Time",
+    internship: "Internship",
+    contract: "Contract",
+  };
+  const readableEmploymentType =
+    employmentTypeMap[job.employmentType?.toLowerCase()] || job.employmentType;
 
   return {
     id: job.id,
@@ -86,12 +92,15 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     title: job.title,
     company: job.company.companyName,
     location: job.location,
-    tags: [job.category?.categoryName || "Unknown", job.employmentType],
-    salaryRange: job.salaryMin && job.salaryMax ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr` : "Not specified",
+    tags: [job.category?.categoryName || "Unknown", readableEmploymentType],
+    salaryRange:
+      job.salaryMin && job.salaryMax
+        ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr`
+        : "Not specified",
     matchPercentage: job.matchScore ? Math.round(job.matchScore * 2) : 80,
     description: job.description,
     responsibilities: job.responsibilities,
-    jobType: job.employmentType,
+    jobType: readableEmploymentType,
     postedDate: `Posted ${formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}`,
     whyYouFit: matchExplanation,
     aiSummary: matchExplanation,
@@ -111,7 +120,7 @@ export function DynamicJobMatching() {
   const [availableQuestions, setAvailableQuestions] = useState<QuestionResponseDto[]>([]);
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
   const [currentTier, setCurrentTier] = useState<number>(1);
-  const [profileCompletion, setProfileCompletion] = useState<number>(0);
+  const [, setProfileCompletion] = useState<number>(0);
   const [matchedJobs, setMatchedJobs] = useState<JobCardProps[]>([]);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
@@ -498,18 +507,21 @@ export function DynamicJobMatching() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        className="flex justify-between items-center"
+        className="flex justify-center items-center mb-3"
       >
-        <div className="space-y-0">
-          <h1 className="text-2xl font-bold">Interactive Job Management</h1>
-          <p className="text-muted-foreground">View your saved, applied, and available jobs</p>
+        <div className="space-y-0 flex flex-col justify-center items-center">
+          <h1 className="text-2xl font-bold">Jobs Dashboard</h1>
+          <p className="text-muted-foreground">Answer questions to unlock better matches, then apply in one click</p>
         </div>
+
         <Button
           variant="outline"
-          className="hover:bg-primary/10 hover:text-primary transition-colors"
+          className="absolute right-0 mr-10"
           onClick={handleReset}
+          title="Reset all progress and start over"
         >
-          <RefreshCw className="h-4 w-4 mr-2" />Reset
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Reset
         </Button>
       </motion.div>
       <motion.div
@@ -517,13 +529,14 @@ export function DynamicJobMatching() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
       >
+        {/** 
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm text-muted-foreground">{`Profile Completion (Tier ${currentTier}/5)`}</span>
           <span className="text-sm text-muted-foreground">{Math.round(profileCompletion)}%</span>
         </div>
         <Progress
           value={profileCompletion}
-          className="h-2 bg-gradient-to-r from-primary/20 to-primary/5"
+          className="h-2 bg-gradient-to-r from-primary/20 to-primary/5 "
         >
           <motion.div
             className="h-full bg-gradient-to-r from-primary to-primary/80"
@@ -532,15 +545,15 @@ export function DynamicJobMatching() {
             transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
           />
         </Progress>
+        */}
       </motion.div>
-      <div className="mb-12">
+      <div className="mb-12 px-4 mt-3">
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           className="text-xl font-semibold mb-6 flex items-center"
         >
-          <Sparkles className="h-5 w-5 text-primary mr-2" />
           Answer Questions
         </motion.h2>
         <motion.div
@@ -572,7 +585,7 @@ export function DynamicJobMatching() {
             })()
           ) : (
             [0, 1, 2].map((columnIndex) => (
-              <div key={`column-${columnIndex}`} className="space-y-4 min-h-[200px]">
+              <div key={`column-${columnIndex}`} className="space-y-4 min-h-[200px] w-[95%]">
                 <AnimatePresence mode="wait">
                   {columnInsights[columnIndex].map((insight, idx) => (
                     <motion.div
@@ -581,13 +594,12 @@ export function DynamicJobMatching() {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      className="mb-4"
+                      className="mb-2 dark:bg-[rgba(17, 8,21,1)]"
                     >
-                      <Card className="bg-jobcardsecondary border-2 border-blue-500">
-                        <CardContent className="p-4">
+                      <Card className="dark:bg-[rgba(17, 8,21,1)] border-2 border-blue-500 items-center">
+                        <CardContent className="px-2 py-1 dark:bg-[rgba(17, 8,21,1)]">
                           <div className="flex items-center gap-2">
-                            {categoryIcons[insight.category as keyof typeof categoryIcons] || categoryIcons.preferences}
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 dark:bg-[rgba(17, 8,21,1)] items-center text-center">
                               {insight.text} (Tier {insight.tier})
                             </p>
                           </div>
@@ -645,18 +657,18 @@ export function DynamicJobMatching() {
           )}
         </motion.div>
       </div>
-      <div ref={jobsRef}>
+      <div ref={jobsRef} className="mt-6">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="flex flex-col md:flex-row-reverse md:items-center justify-between mb-6"
+          className="flex flex-col md:flex-row-reverse md:items-center justify-between mb-6 mt-6"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 mt-6">
             <h2 className="text-xl font-semibold flex items-center">
               <Briefcase className="h-5 w-5 text-primary mr-2" />Your Jobs
             </h2>
-            <p className="text-muted-foreground">View your saved, applied, and available jobs</p>
+            <p className="text-muted-foreground"></p>
           </div>
         </motion.div>
         <Tabs defaultValue="all" className="mb-6">
@@ -697,7 +709,7 @@ export function DynamicJobMatching() {
                 >
                   <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium mb-2">No jobs found</h3>
-                  <p className="text-muted-foreground text-center">Apply to jobs to see job matches!</p>
+                  <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
                 </motion.div>
               )}
             </motion.div>

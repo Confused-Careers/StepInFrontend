@@ -1,6 +1,6 @@
 import { useState, type ReactNode, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { User, Search, Menu, X, Sparkles, Briefcase, Settings, LogOut, Key } from "lucide-react";
+import { User, Search, Menu, X, LogOut, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 // import { ModeToggle } from "@/components/Others/ModeToggle";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
   };
 
   const navigation = [
-    { name: "Interactive", href: "/dashboard/interactive", icon: Sparkles },
-    { name: "Applications", href: "/dashboard/applications", icon: Briefcase },
+    { name: "Jobs", href: "/dashboard/interactive" },
+    { name: "Applications", href: "/dashboard/applications" },
   ];
 
   const isActive = (path: string) => {
@@ -55,7 +55,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
     localStorage.removeItem("google_email");
     localStorage.removeItem("userType");
     localStorage.removeItem("google_accessToken");
-    navigate("/company/login", { replace: true });
+    navigate("/individual-login", { replace: true });
   };
 
   const getInitials = () => {
@@ -74,12 +74,19 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
             
             <div className="hidden md:flex items-center space-x-2">
-              {navigation.map((item) => (
-                <Button key={item.name} variant={isActive(item.href) ? "default" : "ghost"} size="sm" className="flex items-center gap-1" onClick={() => navigate(item.href)}>
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </Button>
-              ))}
+              {navigation.map((item) => {
+                return (
+                  <Button
+                    key={item.name}
+                    variant={isActive(item.href) ? "default" : "ghost"}
+                    size="sm"
+                    className="flex items-center gap-3 w-32 h-8 justify-center"
+                    onClick={() => navigate(item.href)}
+                  >
+                    <span>{item.name}</span>
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
@@ -103,10 +110,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard/settings")} className="cursor-pointer">
+                {/*<DropdownMenuItem onClick={() => navigate("/dashboard/settings")} className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
-                </DropdownMenuItem>
+                </DropdownMenuItem>*/}
                 <DropdownMenuItem onClick={() => navigate("/company/forgot-password")} className="cursor-pointer">
                   <Key className="mr-2 h-4 w-4" />
                   Reset Password
@@ -133,12 +140,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 <Input type="search" placeholder="Search jobs..." className="pl-8" />
               </div>
 
-              {navigation.map((item) => (
-                <Button key={item.name} variant={isActive(item.href) ? "default" : "ghost"} className="justify-start h-12 text-base" onClick={() => { navigate(item.href); setMobileMenuOpen(false); }}>
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Button>
-              ))}
+              {navigation.map((item) => {
+                return (
+                  <Button key={item.name} variant={isActive(item.href) ? "default" : "ghost"} className="justify-start h-12 text-base" onClick={() => { navigate(item.href); setMobileMenuOpen(false); }}>
+                    {item.name}
+                  </Button>
+                );
+              })}
 
               <Button variant="ghost" className="justify-start h-12 text-base" onClick={() => { navigate("/dashboard/profile"); setMobileMenuOpen(false); }}>
                 <User className="mr-3 h-5 w-5" />
