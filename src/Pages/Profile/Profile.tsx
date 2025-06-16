@@ -16,6 +16,7 @@ import {
     DollarSign,
     Upload,
     X,
+    Mail,
 } from "lucide-react"
 import { PageHeader } from "@/components/Layout/PageHeader"
 import { Button } from "@/components/ui/button"
@@ -650,6 +651,10 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{profile.email || "Add Email"}</span>
+                    </div>
                     <div className="flex items-center text-sm">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span>{profile.phone || "Add phone number"}</span>

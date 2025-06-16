@@ -31,6 +31,7 @@ interface BackendJob {
   id: string;
   title: string;
   company: string;
+  companyDescription?:string;
   location: string;
   logoUrl?: string;
   category?: {
@@ -102,7 +103,7 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     aiSummary: matchExplanation,
     fullJobDescription: job.description,
     fullResponsibilities: job.responsibilities,
-    companyDescription: job.company || "No company description available.",
+    companyDescription: job.companyDescription || "No company description available.",
     isTargetedRecommendation: job.matchScore !== undefined ? Number(job.matchScore) > 40 : undefined,
     applyButtonText: "Apply",
     isSaved: job.isSaved ?? false,
