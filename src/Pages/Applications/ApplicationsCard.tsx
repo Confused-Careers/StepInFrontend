@@ -94,7 +94,7 @@ export function JobApplicationCard({ job, onActionClick }: JobApplicationCardPro
           </div>
         </div>
 
-        <div className="flex flex-row gap-1 justify-around items-center px-7 mt-2">
+        <div className="flex flex-row gap-1 justify-around items-center px-7 mt-2 ">
           <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${config.badge}`}>
             {statusLabels[status]}
           </span>
@@ -107,7 +107,7 @@ export function JobApplicationCard({ job, onActionClick }: JobApplicationCardPro
         </div>
 
         <div className="flex flex-wrap items-center justify-around">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6">
             <span className="text-[#b0b3b8] text-xs ml-1">Applied {job.appliedDate}</span>
             <span className="px-1 py-0.5 rounded-md bg-jobcardsecondary text-[#ffffff] text-xs">
               {job.salary}
