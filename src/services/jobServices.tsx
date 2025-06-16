@@ -69,6 +69,7 @@ export const jobServices = {
         headers: getAuthHeaders(),
         params: sanitizedFilters,
       });
+      console.log('Response from getJobs:', response.data);
       return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) return;

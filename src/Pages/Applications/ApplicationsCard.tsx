@@ -51,6 +51,13 @@ interface JobApplicationCardProps {
 }
 
 export function JobApplicationCard({ job, onActionClick }: JobApplicationCardProps) {
+
+  const hasValidImage = (imageUrl?: string | null): boolean => {
+    return imageUrl !== null && 
+           imageUrl !== undefined && 
+           imageUrl.trim() !== "" && 
+           imageUrl !== " ";
+  };
   
   const status: keyof typeof statusLabels = job.status as keyof typeof statusLabels || "applied";
   const config = statusConfig[status] || statusConfig["applied"];
@@ -70,16 +77,24 @@ export function JobApplicationCard({ job, onActionClick }: JobApplicationCardPro
     <div className="w-full rounded-2xl overflow-hidden shadow-xl border border-[rgba(47,51,54,1)] h-min bg-[rgba(17,20,24,1)]">
       <div className="py-2 px-5 space-y-4 mb-2 mt-2">
         <div className="flex items-start gap-4">
-          <div className="bg-white p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-            <img src={job.companyLogo || "/placeholder.svg"} alt={`${job.company} logo`} width={96} height={96} className="object-contain rounded-md " />
-          </div>
+          { hasValidImage(job.companyLogo) ? (
+              <img 
+                src={job.companyLogo} 
+                alt={`${job.company} logo`} 
+                className="w-12 h-12 rounded-lg object-cover" 
+              />       
+          ) : (
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+            </div>
+          )}
+
           <div className="flex-1 mr-7">
             <h3 className="font-bold text-[18px] text-jobcardtext flex justify-center">{job.jobTitle}</h3>
             <p className="text-sm text-jobcardforeground flex justify-center">{job.company} • {job.location}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-x-2 justify-around px-8 mt-2">
+        <div className="flex flex-row gap-1 justify-around items-center px-7 mt-2">
           <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${config.badge}`}>
             {statusLabels[status]}
           </span>

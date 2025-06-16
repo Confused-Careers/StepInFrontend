@@ -189,7 +189,7 @@ export function JobsPostPage() {
       try {
         for (const job of jobs) {
           const insights = await companyServices.getJobInsights(job.id);
-          console.log(`Insights for job ${job.jobTitle}:`, insights);
+          console.log(`Insights for job ${job.id}:`, insights);
         }
       } catch (error) {
         toast.error(

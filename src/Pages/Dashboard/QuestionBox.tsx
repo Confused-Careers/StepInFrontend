@@ -90,7 +90,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                         whileTap={{ scale: 0.98 }}
                         animate={{ scale: selectedAnswer === option.id ? 1 : 1, transition: { duration: 0.1 } }}
                       >
-                        <span className="w-full text-center px-2">{option.optionText}</span>
+                        <span className="w-full text-center px-2 py-2">{option.optionText}</span>
                       </motion.button>
                     </motion.div>
                   ))}

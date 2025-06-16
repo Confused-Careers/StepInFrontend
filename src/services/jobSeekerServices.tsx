@@ -39,6 +39,7 @@ interface UpdateProfileData {
   expectedSalaryMax?: number;
   availability?: string;
   portfolioUrl?: string;
+  phone?: string;
 }
 
 interface ApiResponse<T> {
@@ -59,7 +60,6 @@ const jobSeekerServices = {
           },
         }
       );
-      
       return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
@@ -75,8 +75,6 @@ const jobSeekerServices = {
       if (!token) {
         throw new Error('No authentication token found');
       }
-
-      // Validate salary range if both values are provided
       if (data.expectedSalaryMin && data.expectedSalaryMax && 
           data.expectedSalaryMin > data.expectedSalaryMax) {
         throw new Error('Minimum salary cannot be greater than maximum salary');

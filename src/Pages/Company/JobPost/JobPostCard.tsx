@@ -25,6 +25,14 @@ interface JobApplicationCardProps {
 export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationCardProps) {
   const navigate = useNavigate();
 
+  
+  const hasValidImage = (imageUrl?: string | null): boolean => {
+    return imageUrl !== null && 
+           imageUrl !== undefined && 
+           imageUrl.trim() !== "" && 
+           imageUrl !== " ";
+  };
+
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onActionClick) {
@@ -46,16 +54,26 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
     >
       <div className="py-2 px-5 space-y-4 mb-2 mt-2">
         <div className="flex items-start gap-4">
-          <div className="bg-white p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-            <img src={job.companyLogo || "/placeholder.svg"} alt={`${job.company} logo`} width={96} height={96} className="object-contain rounded-md" />
-          </div>
+            {hasValidImage(job.companyLogo) ? (
+              <div className="bg-white p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 ml-4 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                <img 
+                  src={job.companyLogo!} 
+                  width={96} 
+                  height={96} 
+                  className="object-contain rounded-md w-full h-full" 
+                  alt={`${job.companyLogo}'s photo`}
+                />
+              </div>
+            ) : (
+              <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
+            )}
           <div className="flex-1 ml-5 justify-center items-center mr-12">
             <h3 className="font-bold text-[18px] text-jobcardtext flex justify-center">{job.jobTitle}</h3>
             <p className="text-sm text-jobcardforeground flex justify-center">{job.location}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-x-1 justify-around px-6 mt-2">
+        <div className="flex flex-wrap gap-x-1 justify-evenly px-6 mt-2">
           <span className="px-2 py-0.5 rounded-md bg-jobcardsecondary text-[#ffffff] text-xs font-medium">
             {job.salary}
           </span>

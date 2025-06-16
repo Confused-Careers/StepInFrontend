@@ -4,7 +4,6 @@ import {
     FileText,
     Edit,
     MapPin,
-    Eye,
     Briefcase,
     GraduationCap,
     Award,
@@ -44,11 +43,10 @@ import {
 import type { JobSeekerProfile } from "@/Contexts/ProfileContext";
 import { ResumeUploadModal } from '@/components/Modals/ResumeUploadModal';
 import { ProfilePictureUploadModal } from '@/components/Modals/ProfilePictureUploadModal';
-  
+
 const getCurrentExperience = (experiences: any[]) => {
   if (!experiences || experiences.length === 0) return null;
 
-  // Sort experiences by end date (null/undefined end dates come first)
   const sortedExperiences = [...experiences].sort((a, b) => {
     if (!a.endDate && !b.endDate) return 0;
     if (!a.endDate) return -1;
@@ -56,20 +54,14 @@ const getCurrentExperience = (experiences: any[]) => {
     return new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
   });
 
-  // Find the most recent experience (either current or with the latest end date)
   return sortedExperiences.find(exp => !exp.endDate) || sortedExperiences[0];
 };
-  
+
 const getCurrentPosition = (experiences: any[]) => {
   const currentExperience = getCurrentExperience(experiences);
   return currentExperience ? `${currentExperience.positionTitle} at ${currentExperience.companyName}` : null;
 };
-  
-const getCurrentLocation = (experiences: any[]) => {
-  const currentExperience = getCurrentExperience(experiences);
-  return currentExperience?.location || null;
-};
-  
+
 interface PreferenceData {
   preferredLocation: string;
   availability: string;
@@ -77,12 +69,17 @@ interface PreferenceData {
   expectedSalaryMax: string;
 }
 
+interface ContactData {
+  location: string;
+  phone: string;
+}
+
 interface UploadResponse {
   message: string;
   fileUrl?: string;
   fileId?: string;
 }
-  
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<JobSeekerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,12 +100,17 @@ export default function ProfilePage() {
     expectedSalaryMin: '',
     expectedSalaryMax: '',
   });
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [contactData, setContactData] = useState<ContactData>({
+    location: '',
+    phone: '',
+  });
   const [uploadType, setUploadType] = useState<'resume' | 'profilePicture' | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumePreview, setResumePreview] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
-  
+
   useEffect(() => {
     fetchProfile();
     fetchExperiences();
@@ -118,20 +120,20 @@ export default function ProfilePage() {
       if (profilePicturePreview && !profile?.profilePictureUrl) URL.revokeObjectURL(profilePicturePreview);
     };
   }, []);
-  
+
   useEffect(() => {
     if (profile) {
       if (profile.resumeUrl) setResumePreview(profile.resumeUrl);
       if (profile.profilePictureUrl) setProfilePicturePreview(profile.profilePictureUrl);
     }
   }, [profile]);
-  
+
   useEffect(() => {
     if (profile?.aboutMe) {
       setAboutMeText(profile.aboutMe);
     }
   }, [profile?.aboutMe]);
-  
+
   useEffect(() => {
     if (profile) {
       setPreferenceData({
@@ -140,15 +142,19 @@ export default function ProfilePage() {
         expectedSalaryMin: profile.expectedSalaryMin?.toString() || '',
         expectedSalaryMax: profile.expectedSalaryMax?.toString() || '',
       });
+      setContactData({
+        location: profile.location || '',
+        phone: profile.phone || '',
+      });
     }
   }, [profile]);
-  
+
   useEffect(() => {
     if (experiences.length > 0) {
       updateProfileWithCurrentExperience();
     }
   }, [experiences]);
-  
+
   const fetchProfile = async () => {
     try {
       const data = await jobSeekerServices.getProfile();
@@ -159,7 +165,7 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
-  
+
   const fetchExperiences = async () => {
     try {
       setLoadingExperiences(true);
@@ -171,7 +177,7 @@ export default function ProfilePage() {
       setLoadingExperiences(false);
     }
   };
-  
+
   const fetchEducations = async () => {
     try {
       setLoadingEducations(true);
@@ -183,17 +189,17 @@ export default function ProfilePage() {
       setLoadingEducations(false);
     }
   };
-  
+
   const handleDeleteExperience = async (id: string) => {
     try {
       await workExperienceServices.deleteWorkExperience(id);
       toast.success("Work experience deleted successfully");
-      fetchExperiences(); // Refresh the list
+      fetchExperiences();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete work experience");
     }
   };
-  
+
   const handleExperienceSubmit = async (data: any) => {
     try {
       if (!profile?.id) {
@@ -209,7 +215,7 @@ export default function ProfilePage() {
         workEnvironmentTags: data.workEnvironmentTags || [],
         achievements: data.achievements || []
       };
-      
+
       const response = await workExperienceServices.createWorkExperience(experienceData);
       setExperiences([...experiences, response]);
       setIsExperienceFormOpen(false);
@@ -219,7 +225,7 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to add work experience");
     }
   };
-  
+
   const handleUpdateExperience = async (data: any) => {
     try {
       if (!selectedExperience) return;
@@ -230,22 +236,22 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to update work experience");
     }
   };
-  
+
   const openCreateForm = () => {
     setSelectedExperience(null);
     setIsExperienceFormOpen(true);
   };
-  
+
   const openEditForm = (experience: any) => {
     setSelectedExperience(experience);
     setIsExperienceFormOpen(true);
   };
-  
+
   const closeExperienceForm = () => {
     setSelectedExperience(null);
     setIsExperienceFormOpen(false);
   };
-  
+
   const handleDeleteEducation = async (id: string) => {
     try {
       await educationServices.deleteEducation(id);
@@ -255,15 +261,14 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to delete education record");
     }
   };
-  
+
   const handleCreateEducation = async (data: any) => {
     try {
-      // Add display order based on current education count
       const submitData = {
         ...data,
         displayOrder: educations.length
       };
-      
+
       await educationServices.createEducation(submitData);
       toast.success("Education record created successfully");
       fetchEducations();
@@ -272,7 +277,7 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to create education record");
     }
   };
-  
+
   const handleUpdateEducation = async (data: any) => {
     try {
       if (!selectedEducation) return;
@@ -283,22 +288,22 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to update education record");
     }
   };
-  
+
   const openCreateEducationForm = () => {
     setSelectedEducation(null);
     setIsEducationFormOpen(true);
   };
-  
+
   const openEditEducationForm = (education: any) => {
     setSelectedEducation(education);
     setIsEducationFormOpen(true);
   };
-  
+
   const closeEducationForm = () => {
     setSelectedEducation(null);
     setIsEducationFormOpen(false);
   };
-  
+
   const handleSaveAboutMe = async () => {
     try {
       const updatedProfile = await jobSeekerServices.updateProfile({
@@ -311,10 +316,9 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to update about me");
     }
   };
-  
+
   const handleSavePreferences = async () => {
     try {
-      // Validate salary range if both are provided
       if (preferenceData.expectedSalaryMin && preferenceData.expectedSalaryMax) {
         const minSalary = Number(preferenceData.expectedSalaryMin);
         const maxSalary = Number(preferenceData.expectedSalaryMax);
@@ -338,12 +342,39 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to update preferences");
     }
   };
-  
+
+  const handleSaveContact = async () => {
+    try {
+      // Basic phone number validation
+      const phoneRegex = /^\+?[\d\s-]{8,}$/;
+      if (contactData.phone && !phoneRegex.test(contactData.phone)) {
+        toast.error("Please enter a valid phone number");
+        return;
+      }
+
+      const updatedProfile = await jobSeekerServices.updateProfile({
+        location: contactData.location || undefined,
+        phone: contactData.phone || undefined,
+      });
+
+      setProfile(updatedProfile);
+      setIsEditingContact(false);
+      toast.success("Contact information updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update contact information");
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPreferenceData(prev => ({ ...prev, [name]: value }));
   };
-  
+
+  const handleContactInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setContactData(prev => ({ ...prev, [name]: value }));
+  };
+
   const updateProfileWithCurrentExperience = async () => {
     try {
       const currentExperience = getCurrentExperience(experiences);
@@ -359,7 +390,7 @@ export default function ProfilePage() {
       console.error('Failed to update profile with current experience:', error);
     }
   };
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -378,7 +409,7 @@ export default function ProfilePage() {
       }
     }
   };
-  
+
   const handleUploadResume = async (file: File) => {
     try {
       if (file.size > 5 * 1024 * 1024) {
@@ -393,7 +424,7 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to upload resume");
     }
   };
-  
+
   const handleUploadProfilePicture = async (file: File) => {
     try {
       if (file.size > 5 * 1024 * 1024) {
@@ -408,34 +439,34 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to upload profile picture");
     }
   };
-  
+
   const removeResumePreview = () => {
     setResumeFile(null);
     setResumePreview(null);
     setProfile((prev: any) => prev ? ({ ...prev, resumeUrl: undefined }) : prev);
   };
-  
+
   const removeProfilePicturePreview = () => {
     setProfilePictureFile(null);
     setProfilePicturePreview(null);
     setProfile((prev: any) => prev ? ({ ...prev, profilePictureUrl: undefined }) : prev);
   };
-  
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-  
+
   if (!profile) {
     return <div className="flex items-center justify-center min-h-screen">Profile not found</div>;
   }
-  
+
   return (
     <div>
       <PageHeader
         title="Profile"
         description="View and manage your professional profile"
       />
-  
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1 space-y-6">
           <Card className="overflow-hidden">
@@ -456,10 +487,6 @@ export default function ProfilePage() {
                     <span>{profile.location}</span>
                   </div>
                 )}
-                <div className="flex items-center mt-2 text-muted-foreground text-sm">
-                  <Eye className="h-4 w-4 mr-1" />
-                  <span>{profile.profileViewsCount} Profile Views</span>
-                </div>
                 <div className="flex gap-2 mt-4">
                   {profile.resumeUrl && (
                     <Button variant="outline" size="sm" onClick={() => profile.resumeUrl && window.open(profile.resumeUrl, '_blank')}>
@@ -469,7 +496,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-  
+
               <div className="mt-6 pt-6 border-t">
                 <h3 className="font-medium mb-2">Upload Files</h3>
                 <div className="space-y-4">
@@ -560,19 +587,79 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-  
+
               <div className="mt-6 pt-6 border-t">
-                <h3 className="font-medium mb-3">Contact Information</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{profile.phone || "Add phone number"}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>Current: {getCurrentLocation(experiences) || "Add location"}</span>
-                  </div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium">Contact Information</h3>
+                  {!isEditingContact ? (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => setIsEditingContact(true)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingContact(false);
+                          setContactData({
+                            location: profile.location || '',
+                            phone: profile.phone || '',
+                          });
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveContact}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  )}
                 </div>
+
+                {isEditingContact ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <Input
+                        id="location"
+                        name="location"
+                        placeholder="Enter your location"
+                        value={contactData.location}
+                        onChange={handleContactInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        placeholder="Enter your phone number"
+                        value={contactData.phone}
+                        onChange={handleContactInputChange}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{profile.phone || "Add phone number"}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{profile.location || "Add location"}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 pt-6 border-t">
@@ -698,7 +785,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </div>
-  
+
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -749,13 +836,13 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
-  
+
           <Tabs defaultValue="experience" className="space-y-6">
             <TabsList className="grid grid-cols-2 md:grid-cols-2 w-full">
               <TabsTrigger value="experience">Experience</TabsTrigger>
               <TabsTrigger value="education">Education</TabsTrigger>
             </TabsList>
-  
+
             <TabsContent value="experience" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Work Experience</h3>
@@ -764,7 +851,7 @@ export default function ProfilePage() {
                   Add Experience
                 </Button>
               </div>
-  
+
               {loadingExperiences ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -811,7 +898,7 @@ export default function ProfilePage() {
                               </Button>
                             </div>
                           </div>
-  
+
                           <div className="flex flex-wrap gap-4 mt-1 text-sm text-muted-foreground">
                             {experience.location && (
                               <div className="flex items-center">
@@ -838,11 +925,11 @@ export default function ProfilePage() {
                               </span>
                             </div>
                           </div>
-  
+
                           {experience.description && (
                             <p className="mt-3">{experience.description}</p>
                           )}
-  
+
                           {experience.achievements && experience.achievements.length > 0 && (
                             <div className="mt-4">
                               <p className="font-medium text-sm mb-2">Key Achievements:</p>
@@ -874,7 +961,7 @@ export default function ProfilePage() {
                   </Card>
                 ))
               )}
-  
+
               <WorkExperienceForm 
                 isOpen={isExperienceFormOpen}
                 onClose={closeExperienceForm}
@@ -882,7 +969,7 @@ export default function ProfilePage() {
                 initialData={selectedExperience}
               />
             </TabsContent>
-  
+
             <TabsContent value="education" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Education</h3>
@@ -891,7 +978,7 @@ export default function ProfilePage() {
                   Add Education
                 </Button>
               </div>
-  
+
               {loadingEducations ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -941,13 +1028,13 @@ export default function ProfilePage() {
                               </Button>
                             </div>
                           </div>
-  
+
                           <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
                             {education.location && (
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
                                 <span>{education.location}</span>
-                            </div>
+                              </div>
                             )}
                             <div className="flex items-center">
                               <Calendar className="h-4 w-4 mr-1" />
@@ -974,11 +1061,11 @@ export default function ProfilePage() {
                               </div>
                             )}
                           </div>
-  
+
                           {education.description && (
                             <p className="mt-4 text-sm">{education.description}</p>
                           )}
-  
+
                           {education.coursework && education.coursework.length > 0 && (
                             <div className="mt-4">
                               <p className="font-medium text-sm mb-2">Relevant Coursework:</p>
@@ -1010,7 +1097,7 @@ export default function ProfilePage() {
                   </Card>
                 ))
               )}
-  
+
               <EducationForm 
                 isOpen={isEducationFormOpen}
                 onClose={closeEducationForm}
@@ -1021,7 +1108,7 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </div>
-  
+
       <ResumeUploadModal
         isOpen={resumeFile !== null}
         onClose={() => {

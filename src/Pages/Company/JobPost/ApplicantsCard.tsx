@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Applicant } from "./ApplicationsPage";
+import { Applicant as ImportedApplicant } from "./ApplicationsPage";
+
+export interface Applicant extends ImportedApplicant {
+  imageUrl?: string | null;
+}
 import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +46,13 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [feedback, setFeedback] = useState<string>("");
   const [existingFeedback, setExistingFeedback] = useState<string | null>(null);
   const [applicationId] = useState(applicant.id);
+
+    const hasValidImage = (imageUrl?: string | null): boolean => {
+    return imageUrl !== null && 
+           imageUrl !== undefined && 
+           imageUrl.trim() !== "" && 
+           imageUrl !== " ";
+  };
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -138,9 +149,19 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       >
         <div className="py-2 px-5 space-y-4 mb-2 mt-2">
           <div className="flex items-start gap-4">
-            <div className="bg-white p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-              <img src={`/placeholder.svg`} alt={`${applicant.name} avatar`} width={96} height={96} className="object-contain rounded-md" />
-            </div>
+            {hasValidImage(applicant.imageUrl) ? (
+              <div className="bg-white p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                <img 
+                  src={applicant.imageUrl!} 
+                  width={96} 
+                  height={96} 
+                  className="object-contain rounded-md w-full h-full" 
+                  alt={`${applicant.name}'s photo`}
+                />
+              </div>
+            ) : (
+              <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
+            )}
             <div className="flex-1 ml-5 flex flex-col justify-center">
               <div className="flex justify-center items-center gap-2 pr-5">
                 <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3">{applicant.name}</h3>
@@ -183,21 +204,21 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-evenly w-full gap-2">
+          <div className="flex items-center justify-evenly w-full gap-2 flex-col [@media(min-width:1248px)]:flex-row">
             <button
-              className="bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-2 text-[20px] font-[700] h-min"
+              className="bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full"
               onClick={(e) => handleAction("apply", e)}
             >
               Accept
             </button>
             <button
-              className="border border-[rgba(59,130,246,1)] text-[rgba(59,130,246,1)] rounded-md py-1 px-2 text-[20px] font-[700] h-min"
+              className="border border-[rgba(59,130,246,1)] text-[rgba(59,130,246,1)] rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full"
               onClick={handleOpenFeedbackModal}
             >
               Feedback
             </button>
             <button
-              className="text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap"
+              className="text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap [@media(min-width:1248px)]:w-auto w-full"
               onClick={(e) => handleAction("reject", e)}
             >
               Not Interested
@@ -241,9 +262,19 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                 <motion.div variants={contentVariants} custom={0.15} initial="hidden" animate="visible">
                   <div className="p-4">
                     <div className="flex items-start gap-4">
-                      <div className="rounded-md p-1 w-24 h-24 flex items-center justify-start">
-                        <img src="/placeholder.svg" alt={`${applicant.name} avatar`} width={96} height={96} className="object-contain rounded-md" />
-                      </div>
+                      {hasValidImage(applicant.imageUrl) ? (
+                        <div className="bg-white p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                          <img 
+                            src={applicant.imageUrl!} 
+                            width={96} 
+                            height={96} 
+                            className="object-contain rounded-md w-full h-full" 
+                            alt={`${applicant.name}'s photo`}
+                          />
+                        </div>
+                      ) : (
+                        <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
+                      )}
                       <div className="flex-1 text-center">
                         <h2 className="font-bold text-3xl text-white">{applicant.name}</h2>
                         <p className="text-sm text-[rgba(209,209,214,1)]">{applicant.currentCompany} • {applicant.location}</p>

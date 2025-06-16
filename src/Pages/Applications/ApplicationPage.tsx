@@ -73,7 +73,7 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
         <div className="flex items-center gap-3">
           <div className="bg-white p-2 rounded-lg w-12 h-12 flex items-center justify-center">
             <img
-              src={application.company.logoUrl || "/placeholder-logo.png"}
+              src={application.company.logoUrl || ""}
               alt={`${application.company.companyName} logo`}
               width={32}
               height={32}
@@ -251,31 +251,42 @@ export default function ApplicationsPage() {
                 ) : filteredApplications.length === 0 ? (
                   <p className="text-center text-muted-foreground">No applications found</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-16 gap-y-10">
-                    {filteredApplications.map(app => (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-16 gap-y-10">
+                    {filteredApplications.map(app => {
+                      // Helper to format employment type
+                      const formatEmploymentType = (type?: string) => {
+                      if (!type) return "N/A";
+                      return type
+                        .split("_")
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join("-");
+                      };
+
+                      return (
                       <JobApplicationCard
                         key={app.id}
                         job={{
-                          id: app.id,
-                          status: app.status,
-                          company: app.company.companyName,
-                          companyLogo: app.company.logoUrl,
-                          jobTitle: app.job.title,
-                          location: app.job.location,
-                          department: app.job.department ?? "General",
-                          jobType: app.job.employmentType,
-                          appliedDate: app.applicationDate,
-                          salary: app.job.salaryMin && app.job.salaryMax
-                            ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}`
-                            : "N/A",
-                          matchPercentage: app.matchScore ? `${app.matchScore}%` : "N/A",
-                          feedback: app.feedback ?? "",
-                          interviewDate: app.nextStepDate,
+                        id: app.id,
+                        status: app.status,
+                        company: app.company.companyName,
+                        companyLogo: app.company.logoUrl,
+                        jobTitle: app.job.title,
+                        location: app.job.location,
+                        department: app.job.department ?? "General",
+                        jobType: formatEmploymentType(app.job.employmentType),
+                        appliedDate: app.applicationDate,
+                        salary: app.job.salaryMin && app.job.salaryMax
+                          ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}`
+                          : "N/A",
+                        matchPercentage: app.matchScore ? `${app.matchScore}%` : "N/A",
+                        feedback: app.feedback ?? "",
+                        interviewDate: app.nextStepDate,
                         }}
                         onActionClick={handleActionClick}
                       />
-                    ))}
-                  </div>
+                      );
+                    })}
+                    </div>
                 )}
               </TabsContent>
             </Tabs>

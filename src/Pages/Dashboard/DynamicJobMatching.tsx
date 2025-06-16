@@ -30,13 +30,9 @@ interface Insight {
 interface BackendJob {
   id: string;
   title: string;
-  company: {
-    id: string;
-    companyName: string;
-    companyDescription?: string;
-    logoUrl?: string;
-  };
+  company: string;
   location: string;
+  logoUrl?: string;
   category?: {
     id: string;
     categoryName: string;
@@ -44,7 +40,7 @@ interface BackendJob {
   employmentType: string;
   salaryMin?: number;
   salaryMax?: number;
-  matchScore?: number;
+  matchScore?: string;
   description: string;
   responsibilities: string;
   createdAt: string;
@@ -88,16 +84,16 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
 
   return {
     id: job.id,
-    logo: job.company.logoUrl || "/placeholder.svg?height=40&width=40",
+    logo: job.logoUrl || "  ",
     title: job.title,
-    company: job.company.companyName,
+    company: job.company, 
     location: job.location,
     tags: [job.category?.categoryName || "Unknown", readableEmploymentType],
     salaryRange:
       job.salaryMin && job.salaryMax
         ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr`
         : "Not specified",
-    matchPercentage: job.matchScore ? Math.round(job.matchScore * 2) : 80,
+    matchPercentage: job.matchScore !== undefined ? Number(job.matchScore) || 0 : 0,
     description: job.description,
     responsibilities: job.responsibilities,
     jobType: readableEmploymentType,
@@ -106,8 +102,8 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     aiSummary: matchExplanation,
     fullJobDescription: job.description,
     fullResponsibilities: job.responsibilities,
-    companyDescription: job.company.companyDescription || "No company description available.",
-    isTargetedRecommendation: job.matchScore !== undefined ? job.matchScore > 40 : undefined,
+    companyDescription: job.company || "No company description available.",
+    isTargetedRecommendation: job.matchScore !== undefined ? Number(job.matchScore) > 40 : undefined,
     applyButtonText: "Apply",
     isSaved: job.isSaved ?? false,
     isApplied: job.hasApplied ?? false,

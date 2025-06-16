@@ -126,6 +126,7 @@ export default function CompanyApplicationsPage() {
           weakness: dto.weaknesses || [],
           match: dto.matchPercentage?.toString() || "0",
           location: dto.location || "Not specified",
+          imageUrl: dto.profilePictureUrl || null,
         }));
         setApplicants(mappedApplicants);
         setAllApplicants(mappedApplicants);
@@ -314,7 +315,7 @@ export default function CompanyApplicationsPage() {
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsContent value={activeTab}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-16 gap-y-16">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-11 gap-y-11">
                   {applicants.length > 0 ? (
                     applicants.map((app) => <ApplicantsCard key={app.id} applicant={app} />)
                   ) : (
