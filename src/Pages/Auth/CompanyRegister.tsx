@@ -10,6 +10,7 @@ import authServices from "@/services/authServices";
 import VerifyEmailModal from "@/components/Modals/VerifyEmailModal";
 import Logo from "../../assets/StepIn Transparent Logo.png";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 interface FormData {
   email: string;
@@ -106,23 +107,23 @@ const CompanyRegister: React.FC = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Textarea
+                    <Input
                       id="email"
+                      type="email"
                       placeholder="company@example.com"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      className="resize-none"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Textarea
+                    <Input
                       id="password"
+                      type="password"
                       value={formData.password}
                       onChange={handleInputChange}
                       required
-                      className="resize-none"
                     />
                   </div>
                 </>
@@ -130,24 +131,22 @@ const CompanyRegister: React.FC = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="companyName">Company Name</Label>
-                    <Textarea
+                    <Input
                       id="companyName"
                       placeholder="Tech Innovations Inc"
                       value={formData.companyName}
                       onChange={handleInputChange}
                       required
-                      className="resize-none"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
-                    <Textarea
+                    <Input
                       id="industry"
                       placeholder="Technology"
                       value={formData.industry}
                       onChange={handleInputChange}
                       required
-                      className="resize-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -168,35 +167,40 @@ const CompanyRegister: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="website">Website</Label>
-                    <Textarea
+                    <Input
                       id="website"
                       placeholder="https://techinnovations.com"
                       value={formData.website}
                       onChange={handleInputChange}
                       required
-                      className="resize-none"
                     />
                   </div>
-                  <div className="space-y-2">
+                    <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
                       placeholder="Leading technology company..."
                       value={formData.description}
-                      onChange={handleInputChange}
+                      onChange={e => {
+                      handleInputChange(e);
+                      // Auto-resize textarea
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = "auto";
+                      target.style.height = `${target.scrollHeight}px`;
+                      }}
                       required
-                      className="resize-none"
+                      className="resize-none overflow-hidden"
+                      style={{ minHeight: 80 }}
                     />
-                  </div>
+                    </div>
                   <div className="space-y-2">
                     <Label htmlFor="location">Location</Label>
-                    <Textarea
+                    <Input
                       id="location"
                       placeholder="San Francisco, CA"
                       value={formData.location}
                       onChange={handleInputChange}
                       required
-                      className="resize-none"
                     />
                   </div>
                 </>

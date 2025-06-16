@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Briefcase, Sparkles, CheckCircle, RefreshCw, Bookmark } from "lucide-react";
+import { Briefcase, Sparkles, CheckCircle, Bookmark } from "lucide-react";
 import QuestionBox from "./QuestionBox";
 import { jobServices } from "../../services/jobServices";
 import { formatDistanceToNow } from "date-fns";
@@ -76,7 +75,7 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     ]);
     jobDetails = jobResponse.data;
     matchExplanation = explanationResponse.explanation || matchExplanation;
-    console.error(`Match explanation for job ${job.id}:`, matchExplanation);
+    console.error(`Fetched job details for ${job.id}:`, matchExplanation);
   } catch (error) {
     console.error(`Failed to fetch details for job ${job.id}:`, error);
     jobDetails = job;
@@ -486,6 +485,7 @@ export function DynamicJobMatching() {
     }
   };
 
+  {/*
   const handleReset = async () => {
     try {
       setAnsweredQuestionIds(new Set());
@@ -505,6 +505,7 @@ export function DynamicJobMatching() {
       console.error("Failed to reset:", error);
     }
   };
+ */}
 
   return (
     <div className="space-y-8">
@@ -518,16 +519,17 @@ export function DynamicJobMatching() {
           <h1 className="text-2xl font-bold">Jobs Dashboard</h1>
           <p className="text-muted-foreground">Answer questions to unlock better matches, then apply in one click</p>
         </div>
-
+        {/** 
         <Button
           variant="outline"
-          className="absolute right-0 mr-10"
+          style={{ position: "absolute", right: 40, top: 0 }}
           onClick={handleReset}
           title="Reset all progress and start over"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
           Reset
         </Button>
+        */}
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
