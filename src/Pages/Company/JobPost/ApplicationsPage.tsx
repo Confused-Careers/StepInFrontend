@@ -114,7 +114,6 @@ export default function CompanyApplicationsPage() {
         };
         const response = await ApplicantsService.getJobApplicants(request);
         const applicantData = Array.isArray(response.data) ? response.data : [];
-        console.log("Fetched Applicants Data:", applicantData);
         const mappedApplicants: Applicant[] = applicantData.map((dto: ApplicantCardDto) => ({
           latestExperience: dto.latestExperience || {},
           id: dto.applicationId || dto.jobSeekerId || "",
@@ -130,7 +129,6 @@ export default function CompanyApplicationsPage() {
           location: dto.location || "Not specified",
         }));
         setApplicants(mappedApplicants);
-        console.log("Mapped Applicants:", mappedApplicants);
         setAllApplicants(mappedApplicants);
 
         // Extract tags

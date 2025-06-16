@@ -62,23 +62,19 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   }, [applicationId]);
 
   const handleOpenPopup = () => {
-    console.log("Opening popup for applicant:", applicant.id);
     setShowPopup(true);
   };
 
   const handleClosePopup = () => {
-    console.log("Closing popup");
     setShowPopup(false);
   };
 
   const handleOpenFeedbackModal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log("Opening feedback modal for applicant:", applicant.id);
     setShowFeedbackModal(true);
   };
 
   const handleCloseFeedbackModal = () => {
-    console.log("Closing feedback modal");
     setShowFeedbackModal(false);
     setFeedback(existingFeedback || "");
   };

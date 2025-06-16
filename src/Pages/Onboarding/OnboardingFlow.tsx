@@ -226,7 +226,6 @@ export function OnboardingFlow() {
           } else {
             throw new Error("Resume file is required");
           }
-          console.log("Submitting registration data:", formData);
           await authServices.register(formData);
         }
         setUserEmail(registerData.email || localStorage.getItem("google_email") || "");

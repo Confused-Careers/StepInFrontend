@@ -110,13 +110,6 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
         ...(formData.description && { description: formData.description.trim() }),
         ...(formData.thesisProject && { thesisProject: formData.thesisProject.trim() })
       };
-
-      // Debug log
-      console.log('Form data before submission:', {
-        rawFormData: formData,
-        cleanedData: cleanedData
-      });
-
       await onSubmit(cleanedData);
       onClose();
     } catch (error) {

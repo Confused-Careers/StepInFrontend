@@ -270,7 +270,6 @@ const companyServices = {
           },
         }
       );
-      console.log('Company Jobs Response:', response.data);
       return response.data.data;
     } catch (error: unknown) {
       if (handleAuthError(error)) {

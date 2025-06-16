@@ -59,7 +59,6 @@ export function SkillsCard() {
     const addUserSkills = useCallback(async (skillId: string) => {
         try {
             setSkillsLoader(true);
-            console.log("hi")
             const skill: { id: string, skill: Skills } = await userServices.addUserSkills(skillId);
             setUserSkills(prevSkills => [...prevSkills, { ...skill }]);
 

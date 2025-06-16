@@ -165,13 +165,6 @@ export function WorkExperienceForm({ isOpen, onClose, onSubmit, initialData }: W
         }),
         ...(formData.description && { description: formData.description.trim() })
       };
-
-      // Debug log
-      console.log('Form data before submission:', {
-        rawFormData: formData,
-        cleanedData: cleanedData
-      });
-
       await onSubmit(cleanedData);
       onClose();
     } catch (error: any) {

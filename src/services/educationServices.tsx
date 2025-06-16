@@ -51,16 +51,6 @@ const educationServices = {
     try {
       const token = localStorage.getItem('accessToken');
       
-      // Debug log
-      console.log('Creating education with data:', {
-        endpoint: `${SERVER_BASE_URL}/api/v1/job-seeker/education`,
-        requestData: data,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      
       const response: AxiosResponse<EducationResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/job-seeker/education`,
         data,
@@ -71,9 +61,6 @@ const educationServices = {
           },
         }
       );
-      
-      // Debug log
-      console.log('Education creation response:', response.data);
       
       return response.data.data;
     } catch (error: unknown) {
