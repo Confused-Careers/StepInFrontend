@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, Sparkles, CheckCircle, RefreshCw, Bookmark } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Briefcase, Sparkles, CheckCircle, Bookmark } from "lucide-react";
 import QuestionBox from "./QuestionBox";
 import { jobServices } from "../../services/jobServices";
 import { formatDistanceToNow } from "date-fns";
@@ -67,13 +66,22 @@ const itemVariants: Variants = {
 };
 
 const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
+  let jobDetails;
   let matchExplanation = job.matchExplanation?.explanation || "Your skills and preferences align with this role.";
+  
   try {
-    const explanationResponse = await jobServices.getMatchExplanation(job.id);
+    const [jobResponse, explanationResponse] = await Promise.all([
+      jobServices.getJobById(job.id),
+      jobServices.getMatchExplanation(job.id),
+    ]);
+    jobDetails = jobResponse.data;
     matchExplanation = explanationResponse.explanation || matchExplanation;
+    console.error(`Fetched job details for ${job.id}:`, matchExplanation);
   } catch (error) {
-    console.error(`Failed to fetch match explanation for job ${job.id}:`, error);
+    console.error(`Failed to fetch details for job ${job.id}:`, error);
+    jobDetails = job;
   }
+
   const employmentTypeMap: Record<string, string> = {
     full_time: "Full-Time",
     part_time: "Part-Time",
@@ -81,33 +89,33 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     contract: "Contract",
   };
   const readableEmploymentType =
-    employmentTypeMap[job.employmentType?.toLowerCase()] || job.employmentType;
+    employmentTypeMap[jobDetails.employmentType?.toLowerCase()] || jobDetails.employmentType;
 
   return {
-    id: job.id,
-    logo: job.logoUrl || "  ",
-    title: job.title,
-    company: job.company, 
-    location: job.location,
-    tags: [job.category?.categoryName || "Unknown", readableEmploymentType],
+    id: jobDetails.id,
+    logo: jobDetails.company?.logoUrl || "  ",
+    title: jobDetails.title,
+    company: jobDetails.company?.companyName || job.company,
+    location: jobDetails.location,
+    tags: [jobDetails.category?.categoryName || "General", readableEmploymentType],
     salaryRange:
-      job.salaryMin && job.salaryMax
-        ? `$${job.salaryMin / 1000}k - $${job.salaryMax / 1000}k/yr`
+      jobDetails.salaryMin && jobDetails.salaryMax
+        ? `$${Number(jobDetails.salaryMin) / 1000}k - $${Number(jobDetails.salaryMax) / 1000}k/yr`
         : "Not specified",
-    matchPercentage: job.matchScore !== undefined ? Number(job.matchScore) || 0 : 0,
-    description: job.description,
-    responsibilities: job.responsibilities,
+    matchPercentage: jobDetails.matchScore !== undefined ? Number(jobDetails.matchScore) || 0 : 0,
+    description: jobDetails.description,
+    responsibilities: jobDetails.responsibilities || "",
     jobType: readableEmploymentType,
-    postedDate: `Posted ${formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}`,
-    whyYouFit: matchExplanation,
-    aiSummary: matchExplanation,
-    fullJobDescription: job.description,
-    fullResponsibilities: job.responsibilities,
+    postedDate: `Posted ${formatDistanceToNow(new Date(jobDetails.createdAt), { addSuffix: true })}`,
+    whyYouFit: "You are a great fit for this role because of your skills and preferences.",
+    aiSummary: "This job matches your profile based on your skills and preferences.",
+    fullJobDescription: jobDetails.description,
+    fullResponsibilities: jobDetails.responsibilities || "",
     companyDescription: job.companyDescription || "No company description available.",
-    isTargetedRecommendation: job.matchScore !== undefined ? Number(job.matchScore) > 40 : undefined,
+    isTargetedRecommendation: jobDetails.matchScore !== undefined ? Number(jobDetails.matchScore) > 40 : undefined,
     applyButtonText: "Apply",
-    isSaved: job.isSaved ?? false,
-    isApplied: job.hasApplied ?? false,
+    isSaved: jobDetails.isSaved ?? false,
+    isApplied: jobDetails.hasApplied ?? false,
   };
 };
 
@@ -478,6 +486,7 @@ export function DynamicJobMatching() {
     }
   };
 
+  {/*
   const handleReset = async () => {
     try {
       setAnsweredQuestionIds(new Set());
@@ -497,6 +506,7 @@ export function DynamicJobMatching() {
       console.error("Failed to reset:", error);
     }
   };
+ */}
 
   return (
     <div className="space-y-8">
@@ -510,16 +520,17 @@ export function DynamicJobMatching() {
           <h1 className="text-2xl font-bold">Jobs Dashboard</h1>
           <p className="text-muted-foreground">Answer questions to unlock better matches, then apply in one click</p>
         </div>
-
+        {/** 
         <Button
           variant="outline"
-          className="absolute right-0 mr-10"
+          style={{ position: "absolute", right: 40, top: 0 }}
           onClick={handleReset}
           title="Reset all progress and start over"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
           Reset
         </Button>
+        */}
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}

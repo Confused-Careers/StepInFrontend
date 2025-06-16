@@ -1,7 +1,7 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './Contexts/ThemeContext';
-import { ProtectedRoute } from './utils/ProtectedRoutes';
+import { ProtectedRoute, PublicRoute } from './utils/ProtectedRoutes';
 import LandingPage from './Pages/Landing/Landing';
 import { OnboardingFlow } from './Pages/Onboarding/OnboardingFlow';
 import IndividualLogin from './Pages/Auth/IndividualLogin';
@@ -30,15 +30,17 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/individual-login" element={<IndividualLogin />} />
-          <Route path="/individual-register" element={<IndividualRegister />} />
-          <Route path="/individual-forget-password" element={<IndividualResetPassword />} />
-          <Route path="/company/login" element={<CompanyLogin />} />
-          <Route path="/company/register" element={<CompanyRegister />} />
-          <Route path="/company/forgot-password" element={<ForgotPassword />} />
-          <Route path="/onboarding/*" element={<OnboardingFlow />} />
-          <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+          <Route element={<PublicRoute />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/individual-login" element={<IndividualLogin />} />
+            <Route path="/individual-register" element={<IndividualRegister />} />
+            <Route path="/individual-forget-password" element={<IndividualResetPassword />} />
+            <Route path="/company/login" element={<CompanyLogin />} />
+            <Route path="/company/register" element={<CompanyRegister />} />
+            <Route path="/company/forgot-password" element={<ForgotPassword />} />
+            <Route path="/onboarding/*" element={<OnboardingFlow />} />
+            <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+          </Route>
 
           {/* Protected Individual Routes */}
           <Route element={<ProtectedRoute allowedUserType="individual" />}>

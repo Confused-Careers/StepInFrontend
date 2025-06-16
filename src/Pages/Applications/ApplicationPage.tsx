@@ -206,7 +206,6 @@ export default function ApplicationsPage() {
         })
       );
       setAllApplications(enrichedApplications);
-      toast.success("Applications loaded successfully");
     } catch (error: unknown) {
       console.error('Fetch applications error:', error);
       toast.error("Failed to load applications");

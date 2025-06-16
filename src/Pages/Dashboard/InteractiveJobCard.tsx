@@ -294,9 +294,9 @@ const JobCard = ({
                 }}
               >
                 <div className="flex items-center gap-4 justify-around">
-                  <div className="rounded-md p-1 pt-4 w-24 h-24 flex items-center justify-center">
+                  <div className="rounded-md p-1 pt-4 w-24 h-24 flex items-center justify-items-start">
                     {hasValidImage(logo) ? (
-                      <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                      <div className="p-1 sm:p-2 rounded-lg w-20 h-20 flex place-items-start justify-center flex-shrink-0">
                         <img 
                           src={logo!} 
                           width={96} 
@@ -309,7 +309,7 @@ const JobCard = ({
                       <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
                     )}
                   </div>
-                  <div>
+                  <div className="flex-1 text-center mt-2 mr-3">
                     <h3 className="font-bold text-xl text-jobcardtext flex justify-center">{title}</h3>
                     <p className="text-sm text-jobcardforeground flex justify-center">
                       {company} • {location}
@@ -336,12 +336,12 @@ const JobCard = ({
                     {responsibilities}
                   </p>
                 </div>
-                <div className="flex flex-col xl:flex-row justify-between gap-3 xl:gap-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col justify-between gap-3 [@media(min-width:1248px)]:flex-row" onClick={(e) => e.stopPropagation()} px-3>
                   <Button
                     className={`
-                      bg-primary text-white rounded-[6px]
-                      xl:w-auto w-full h-[35px]
-                      font-bold text-[20px]
+                      bg-primary text-white rounded-[6px] py-2 px-6
+                      [@media(min-width:1248px)]:w-auto w-full h-[35px]
+                      font-bold text-[18px]
                       text-center align-middle
                       transition-all duration-300
                       ${isApplying ? "opacity-50 cursor-default" : ""}
@@ -353,11 +353,12 @@ const JobCard = ({
                   </Button>
                   <button
                     className={`
-                      xl:w-[99px] w-full h-[35px]
+                      [@media(min-width:1248px)]:w-auto w-full h-[35px]
                       border ${isSaved ? "border-primary bg-primary/10" : "border-primary"}
                       text-primary
                       rounded-[6px]
-                      font-bold text-[20px] leading-[140%]
+                      w-min-[150px] px-6 
+                      font-bold text-[18px] leading-[140%]
                       text-center align-middle
                       transition-all duration-300
                     `}
@@ -365,7 +366,7 @@ const JobCard = ({
                   >
                     {isSaved ? "Saved" : "Save"}
                   </button>
-                  <button className="text-jobcardforeground text-sm xl:w-auto w-full py-2" onClick={() => handleAction("reject")}>
+                  <button className="text-jobcardforeground text-[14px] [@media(min-width:1248px)]:w-auto w-full py-2" onClick={() => handleAction("reject")}>
                     Not Interested
                   </button>
                 </div>
@@ -388,7 +389,7 @@ const JobCard = ({
                 <div className="flex items-center gap-4 justify-around">
                   <div className="rounded-md p-1 w-24 h-24 flex items-center justify-center">
                     {hasValidImage(nextJobData.logo) ? (
-                      <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                      <div className="p-1 sm:p-2 rounded-lg w-20 h-20 flex items-start justify-center flex-shrink-0">
                         <img 
                           src={nextJobData.logo!} 
                           width={96} 
@@ -500,7 +501,7 @@ const JobCard = ({
                     <div className="flex items-start gap-4">
                       <div className="rounded-md p-1 w-24 h-24 flex items-center justify-start">
                         {hasValidImage(logo) ? (
-                          <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                          <div className="p-1 sm:p-2 rounded-lg w-32 h-32 flex items-center justify-center flex-shrink-0 flex-col mb-0">
                             <img 
                               src={logo!} 
                               width={96} 
@@ -508,12 +509,13 @@ const JobCard = ({
                               className="object-contain rounded-md w-full h-full" 
                               alt={`${logo}'s photo`}
                             />
+                            <div>&nbsp;</div>
                           </div>
                         ) : (
                           <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
                         )}
                       </div>
-                      <div className="flex-1 text-center">
+                      <div className="flex-1 text-center mt-2 mb-3">
                         <h2 className="font-bold text-3xl text-jobcardtext">{title}</h2>
                         <p className="text-sm text-jobcardforeground">
                           {company} • {location} • {jobType}

@@ -150,12 +150,12 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
         <div className="py-2 px-5 space-y-4 mb-2 mt-2">
           <div className="flex items-start gap-4">
             {hasValidImage(applicant.imageUrl) ? (
-              <div className="bg-white p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+              <div className="bg-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
                 <img 
                   src={applicant.imageUrl!} 
                   width={96} 
                   height={96} 
-                  className="object-contain rounded-md w-full h-full" 
+                  className="object-fill rounded-md w-full h-full" 
                   alt={`${applicant.name}'s photo`}
                 />
               </div>
@@ -163,13 +163,12 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
               <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
             )}
             <div className="flex-1 ml-5 flex flex-col justify-center">
-              <div className="flex justify-center items-center gap-2 pr-5">
+              <div className="flex justify-center items-center gap-2 pr-9">
                 <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3">{applicant.name}</h3>
               </div>
-                {/* Responsive: stack in column for screens < 1920px (15.6" FHD), row otherwise */}
-                <div className="flex flex-col [@media(min-width:1920px)]:flex-row items-center justify-center gap-2">
+                <div className="flex flex-col [@media(min-width:1248px)]:flex-row items-center justify-center gap-2">
                   <p className="text-sm text-[rgba(209,209,214,1)]">{applicant.location}</p>
-                  <span className="text-[rgba(209,209,214,1)] text-sm [@media(min-width:1920px)]:block hidden">•</span>
+                  <span className="text-[rgba(209,209,214,1)] text-sm [@media(min-width:1248px)]:block hidden">•</span>
                   <p className="px-1 py-0.5 rounded-md bg-[#0A84FF] text-white text-xs font-medium flex items-center justify-center">
                     {applicant.match}% Match
                   </p>
@@ -263,12 +262,12 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   <div className="p-4">
                     <div className="flex items-start gap-4">
                       {hasValidImage(applicant.imageUrl) ? (
-                        <div className="bg-white p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+                        <div className="bg-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
                           <img 
                             src={applicant.imageUrl!} 
                             width={96} 
                             height={96} 
-                            className="object-contain rounded-md w-full h-full" 
+                            className="object-fill rounded-md w-full h-full" 
                             alt={`${applicant.name}'s photo`}
                           />
                         </div>
