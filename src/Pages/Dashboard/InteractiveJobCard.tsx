@@ -152,6 +152,7 @@ const JobCard = ({
   const [showPopup, setShowPopup] = useState(false);
   const [readMoreJobDesc, setReadMoreJobDesc] = useState(false);
   const [readMoreResp, setReadMoreResp] = useState(false);
+  const [readMoreCompanyDesc, setReadMoreCompanyDesc] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [cardVisible, setCardVisible] = useState(true);
   const [showAppliedTag, setShowAppliedTag] = useState(false);
@@ -176,6 +177,7 @@ const JobCard = ({
     setShowPopup(false);
     setReadMoreJobDesc(false);
     setReadMoreResp(false);
+    setReadMoreCompanyDesc(false);
   };
 
   const handleAction = (action: "save" | "apply" | "reject") => {
@@ -589,7 +591,15 @@ const JobCard = ({
                   <div className="px-6 pb-6">
                     <h3 className="font-bold text-[18px] text-jobcardtext mb-0 ml-3">Company Description</h3>
                     <div className="bg-jobcardsummary2 rounded-lg p-3 border border-gray-400 border-opacity-20">
-                      <p className="text-sm text-jobcardtext m-1">{companyDescription}</p>
+                       <p className="text-sm text-jobcardtext m-1">
+                        {readMoreCompanyDesc ? companyDescription : companyDescription?.split(" ").slice(0, 15).join(" ") + "..."}
+                        <button
+                          className="text-primary text-sm mt-0 underline italic"
+                          onClick={() => setReadMoreCompanyDesc(!readMoreCompanyDesc)}
+                        >
+                          {readMoreCompanyDesc ? "Read Less" : "Read More"}
+                        </button>
+                      </p>
                     </div>
                   </div>
                 </motion.div>
