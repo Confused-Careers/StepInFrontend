@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -114,6 +114,25 @@ const ConfirmationModal = ({
   );
 };
 
+// Custom hook for auto-resizing textarea
+const useAutoResize = (value: string) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value]);
+
+  return { textareaRef, adjustHeight };
+};
+
 export default function JobPostForm() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
@@ -136,6 +155,13 @@ export default function JobPostForm() {
     requiredEducation: [{ educationLevel: "bachelor", fieldOfStudy: "", isRequired: true }],
     department: "",
   });
+
+  // Auto-resize hooks for different textareas
+  const titleResize = useAutoResize(job.title);
+  const descriptionResize = useAutoResize(job.description);
+  const requirementsResize = useAutoResize(job.requirements);
+  const locationResize = useAutoResize(job.location);
+  const departmentResize = useAutoResize(job.department);
 
   useEffect(() => {
     if (jobId) {
@@ -291,51 +317,53 @@ export default function JobPostForm() {
                   <div className="space-y-2">
                     <Label htmlFor="title" className="text-white">Job Title</Label>
                     <textarea
+                      ref={titleResize.textareaRef}
                       id="title"
                       value={job.title}
                       onChange={handleInputChange}
+                      onInput={titleResize.adjustHeight}
                       required
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
                       rows={1}
                       style={{ height: 'auto', minHeight: '40px' }}
-                      onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
-                      }}
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-white">Description</Label>
+                    <Label htmlFor="description" className="text-white">Job Description</Label>
                     <textarea
+                      ref={descriptionResize.textareaRef}
                       id="description"
                       value={job.description}
                       onChange={handleInputChange}
+                      onInput={descriptionResize.adjustHeight}
                       required
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
                       rows={1}
                       style={{ height: 'auto', minHeight: '40px' }}
-                      onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
-                      }}
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="requirements" className="text-white">Requirements</Label>
+                    <Label htmlFor="requirements" className="text-white">Job Requirements</Label>
                     <textarea
+                      ref={requirementsResize.textareaRef}
                       id="requirements"
                       value={job.requirements}
                       onChange={handleInputChange}
+                      onInput={requirementsResize.adjustHeight}
                       required
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
                       rows={1}
-                      style={{ height: 'auto', minHeight: '40px' }}
-                      onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                      style={{ 
+                        height: 'auto', 
+                        minHeight: '40px',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
                       }}
                     />
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="employmentType" className="text-white">Employment Type</Label>
                     <Select
@@ -353,6 +381,7 @@ export default function JobPostForm() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="experienceLevel" className="text-white">Experience Level</Label>
                     <Select
@@ -371,22 +400,22 @@ export default function JobPostForm() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="location" className="text-white">Location</Label>
                     <textarea
+                      ref={locationResize.textareaRef}
                       id="location"
                       value={job.location}
                       onChange={handleInputChange}
+                      onInput={locationResize.adjustHeight}
                       required
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
                       rows={1}
                       style={{ height: 'auto', minHeight: '40px' }}
-                      onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
-                      }}
                     />
                   </div>
+                  
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="isRemote"
@@ -396,22 +425,22 @@ export default function JobPostForm() {
                     />
                     <Label htmlFor="isRemote" className="text-white">Remote</Label>
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="department" className="text-white">Department</Label>
                     <textarea
+                      ref={departmentResize.textareaRef}
                       id="department"
                       value={job.department}
                       onChange={handleInputChange}
+                      onInput={departmentResize.adjustHeight}
                       required
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
                       rows={1}
                       style={{ height: 'auto', minHeight: '40px' }}
-                      onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
-                      }}
                     />
                   </div>
+                  
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="salaryMin" className="text-white">Min Salary</Label>
@@ -434,6 +463,7 @@ export default function JobPostForm() {
                       />
                     </div>
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="applicationDeadline" className="text-white">Application Deadline</Label>
                     <Input
@@ -444,6 +474,7 @@ export default function JobPostForm() {
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
                     />
                   </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button
                       type="submit"

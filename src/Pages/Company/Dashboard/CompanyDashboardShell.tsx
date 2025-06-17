@@ -1,6 +1,6 @@
 import { useState, type ReactNode, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Briefcase, User, Sparkles, Menu, X, LogOut, Key } from "lucide-react";
+import { User, Menu, X, LogOut, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 // import { ModeToggle } from "@/components/Others/ModeToggle";
 import { motion } from "framer-motion";
@@ -26,8 +26,8 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
 
   const navigation = [
-    { name: "Job Postings", href: "/company/dashboard/jobposts", icon: Sparkles },
-    { name: "Post a Job", href: "/company/dashboard/job/new", icon: Briefcase },
+    { name: "Job Postings", href: "/company/dashboard/jobposts" },
+    { name: "Post a Job", href: "/company/dashboard/job/new" },
   ];
 
   useEffect(() => {
@@ -77,7 +77,6 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
             <div className="hidden md:flex items-center space-x-2">
               {navigation.map((item) => (
                 <Button key={item.name} variant={isActive(item.href) ? "default" : "ghost"} size="sm" className="flex items-center gap-1" onClick={() => navigate(item.href)}>
-                  <item.icon className="h-4 w-4" />
                   <span>{item.name}</span>
                 </Button>
               ))}
@@ -127,7 +126,6 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
             <div className="container px-4 py-4 flex flex-col space-y-3 border-t">
               {navigation.map((item) => (
                 <Button key={item.name} variant={isActive(item.href) ? "default" : "ghost"} className="justify-start h-12 text-base" onClick={() => { navigate(item.href); setMobileMenuOpen(false); }}>
-                  <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Button>
               ))}

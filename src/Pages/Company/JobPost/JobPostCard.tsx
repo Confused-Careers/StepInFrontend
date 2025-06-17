@@ -55,7 +55,7 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
       <div className="py-2 px-5 space-y-4 mb-2 mt-2">
         <div className="flex items-start gap-4">
             {hasValidImage(job.companyLogo) ? (
-              <div className="bg-white p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 ml-4 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
+              <div className="p-1 sm:p-2 rounded-lg w-20 h-20 flex items-center justify-center flex-shrink-0">
                 <img 
                   src={job.companyLogo!} 
                   width={96} 
@@ -67,7 +67,7 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
             ) : (
               <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
             )}
-          <div className="flex-1 ml-5 justify-center items-center mr-12">
+          <div className="flex-1 ml-5 justify-center items-center mr-12 mt-4">
             <h3 className="font-bold text-[18px] text-jobcardtext flex justify-center">{job.jobTitle}</h3>
             <p className="text-sm text-jobcardforeground flex justify-center">{job.location}</p>
           </div>

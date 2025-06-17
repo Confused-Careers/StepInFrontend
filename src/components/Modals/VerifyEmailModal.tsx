@@ -64,8 +64,8 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
         otpType: "email_verification",
       });
       setSuccess(response.message);
-      toast.success("OTP resent successfully!", {
-        description: "Please check your email for the new OTP.",
+      toast.success("Authentication Code resent successfully!", {
+        description: "Please check your email for the new authentication code.",
       });
     } catch (err: unknown) {
       type ErrorWithMessage = { message: string };

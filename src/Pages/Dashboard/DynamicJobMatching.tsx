@@ -76,7 +76,6 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     ]);
     jobDetails = jobResponse.data;
     matchExplanation = explanationResponse.explanation || matchExplanation;
-    console.error(`Fetched job details for ${job.id}:`, matchExplanation);
   } catch (error) {
     console.error(`Failed to fetch details for job ${job.id}:`, error);
     jobDetails = job;
@@ -313,7 +312,7 @@ export function DynamicJobMatching() {
         const insight: Insight = {
           id: answer.questionId,
           questionText: question.questionText,
-          text: `${answer.selectedOption.insight || "No insight available"} (Selected: "${answer.selectedOption.optionText || "Unknown"}" for "${question.questionText}")`,
+          text: `${answer.selectedOption.insight || "No insight available"}`,
           category: question.insightCategory || "preferences",
           tier: answer.tierWhenAnswered,
         };
@@ -353,7 +352,8 @@ export function DynamicJobMatching() {
 
       // Fetch the latest answer to get the insight
       const latestAnswer = (await getAnswerHistory(currentTier)).find((a) => a.questionId === questionId);
-      const insightText = latestAnswer?.selectedOption?.insight || `You selected "${optionText}" for "${question.questionText}".`;
+      console.log("Latest answer for question:", latestAnswer);
+      const insightText = latestAnswer?.selectedOption?.insight || "No insight available";
 
       const insight: Insight = {
         id: questionId,
@@ -486,28 +486,6 @@ export function DynamicJobMatching() {
     }
   };
 
-  {/*
-  const handleReset = async () => {
-    try {
-      setAnsweredQuestionIds(new Set());
-      setColumnInsights([[], [], []]);
-      setColumnQuestions([null, null, null]);
-      setAvailableQuestions([]);
-      setCurrentTier(1);
-      setProfileCompletion(0);
-      setMatchedJobs([]);
-      setExpandedJob(null);
-      setSavedJobs([]);
-      setAppliedJobs([]);
-      setRejectedJobs([]);
-      setCurrentMobileQuestionIndex(0);
-      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress()]);
-    } catch (error) {
-      console.error("Failed to reset:", error);
-    }
-  };
- */}
-
   return (
     <div className="space-y-8">
       <motion.div
@@ -520,40 +498,12 @@ export function DynamicJobMatching() {
           <h1 className="text-2xl font-bold">Jobs Dashboard</h1>
           <p className="text-muted-foreground">Answer questions to unlock better matches, then apply in one click</p>
         </div>
-        {/** 
-        <Button
-          variant="outline"
-          style={{ position: "absolute", right: 40, top: 0 }}
-          onClick={handleReset}
-          title="Reset all progress and start over"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Reset
-        </Button>
-        */}
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
       >
-        {/** 
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-muted-foreground">{`Profile Completion (Tier ${currentTier}/5)`}</span>
-          <span className="text-sm text-muted-foreground">{Math.round(profileCompletion)}%</span>
-        </div>
-        <Progress
-          value={profileCompletion}
-          className="h-2 bg-gradient-to-r from-primary/20 to-primary/5 "
-        >
-          <motion.div
-            className="h-full bg-gradient-to-r from-primary to-primary/80"
-            initial={{ width: 0 }}
-            animate={{ width: `${profileCompletion}%` }}
-            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-          />
-        </Progress>
-        */}
       </motion.div>
       <div className="mb-12 px-4 mt-3">
         <motion.h2
@@ -593,7 +543,7 @@ export function DynamicJobMatching() {
             })()
           ) : (
             [0, 1, 2].map((columnIndex) => (
-              <div key={`column-${columnIndex}`} className="space-y-4 min-h-[200px] w-[95%]">
+              <div key={`column-${columnIndex}`} className="space-y-4 min-h-[200px] w-[95%] ">
                 <AnimatePresence mode="wait">
                   {columnInsights[columnIndex].map((insight, idx) => (
                     <motion.div
@@ -602,13 +552,13 @@ export function DynamicJobMatching() {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      className="mb-2 dark:bg-[rgba(17, 8,21,1)]"
+                      className="mb-2"
                     >
-                      <Card className="dark:bg-[rgba(17, 8,21,1)] border-2 border-blue-500 items-center">
-                        <CardContent className="px-2 py-1 dark:bg-[rgba(17, 8,21,1)]">
+                      <Card className="dark:bg-[#202536] bg-[#202536] border-2 border-blue-500 items-center">
+                        <CardContent className="px-2 py-1 dark:bg-[#202536] bg-[#202536]">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm text-gray-700 dark:text-gray-300 dark:bg-[rgba(17, 8,21,1)] items-center text-center">
-                              {insight.text} (Tier {insight.tier})
+                            <p className="text-sm dark:text-gray-300 text-gray-300 bg-[#202536] items-center text-center">
+                              {insight.text}
                             </p>
                           </div>
                         </CardContent>
@@ -763,7 +713,7 @@ export function DynamicJobMatching() {
                   <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium mb-2">No saved jobs</h3>
                   <p className="text-muted-foreground text-center">
-                    Save jobs you are interested in to view later!
+                    Answer a few questions to unlock your job matches
                   </p>
                 </motion.div>
               )}
@@ -809,7 +759,7 @@ export function DynamicJobMatching() {
                 >
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium mb-2">No applied jobs</h3>
-                  <p className="text-muted-foreground text-center">Apply to jobs to track them here!</p>
+                  <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
                 </motion.div>
               )}
             </motion.div>

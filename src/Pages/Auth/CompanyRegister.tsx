@@ -176,7 +176,7 @@ const CompanyRegister: React.FC = () => {
                     />
                   </div>
                     <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">Company Description</Label>
                     <Textarea
                       id="description"
                       placeholder="Leading technology company..."
