@@ -554,13 +554,11 @@ export function DynamicJobMatching() {
                       exit="exit"
                       className="mb-2"
                     >
-                      <Card className="dark:bg-[#202536] bg-[#202536] border-2 border-blue-500 items-center">
-                        <CardContent className="px-2 py-1 dark:bg-[#202536] bg-[#202536]">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm dark:text-gray-300 text-gray-300 bg-[#202536] items-center text-center">
+                      <Card className="dark:bg-[rgba(17, 8,21,1)] bg-[#202536] border-2 border-blue-500 items-center custom-bg-dark">
+                        <CardContent className="px-2 py-1 dark:bg-[rgba(17, 8,21,1)] bg-[#202536] custom-bg-dark">
+                            <p className="text-sm dark:text-gray-300 text-gray-300 bg-[#202536] items-center text-center custom-bg-dark">
                               {insight.text}
                             </p>
-                          </div>
                         </CardContent>
                       </Card>
                     </motion.div>

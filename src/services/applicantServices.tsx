@@ -106,7 +106,6 @@ export const ApplicantsService = {
           sortOrder: request.sortOrder,
         },
       });
-      console.log("Response from getJobApplicants:", response.data);
       return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) return { data: [] };

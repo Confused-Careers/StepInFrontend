@@ -28,6 +28,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
   display: none; /* For Chrome, Safari, and Opera */
 }
 
+.custom-bg-dark {
+  background-color: rgba(32, 37, 54, 1) !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

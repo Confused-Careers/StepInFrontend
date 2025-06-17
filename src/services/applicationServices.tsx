@@ -190,8 +190,6 @@ const applicationServices = {
         }
       );
 
-      console.log('API Response:', response.data);
-
       const responseData = response.data.data || response.data;
       const applications = responseData.applications || [];
 
