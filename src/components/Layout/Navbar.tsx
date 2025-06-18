@@ -21,7 +21,7 @@ const Navbar = () => {
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
+            {/* <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
                 Features
             </a>
             <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
@@ -32,7 +32,7 @@ const Navbar = () => {
             </a>
             <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-colors">
                 Testimonials
-            </a>
+            </a> */}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -59,7 +59,7 @@ const Navbar = () => {
             transition={{ duration: 0.3 }}
         >
             <div className="container py-4 flex flex-col space-y-4 border-t">
-            <a
+            {/* <a
                 href="#features"
                 className="text-sm font-medium hover:text-primary transition-colors px-2 py-2"
                 onClick={() => setMobileMenuOpen(false)}
@@ -79,7 +79,7 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
             >
                 Testimonials
-            </a>
+            </a> */}
             <Button onClick={() => navigate("/login")} variant="ghost" className="justify-start">
                 Log in
             </Button>

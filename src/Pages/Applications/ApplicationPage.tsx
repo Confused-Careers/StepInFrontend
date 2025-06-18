@@ -277,7 +277,7 @@ export default function ApplicationsPage() {
                               salary: app.job.salaryMin && app.job.salaryMax
                                 ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}`
                                 : "N/A",
-                              matchPercentage: app.matchScore ? `${app.matchScore}%` : "N/A",
+                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
                               feedback: app.feedback ?? "",
                               interviewDate: app.nextStepDate,
                             }}

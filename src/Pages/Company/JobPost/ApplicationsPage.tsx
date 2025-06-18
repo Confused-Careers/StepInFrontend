@@ -124,7 +124,7 @@ export default function CompanyApplicationsPage() {
           currentPosition: dto.currentPosition || "Not specified",
           strength: dto.strengths || [],
           weakness: dto.weaknesses || [],
-          match: dto.matchPercentage?.toString() || "0",
+          match: dto.matchPercentage ? Math.round(dto.matchPercentage).toString() : "0",
           location: dto.location || "Not specified",
           imageUrl: dto.profilePictureUrl || null,
         }));

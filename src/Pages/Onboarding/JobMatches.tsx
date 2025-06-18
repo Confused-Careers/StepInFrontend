@@ -62,7 +62,7 @@ export function JobMatches({ matches, onComplete }: JobMatchesProps) {
             <Card className="overflow-hidden">
               <div
                 className={`h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/50 animate-gradient-shift`}
-                style={{ width: `${job.matchPercentage}%` }}
+                style={{ width: `${Math.round(job.matchPercentage)}%` }}
               />
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -104,7 +104,7 @@ export function JobMatches({ matches, onComplete }: JobMatchesProps) {
                       variant="outline"
                       className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/20"
                     >
-                      {job.matchPercentage}% Match
+                      {Math.round(job.matchPercentage)}% Match
                     </Badge>
                     <Button
                       size="sm"

@@ -101,7 +101,7 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
       jobDetails.salaryMin && jobDetails.salaryMax
         ? `$${Number(jobDetails.salaryMin) / 1000}k - $${Number(jobDetails.salaryMax) / 1000}k/yr`
         : "Not specified",
-    matchPercentage: jobDetails.matchScore !== undefined ? Number(jobDetails.matchScore) || 0 : 0,
+    matchPercentage: jobDetails.matchScore !== undefined ? Math.round(Number(jobDetails.matchScore)) || 0 : 0,
     description: jobDetails.description,
     responsibilities: jobDetails.responsibilities || "",
     jobType: readableEmploymentType,

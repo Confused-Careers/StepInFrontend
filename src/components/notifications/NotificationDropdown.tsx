@@ -154,7 +154,7 @@ export function NotificationDropdown() {
           <>
             <p>Company: {data.companyName}</p>
             <p>Job Title: {data.jobTitle}</p>
-            <p>Match Score: {data.matchScore}%</p>
+            <p>Match Score: {Math.round(data.matchScore)}%</p>
             <p>Location: {data.location}</p>
             <p>Salary: {data.salaryRange}</p>
             <p>Matching Skills: {data.matchingSkills.join(', ')}</p>

@@ -59,7 +59,7 @@ export function JobCard({
       transition={{ duration: 0.3, delay }}
     >
       <Card className="overflow-hidden border-primary/10 shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-primary/5 dark:from-gray-900 dark:to-primary/10">
-        <div className="h-1 bg-gradient-to-r from-primary to-primary/40" style={{ width: `${job.matchPercentage}%` }} />
+        <div className="h-1 bg-gradient-to-r from-primary to-primary/40" style={{ width: `${Math.round(job.matchPercentage)}%` }} />
         <div className="p-6 flex flex-col h-full">
           <div className="flex items-start gap-4 mb-4">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20 p-1">
@@ -104,7 +104,7 @@ export function JobCard({
           <div className="mt-auto pt-4 border-t border-primary/10">
             <div className="flex items-center gap-1">
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 mr-2">
-                {job.matchPercentage}% Match
+                {Math.round(job.matchPercentage)}% Match
               </Badge>
               <div className="flex flex-wrap gap-1">
                 {job.skills.slice(0, 2).map((skill) => (

@@ -3,11 +3,9 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; 
 import { ArrowRight, Sparkles, CheckCircle, Star } from "lucide-react";
-import { TestimonialsSection } from "./TestimonialCarousel";
 import { HowItWorksSection } from "./HowItWorks";
 import Footer from "@/components/Layout/Footer";
 import Navbar from "@/components/Layout/Navbar";
-import { JobsSection } from "./JobPost";
 import ResponsiveFeatureStrip from "./FeaturesSection";
 import mainimage from "@/assets/mainimage.png";
 
@@ -103,32 +101,9 @@ export default function LandingPage() {
                     </span>
                     <span className="absolute inset-0 scale-0 rounded-md bg-white/20 group-active:scale-100 group-active:duration-200"></span>
                   </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="group relative overflow-hidden transition-all duration-300"
-                  >
-                    <span className="relative z-10">Learn More</span>
-                    <span className="absolute inset-0 bg-primary/10 scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100"></span>
-                    <span className="absolute inset-0 scale-0 rounded-md bg-white/20 group-active:scale-100 group-active:duration-200"></span>
-                  </Button>
                 </div>
 
-                <div className="flex items-center gap-4 pt-4">
-                  <div className="flex -space-x-3">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-background"
-                      >
-                        <span className="text-xs font-medium">{i}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">1,000+</span> people found jobs this week
-                  </p>
-                </div>
+                
               </motion.div>
 
               <motion.div
@@ -199,21 +174,6 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             </div>
-
-            <div className="mt-20">
-              <p className="text-center text-sm text-muted-foreground mb-6">TRUSTED BY LEADING COMPANIES</p>
-              <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="opacity-50 hover:opacity-100 transition-opacity">
-                    <img
-                      src={`/placeholder.svg?height=30&width=120&text=Company${i}`}
-                      alt={`Company ${i}`}
-                      className="h-8 w-auto"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 
@@ -222,12 +182,6 @@ export default function LandingPage() {
 
         {/* How It Works Section */}
         <HowItWorksSection />
-
-        {/* Jobs Section */}
-        <JobsSection/>
-
-        {/* Testimonials Section */}
-        <TestimonialsSection/>
 
         <section id="cta" className="py-20 relative overflow-hidden">
           <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -271,7 +225,6 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-      <Footer/>
     </div>
   );
 }
