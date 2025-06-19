@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 
+// PROTECTED ROUTE
 interface ProtectedRouteProps {
   allowedUserType: 'individual' | 'company';
 }
@@ -27,13 +28,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedUserType 
   return <Outlet />;
 };
 
+// PUBLIC ROUTE
 export const PublicRoute: React.FC = () => {
   const accessToken = localStorage.getItem('accessToken');
   const userType = localStorage.getItem('userType');
-
   const isAuthenticated = !!accessToken;
 
-  if (isAuthenticated) {
+  const currentPath = window.location.pathname;
+
+  const alwaysPublicPaths = [
+    '/individual-forget-password',
+    '/company/forgot-password'
+  ];
+
+  const isAlwaysPublic = alwaysPublicPaths.some(path => currentPath.startsWith(path));
+
+  if (isAuthenticated && !isAlwaysPublic) {
     if (userType === 'company') {
       return <Navigate to="/company/dashboard/jobposts" replace />;
     } else if (userType === 'individual') {

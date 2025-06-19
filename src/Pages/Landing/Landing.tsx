@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; 
-import { ArrowRight, Sparkles, CheckCircle, Star } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { HowItWorksSection } from "./HowItWorks";
 import Footer from "@/components/Layout/Footer";
 import Navbar from "@/components/Layout/Navbar";
 import ResponsiveFeatureStrip from "./FeaturesSection";
-import mainimage from "@/assets/mainimage.png";
 import { TestimonialsSection } from "./TestimonialCarousel";
 
 export default function LandingPage() {
