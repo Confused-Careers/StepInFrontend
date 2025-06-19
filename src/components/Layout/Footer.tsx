@@ -18,13 +18,13 @@ const Footer = () => {
         <div className="flex flex-col items-center md:items-end gap-2">
           <span className="font-semibold text-base mb-1">Contact Us</span>
           <div className="flex gap-4 mb-2">
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+            <a href="https://x.com/StepInCompany" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
               <X className="h-6 w-6 hover:text-primary transition-colors" />
             </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+            <a href="https://www.linkedin.com/company/stepincompany/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
               <Linkedin className="h-6 w-6 hover:text-primary transition-colors" />
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <a href="https://www.instagram.com/stepincompany?igsh=aXpvbXpjYTFsMGpm&utm_source=qr" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
               <Instagram className="h-6 w-6 hover:text-primary transition-colors" />
             </a>
           </div>
