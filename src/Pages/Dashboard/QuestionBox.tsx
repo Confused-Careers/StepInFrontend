@@ -103,7 +103,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: 0.2 }}
               >
-                <div className="flex items-center gap-3 bg-white dark:bg-black">
+                <div className="flex items-center gap-3 bg-white dark:bg-[#202536]">
                   {categoryIcons[question.insightCategory || "preferences"]}
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     You selected {question.options.find((opt) => opt.id === selectedAnswer)?.optionText}

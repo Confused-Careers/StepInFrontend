@@ -29,6 +29,7 @@ function App() {
     <ThemeProvider>
       <Router>
         <Routes>
+
           {/* Public Routes */}
           <Route element={<PublicRoute />}>
             <Route path="/" element={<LandingPage />} />
@@ -62,6 +63,7 @@ function App() {
 
           {/* Catch-all Route */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
         <Toaster />
       </Router>

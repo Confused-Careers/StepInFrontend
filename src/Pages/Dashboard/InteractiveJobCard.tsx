@@ -325,7 +325,7 @@ const JobCard = ({
                 </div>
                 <div className="flex justify-end items-center mb-4 gap-3 mt-2">
                   <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{salaryRange}</span>
-                  <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{matchPercentage}% Match</span>
+                  <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{Math.round(matchPercentage)}% Match</span>
                 </div>
                 <div className="bg-jobcardsecondary1 rounded-lg p-3 mb-4 border border-gray-400 border-opacity-20">
                   <p className="text-sm text-jobcardtext">{description}</p>
@@ -418,7 +418,7 @@ const JobCard = ({
                 </div>
                 <div className="flex justify-end items-center mb-4 gap-3 mt-0">
                   <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{nextJobData.salaryRange}</span>
-                  <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{nextJobData.matchPercentage}% Match</span>
+                  <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{Math.round(nextJobData.matchPercentage)}% Match</span>
                 </div>
                 <div className="bg-jobcardsecondary rounded-lg p-3 mb-4 border border-gray-400 border-opacity-20">
                   <p className="text-sm text-jobcardtext">{nextJobData.description}</p>
@@ -531,7 +531,7 @@ const JobCard = ({
                         </span>
                       ))}
                       <span className="text-jobcardforeground text-sm min-w-[80px] text-center">{postedDate}</span>
-                      <span className="bg-primary text-white text-xs rounded-md px-2 py-1 min-w-[80px] text-center">{matchPercentage}% Match</span>
+                      <span className="bg-primary text-white text-xs rounded-md px-2 py-1 min-w-[80px] text-center">{Math.round(matchPercentage)}% Match</span>
                       {isTargetedRecommendation && (
                         <span className="bg-green-500 text-white text-xs rounded-md px-2 py-1 min-w-[80px] text-center">Targeted</span>
                       )}

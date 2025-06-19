@@ -79,7 +79,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
                       variant="outline"
                       className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/20 px-3 py-1 text-sm"
                     >
-                      {job.matchPercentage}% Match
+                      {Math.round(job.matchPercentage)}% Match
                     </Badge>
                     <Badge variant="outline" className="px-3 py-1 text-sm">
                       {job.jobType}

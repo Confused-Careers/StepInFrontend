@@ -58,7 +58,7 @@ const ResponsiveFeatureStrip = () => {
                 <span>Powerful Features</span>
               </div>
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">
-                Features That Make a Difference
+              Why StepIn Feels Smarter
               </h2>
               <p className="text-muted-foreground mt-4 text-lg">
                 Our AI-powered platform offers unique features designed to match you with your ideal job.

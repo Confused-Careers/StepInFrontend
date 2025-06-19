@@ -62,7 +62,7 @@ export function JobDetailSection({ selectedJob, relatedJobs, onBackClick, onJobC
                             variant="outline"
                             className="text-xs bg-primary/10 text-primary border-primary/20"
                           >
-                            {job.matchPercentage}% Match
+                            {Math.round(job.matchPercentage)}% Match
                           </Badge>
                         </div>
                       </div>

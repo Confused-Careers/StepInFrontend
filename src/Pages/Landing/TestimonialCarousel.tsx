@@ -195,7 +195,7 @@ export function TestimonialsCarousel() {
                   <div className="rounded-full overflow-hidden w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 p-0.5">
                     <div className="rounded-full overflow-hidden w-full h-full">
                       <img
-                        src={testimonial.image || "/placeholder.svg"}
+                        src={'/src/assets/avatar.png'}
                         alt={testimonial.name}
                         className="object-cover w-full h-full"
                       />
@@ -272,7 +272,7 @@ export function TestimonialsSection() {
               <Star className="h-3.5 w-3.5" />
               <span>Success Stories</span>
             </div>
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">What Our Users Say</h2>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">What Real Users Say About StepIn</h2>
             <p className="text-muted-foreground mt-4 text-lg">
               Hear from professionals who found their dream jobs through StepIn.
               <span className="hidden md:inline"> Swipe to explore more testimonials.</span>
