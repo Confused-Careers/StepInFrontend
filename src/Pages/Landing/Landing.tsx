@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; 
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles} from "lucide-react";
 import { HowItWorksSection } from "./HowItWorks";
 import Footer from "@/components/Layout/Footer";
 import Navbar from "@/components/Layout/Navbar";
 import ResponsiveFeatureStrip from "./FeaturesSection";
 import { TestimonialsSection } from "./TestimonialCarousel";
+import heroVideo from "@/assets/hero-bg.mp4";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ export default function LandingPage() {
             muted
             playsInline
             className="absolute inset-0 w-full h-full object-cover -z-20"
-            src="/src/assets/hero-bg.mp4"
+            src={heroVideo}
           />
           <div className="absolute inset-0 -z-10 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent" />

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import avatarImage from "@/assets/avatar.png";
 
 const testimonials = [
   {
@@ -195,7 +196,7 @@ export function TestimonialsCarousel() {
                   <div className="rounded-full overflow-hidden w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 p-0.5">
                     <div className="rounded-full overflow-hidden w-full h-full">
                       <img
-                        src={'/src/assets/avatar.png'}
+                        src={avatarImage}
                         alt={testimonial.name}
                         className="object-cover w-full h-full"
                       />
