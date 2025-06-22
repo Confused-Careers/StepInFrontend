@@ -47,7 +47,43 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [existingFeedback, setExistingFeedback] = useState<string | null>(null);
   const [applicationId] = useState(applicant.id);
 
-    const hasValidImage = (imageUrl?: string | null): boolean => {
+  const formatEducation = (education: string) => {
+    if (!education || education === "Not specified") return education;
+    
+    // Common degree type mappings
+    const degreeTypeMap: Record<string, string> = {
+      'bachelor': "Bachelor's",
+      'bachelors': "Bachelor's",
+      'master': "Master's", 
+      'masters': "Master's",
+      'phd': "PhD",
+      'doctorate': "Doctorate",
+      'associate': "Associate's",
+      'associates': "Associate's",
+      'diploma': "Diploma",
+      'certificate': "Certificate",
+      'high school': "High School",
+      'highschool': "High School"
+    };
+
+    // Split the education string into parts
+    const parts = education.split(' in ');
+    if (parts.length >= 2) {
+      const degreeType = parts[0].toLowerCase().trim();
+      const rest = parts.slice(1).join(' in ');
+      
+      // Format the degree type
+      const formattedDegreeType = degreeTypeMap[degreeType] || 
+        degreeType.charAt(0).toUpperCase() + degreeType.slice(1);
+      
+      return `${formattedDegreeType} in ${rest}`;
+    }
+    
+    // If no "in" found, just capitalize the first letter
+    return education.charAt(0).toUpperCase() + education.slice(1);
+  };
+
+  const hasValidImage = (imageUrl?: string | null): boolean => {
     return imageUrl !== null && 
            imageUrl !== undefined && 
            imageUrl.trim() !== "" && 
@@ -177,7 +213,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
           </div>
 
           <div className="rounded-lg px-8 py-2 text-center border border-[rgba(42,42,42,1)]" style={{ backgroundColor: "rgba(17, 17, 19, 1)" }}>
-            <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{applicant.education}</p>
+            <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{formatEducation(applicant.education)}</p>
             <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{applicant.currentPosition} @ {applicant.currentCompany}</p>
           </div>
 
@@ -320,7 +356,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   <div className="px-6 pb-6">
                     <h3 className="font-bold text-[18px] text-white mb-0 ml-3">Education</h3>
                     <div className="rounded-lg p-3 border border-[rgba(255,255,255,0.03)] bg-[rgba(26,31,43,1)]">
-                      <p className="text-sm text-white m-1">{applicant.education}</p>
+                      <p className="text-sm text-white m-1">{formatEducation(applicant.education)}</p>
                     </div>
                   </div>
                 </motion.div>

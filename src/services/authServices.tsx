@@ -244,9 +244,9 @@ const authServices = {
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
-        throw new Error(error.response.data.message || 'OTP resend failed');
+        throw new Error(error.response.data.message || 'Authentication Code resend failed');
       }
-      throw new Error('OTP resend failed');
+      throw new Error('Authentication Code resend failed');
     }
   },
 

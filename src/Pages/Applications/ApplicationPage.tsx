@@ -44,6 +44,24 @@ interface Application {
 function ApplicationDetail({ application, onBackClick }: { application: Application | null; onBackClick: () => void }) {
   if (!application) return null;
 
+  // Helper to format employment type
+  const formatEmploymentType = (type?: string) => {
+    if (!type) return "N/A";
+    
+    // Handle specific cases
+    const typeMap: Record<string, string> = {
+      'full_time': 'Full-Time',
+      'part_time': 'Part-Time', 
+      'contract': 'Contract',
+      'internship': 'Internship'
+    };
+    
+    return typeMap[type] || type
+      .split("_")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("-");
+  };
+
   const statusLabels = {
     "rejected": "Rejected",
     "interview": "Interview",
@@ -71,7 +89,7 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
 
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="bg-white p-2 rounded-lg w-12 h-12 flex items-center justify-center">
+          <div className="p-2 rounded-lg w-12 h-12 flex items-center justify-center">
             <img
               src={application.company.logoUrl || ""}
               alt={`${application.company.companyName} logo`}
@@ -105,7 +123,7 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
 
         <div>
           <h3 className="font-semibold text-sm">Employment Type</h3>
-          <p className="text-sm text-muted-foreground">{application.job.employmentType}</p>
+          <p className="text-sm text-muted-foreground">{formatEmploymentType(application.job.employmentType)}</p>
         </div>
 
         {(application.job.salaryMin || application.job.salaryMax) && (
@@ -255,7 +273,16 @@ export default function ApplicationsPage() {
                         // Helper to format employment type
                         const formatEmploymentType = (type?: string) => {
                           if (!type) return "N/A";
-                          return type
+                          
+                          // Handle specific cases
+                          const typeMap: Record<string, string> = {
+                            'full_time': 'Full-Time',
+                            'part_time': 'Part-Time', 
+                            'contract': 'Contract',
+                            'internship': 'Internship'
+                          };
+                          
+                          return typeMap[type] || type
                             .split("_")
                             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                             .join("-");

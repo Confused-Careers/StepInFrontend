@@ -163,6 +163,7 @@ export function JobsPostPage() {
           jobType: job.employmentType === "full_time" ? "Full Time" : 
                    job.employmentType === "part_time" ? "Part Time" : 
                    job.employmentType === "contract" ? "Contract" : 
+                   job.employmentType === "internship" ? "Internship" :
                    job.employmentType || "Full Time",
           location: job.isRemote ? "Remote" : job.location,
           salary: job.salaryMin && job.salaryMax ? `$${parseFloat(String(job.salaryMin)).toLocaleString()} - $${parseFloat(String(job.salaryMax)).toLocaleString()}/yr` : "Negotiable",

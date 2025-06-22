@@ -31,15 +31,15 @@ const IndividualResetPassword: React.FC = () => {
     try {
       const response = await authServices.forgotPassword({ email });
       setSuccess(response.message); // "If the email exists, a password reset OTP has been sent"
-      toast.success("OTP sent successfully!", {
-        description: "Please check your email for the OTP.",
+      toast.success("Authentication Code sent successfully!", {
+        description: "Please check your email for the Authentication Code.",
       });
       setShowResetModal(true); // Open modal to enter OTP and new password
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || "Failed to send reset OTP. Please try again.");
+        setError(err.message || "Failed to send reset Authentication Code. Please try again.");
       } else {
-        setError("Failed to send reset OTP. Please try again.");
+        setError("Failed to send reset Authentication Code. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -61,7 +61,7 @@ const IndividualResetPassword: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Reset Password</CardTitle>
             <CardDescription className="text-center">
-              Enter your email to receive a password reset OTP
+              Enter your email to receive a password reset Authentication Code
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,7 +84,7 @@ const IndividualResetPassword: React.FC = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Sending..." : "Send Reset OTP"}
+                {isLoading ? "Sending..." : "Send Reset Authentication Code"}
               </Button>
               <Button
                 variant="outline"

@@ -518,7 +518,7 @@ const JobCard = ({
                       <div className="flex-1 text-center mt-2 mb-3">
                         <h2 className="font-bold text-3xl text-jobcardtext">{title}</h2>
                         <p className="text-sm text-jobcardforeground">
-                          {company} • {location} • {jobType}
+                          {company} • {location}
                         </p>
                       </div>
                       <div className="w-24"></div>

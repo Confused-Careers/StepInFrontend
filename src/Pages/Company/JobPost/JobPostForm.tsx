@@ -214,7 +214,11 @@ export default function JobPostForm() {
   };
 
   const handleCheckboxChange = (checked: boolean) => {
-    setJob((prev) => ({ ...prev, isRemote: checked }));
+    setJob((prev) => ({ 
+      ...prev, 
+      isRemote: checked,
+      location: checked ? "" : prev.location // Clear location when remote is selected
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -402,15 +406,19 @@ export default function JobPostForm() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="location" className="text-white">Location</Label>
+                    <Label htmlFor="location" className="text-white">Location (City, State)</Label>
                     <textarea
                       ref={locationResize.textareaRef}
                       id="location"
                       value={job.location}
                       onChange={handleInputChange}
                       onInput={locationResize.adjustHeight}
-                      required
-                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      required={!job.isRemote}
+                      disabled={job.isRemote}
+                      placeholder={job.isRemote ? "Not required for remote positions" : "Enter city and state"}
+                      className={`bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden ${
+                        job.isRemote ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                       rows={1}
                       style={{ height: 'auto', minHeight: '40px' }}
                     />

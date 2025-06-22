@@ -37,7 +37,7 @@ const JobActionModal: React.FC<JobActionModalProps> = ({ open, onClose, action, 
           {action === "apply" && (
             <div className="grid gap-2">
               <label htmlFor="coverLetter" className="text-sm font-medium">
-                Cover Letter (Optional)
+                Want to share anything else? (Optional)
               </label>
               <Textarea
                 id="coverLetter"
@@ -48,18 +48,6 @@ const JobActionModal: React.FC<JobActionModalProps> = ({ open, onClose, action, 
               />
             </div>
           )}
-          <div className="grid gap-2">
-            <label htmlFor="notes" className="text-sm font-medium">
-              Notes (Optional)
-            </label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes here..."
-              className="min-h-[100px] bg-background"
-            />
-          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleSkip}>

@@ -20,7 +20,7 @@ import notificationServices, {
 } from '@/services/notificationService';
 import { format } from 'date-fns';
 
-type ActiveTabType = 'all' | 'unread' | 'jobs' | 'system';
+type ActiveTabType = 'all' | 'unread'; // | 'jobs' | 'system';
 
 export function NotificationDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -34,7 +34,7 @@ export function NotificationDropdown() {
     setLoading(true);
     try {
       let response;
-      const currentLimit = activeTab === 'unread' ? 20 : activeTab === 'system' ? 5 : 10;
+      const currentLimit = activeTab === 'unread' ? 20 : 10; // activeTab === 'system' ? 5 : 10;
       
       switch (activeTab) {
         case 'unread':
@@ -44,20 +44,20 @@ export function NotificationDropdown() {
             limit: currentLimit
           });
           break;
-        case 'jobs':
-          response = await notificationServices.getAllNotifications({ 
-            type: 'job_application',
-            page: currentPage,
-            limit: currentLimit
-          });
-          break;
-        case 'system':
-          response = await notificationServices.getAllNotifications({ 
-            type: 'system_announcement',
-            page: currentPage,
-            limit: currentLimit
-          });
-          break;
+        // case 'jobs':
+        //   response = await notificationServices.getAllNotifications({ 
+        //     type: 'job_application',
+        //     page: currentPage,
+        //     limit: currentLimit
+        //   });
+        //   break;
+        // case 'system':
+        //   response = await notificationServices.getAllNotifications({ 
+        //     type: 'system_announcement',
+        //     page: currentPage,
+        //     limit: currentLimit
+        //   });
+        //   break;
         default:
           response = await notificationServices.getAllNotifications({ 
             page: currentPage,
@@ -259,11 +259,11 @@ export function NotificationDropdown() {
               )}
             </div>
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTabType)}>
-              <TabsList className="w-full grid grid-cols-4">
+              <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="unread">Unread</TabsTrigger>
-                <TabsTrigger value="jobs">Jobs</TabsTrigger>
-                <TabsTrigger value="system">System</TabsTrigger>
+                {/* <TabsTrigger value="jobs">Jobs</TabsTrigger> */}
+                {/* <TabsTrigger value="system">System</TabsTrigger> */}
               </TabsList>
               <TabsContent value={activeTab}>
                 <div className="max-h-[400px] overflow-y-auto">

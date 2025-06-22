@@ -171,7 +171,25 @@ export default function ProfilePage() {
     try {
       setLoadingExperiences(true);
       const data = await workExperienceServices.getAllWorkExperiences();
-      setExperiences(data);
+      
+      // Sort experiences by date - most recent first
+      const sortedExperiences = data.sort((a, b) => {
+        // If one is current and the other isn't, current comes first
+        if (a.isCurrent && !b.isCurrent) return -1;
+        if (!a.isCurrent && b.isCurrent) return 1;
+        
+        // For current positions, sort by start date (most recent first)
+        if (a.isCurrent && b.isCurrent) {
+          return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        }
+        
+        // For completed positions, sort by end date (most recent first)
+        const aEndDate = a.endDate ? new Date(a.endDate).getTime() : 0;
+        const bEndDate = b.endDate ? new Date(b.endDate).getTime() : 0;
+        return bEndDate - aEndDate;
+      });
+      
+      setExperiences(sortedExperiences);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch work experiences");
     } finally {
@@ -183,7 +201,25 @@ export default function ProfilePage() {
     try {
       setLoadingEducations(true);
       const data = await educationServices.getAllEducation();
-      setEducations(data);
+      
+      // Sort education by date - most recent first
+      const sortedEducations = data.sort((a, b) => {
+        // If one has no end date (ongoing) and the other does, ongoing comes first
+        if (!a.endDate && b.endDate) return -1;
+        if (a.endDate && !b.endDate) return 1;
+        
+        // For ongoing education, sort by start date (most recent first)
+        if (!a.endDate && !b.endDate) {
+          return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        }
+        
+        // For completed education, sort by end date (most recent first)
+        const aEndDate = a.endDate ? new Date(a.endDate).getTime() : 0;
+        const bEndDate = b.endDate ? new Date(b.endDate).getTime() : 0;
+        return bEndDate - aEndDate;
+      });
+      
+      setEducations(sortedEducations);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch education records");
     } finally {
@@ -638,6 +674,7 @@ export default function ProfilePage() {
                         onChange={handleContactInputChange}
                       />
                     </div>
+                    {/* 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number</Label>
                       <Input
@@ -648,6 +685,7 @@ export default function ProfilePage() {
                         onChange={handleContactInputChange}
                       />
                     </div>
+                    */}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -655,10 +693,12 @@ export default function ProfilePage() {
                       <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span>{profile.email || "Add Email"}</span>
                     </div>
+                    {/* 
                     <div className="flex items-center text-sm">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span>{profile.phone || "Add phone number"}</span>
                     </div>
+                    */}
                     <div className="flex items-center text-sm">
                       <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span>{profile.location || "Add location"}</span>
@@ -667,6 +707,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              {/* 
               <div className="mt-6 pt-6 border-t">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-medium">Preferences & Availability</h3>
@@ -787,6 +828,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+              */}
             </CardContent>
           </Card>
         </div>
