@@ -74,9 +74,11 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
         </div>
 
         <div className="flex flex-wrap gap-x-1 justify-evenly px-6 mt-2">
+          {job.salary && job.salary !== "Negotiable" && job.salary.trim() !== "" && (
           <span className="px-2 py-0.5 rounded-md bg-jobcardsecondary text-[#ffffff] text-xs font-medium">
             {job.salary}
           </span>
+          )}
           <span className="px-2 py-0.5 rounded-md bg-[#0A84FF] text-[#ffffff] text-xs font-medium">
             {job.applications} Applicants
           </span>

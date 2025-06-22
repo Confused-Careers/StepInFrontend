@@ -22,6 +22,7 @@ export interface Application {
     salaryMax?: number;
     requiredSkills?: string[];
     department?: string;
+    description?: string;
   };
   company: {
     companyName: string;
@@ -47,6 +48,7 @@ interface SavedJob {
     salaryMax?: number;
     requiredSkills?: string[];
     department?: string;
+    description?: string;
   };
   company: {
     companyName: string;
@@ -114,6 +116,7 @@ interface ApiJob {
   salaryMax?: string;
   requiredSkills?: string[];
   department?: string;
+  description?: string;
 }
 
 interface ApiApplication {
@@ -209,6 +212,7 @@ const applicationServices = {
               salaryMax: app?.job?.salaryMax ? Number(app.job.salaryMax) : undefined,
               requiredSkills: app?.job?.requiredSkills ?? [],
               department: app?.job?.department ?? undefined,
+              description: app?.job?.description ?? '',
             },
             company: {
               companyName: app?.job?.company?.companyName ?? 'Unknown',
@@ -287,6 +291,7 @@ const applicationServices = {
         salaryMax: jobData?.salaryMax ? Number(jobData.salaryMax) : undefined,
         requiredSkills: jobData?.requiredSkills ?? [],
         department: jobData?.department ?? undefined,
+        description: jobData?.description ?? undefined,
       };
     } catch (error: unknown) {
       console.error('Error fetching job details:', error);
@@ -345,6 +350,7 @@ const applicationServices = {
             salaryMax: saved?.job?.salaryMax ? Number(saved.job.salaryMax) : undefined,
             requiredSkills: saved?.job?.requiredSkills ?? [],
             department: saved?.job?.department ?? undefined,
+            description: saved?.job?.description ?? '',
           },
           company: {
             companyName: saved?.company?.companyName ?? 'Unknown',

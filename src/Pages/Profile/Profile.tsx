@@ -10,10 +10,6 @@ import {
     Calendar,
     Trash2,
     Loader2,
-    Phone,
-    Map,
-    Clock,
-    DollarSign,
     Upload,
     X,
     Mail,
@@ -94,8 +90,8 @@ export default function ProfilePage() {
   const [selectedEducation, setSelectedEducation] = useState<any>(null);
   const [isEditingAbout, setIsEditingAbout] = useState(false);
   const [aboutMeText, setAboutMeText] = useState('');
-  const [isEditingPreferences, setIsEditingPreferences] = useState(false);
-  const [preferenceData, setPreferenceData] = useState<PreferenceData>({
+  const [] = useState(false);
+  const [, setPreferenceData] = useState<PreferenceData>({
     preferredLocation: '',
     availability: '',
     expectedSalaryMin: '',
@@ -354,31 +350,31 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSavePreferences = async () => {
-    try {
-      if (preferenceData.expectedSalaryMin && preferenceData.expectedSalaryMax) {
-        const minSalary = Number(preferenceData.expectedSalaryMin);
-        const maxSalary = Number(preferenceData.expectedSalaryMax);
-        if (minSalary > maxSalary) {
-          toast.error("Minimum salary cannot be greater than maximum salary");
-          return;
-        }
-      }
+  // const handleSavePreferences = async () => {
+  //   try {
+  //     if (preferenceData.expectedSalaryMin && preferenceData.expectedSalaryMax) {
+  //       const minSalary = Number(preferenceData.expectedSalaryMin);
+  //       const maxSalary = Number(preferenceData.expectedSalaryMax);
+  //       if (minSalary > maxSalary) {
+  //         toast.error("Minimum salary cannot be greater than maximum salary");
+  //         return;
+  //       }
+  //     }
 
-      const updatedProfile = await jobSeekerServices.updateProfile({
-        preferredLocation: preferenceData.preferredLocation || undefined,
-        availability: preferenceData.availability || undefined,
-        expectedSalaryMin: preferenceData.expectedSalaryMin ? Number(preferenceData.expectedSalaryMin) : undefined,
-        expectedSalaryMax: preferenceData.expectedSalaryMax ? Number(preferenceData.expectedSalaryMax) : undefined,
-      });
+  //     const updatedProfile = await jobSeekerServices.updateProfile({
+  //       preferredLocation: preferenceData.preferredLocation || undefined,
+  //       availability: preferenceData.availability || undefined,
+  //       expectedSalaryMin: preferenceData.expectedSalaryMin ? Number(preferenceData.expectedSalaryMin) : undefined,
+  //       expectedSalaryMax: preferenceData.expectedSalaryMax ? Number(preferenceData.expectedSalaryMax) : undefined,
+  //     });
 
-      setProfile(updatedProfile);
-      setIsEditingPreferences(false);
-      toast.success("Preferences updated successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update preferences");
-    }
-  };
+  //     setProfile(updatedProfile);
+  //     setIsEditingPreferences(false);
+  //     toast.success("Preferences updated successfully");
+  //   } catch (error: any) {
+  //     toast.error(error.message || "Failed to update preferences");
+  //   }
+  // };
 
   const handleSaveContact = async () => {
     try {
@@ -402,10 +398,10 @@ export default function ProfilePage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPreferenceData(prev => ({ ...prev, [name]: value }));
-  };
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { name, value } = e.target;
+  //   setPreferenceData(prev => ({ ...prev, [name]: value }));
+  // };
 
   const handleContactInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

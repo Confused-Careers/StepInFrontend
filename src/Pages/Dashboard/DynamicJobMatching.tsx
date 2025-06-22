@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Briefcase, Sparkles, CheckCircle, Bookmark } from "lucide-react";
+import { Briefcase, Sparkles } from "lucide-react";
 import QuestionBox from "./QuestionBox";
 import { jobServices } from "../../services/jobServices";
 import { formatDistanceToNow } from "date-fns";
@@ -632,8 +632,6 @@ export function DynamicJobMatching() {
         <Tabs defaultValue="all" className="mb-6">
           <TabsList className="flex justify-center gap-2">
             <TabsTrigger value="all">All Jobs</TabsTrigger>
-            <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
-            <TabsTrigger value="applied">Applied Jobs</TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="mt-4">
             <motion.div
@@ -667,98 +665,6 @@ export function DynamicJobMatching() {
                 >
                   <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium mb-2">No jobs found</h3>
-                  <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
-                </motion.div>
-              )}
-            </motion.div>
-          </TabsContent>
-          <TabsContent value="saved" className="mt-4">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            >
-              <AnimatePresence>
-                {matchedJobs
-                  .filter((job) => savedJobs.includes(job.id))
-                  ?.map((job, index) => (
-                    <motion.div
-                      key={job.id}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                    >
-                      <JobCard
-                        {...job}
-                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
-                        delay={index * 0.1}
-                        expanded={expandedJob === job.id}
-                        onAction={(action, jobId) => handleJobAction(jobId, action)}
-                        isSaved={true}
-                        isApplied={appliedJobs.includes(job.id)}
-                        nextJob={getNextJob}
-                      />
-                    </motion.div>
-                  ))}
-              </AnimatePresence>
-              {savedJobs.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
-                >
-                  <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">No saved jobs</h3>
-                  <p className="text-muted-foreground text-center">
-                    Answer a few questions to unlock your job matches
-                  </p>
-                </motion.div>
-              )}
-            </motion.div>
-          </TabsContent>
-          <TabsContent value="applied" className="mt-4">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            >
-              <AnimatePresence>
-                {matchedJobs
-                  .filter((job) => appliedJobs.includes(job.id))
-                  .map((job, index) => (
-                    <motion.div
-                      key={job.id}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                    >
-                      <JobCard
-                        {...job}
-                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
-                        delay={index * 0.1}
-                        expanded={expandedJob === job.id}
-                        onAction={(action, jobId) => handleJobAction(jobId, action)}
-                        isSaved={savedJobs.includes(job.id)}
-                        isApplied={true}
-                        nextJob={getNextJob}
-                      />
-                    </motion.div>
-                  ))}
-              </AnimatePresence>
-              {appliedJobs.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
-                >
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">No applied jobs</h3>
                   <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
                 </motion.div>
               )}

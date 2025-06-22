@@ -83,7 +83,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     return education.charAt(0).toUpperCase() + education.slice(1);
   };
 
-  const hasValidImage = (imageUrl?: string | null): boolean => {
+    const hasValidImage = (imageUrl?: string | null): boolean => {
     return imageUrl !== null && 
            imageUrl !== undefined && 
            imageUrl.trim() !== "" && 

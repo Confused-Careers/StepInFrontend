@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, ChevronLeft } from "lucide-react";
+import { FileText, CheckCircle, ChevronLeft, X } from "lucide-react";
 import { JobApplicationCard } from "./ApplicationsCard";
 import applicationServices from "@/services/applicationServices";
 import { toast } from "sonner";
+import InteractiveJobCard from "../Dashboard/InteractiveJobCard";
+import { jobServices } from "@/services/jobServices";
 
 enum ApplicationStatus {
   APPLIED = 'applied',
@@ -28,6 +30,8 @@ interface Application {
     salaryMax?: number;
     requiredSkills?: string[];
     department?: string;
+    description?: string;
+    payPeriod?: string;
   };
   company: {
     companyName: string;
@@ -42,6 +46,8 @@ interface Application {
 }
 
 function ApplicationDetail({ application, onBackClick }: { application: Application | null; onBackClick: () => void }) {
+  const [showJobDescription, setShowJobDescription] = useState(false);
+  
   if (!application) return null;
 
   // Helper to format employment type
@@ -131,10 +137,10 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
             <h3 className="font-semibold text-sm">Salary Range</h3>
             <p className="text-sm text-muted-foreground">
               {application.job.salaryMin && application.job.salaryMax
-                ? `$${application.job.salaryMin.toLocaleString()} - $${application.job.salaryMax.toLocaleString()} USD`
+                ? `$${application.job.salaryMin.toLocaleString()} - $${application.job.salaryMax.toLocaleString()} USD/${(application.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
                 : application.job.salaryMin
-                ? `$${application.job.salaryMin.toLocaleString()} USD`
-                : `$${application.job.salaryMax?.toLocaleString()} USD`}
+                ? `$${application.job.salaryMin.toLocaleString()} USD/${(application.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
+                : `$${application.job.salaryMax?.toLocaleString()} USD/${(application.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`}
             </p>
           </div>
         )}
@@ -164,7 +170,7 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowJobDescription(true)}>
             <FileText className="h-4 w-4 mr-1" />
             View Job Description
           </Button>
@@ -179,6 +185,54 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
           )}
         </div>
       </div>
+
+      {/* Job Description Modal */}
+      {showJobDescription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Job Description</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Detailed information about the position</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowJobDescription(false)}
+                  className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">{application.job.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{application.company.companyName}</p>
+                </div>
+                
+                {application.job.description ? (
+                  <div className="prose dark:prose-invert max-w-none">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">About the Role</h4>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                        {application.job.description}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No job description available</p>
+                    <p className="text-sm mt-2">The company hasn't provided a detailed description for this position.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -187,12 +241,15 @@ export default function ApplicationsPage() {
   const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [allApplications, setAllApplications] = useState<Application[]>([]);
+  const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSavedJobs, setIsLoadingSavedJobs] = useState(false);
   const hasFetched = useRef(false);
 
   useEffect(() => {
     if (!hasFetched.current) {
       fetchAllApplications();
+      fetchSavedJobs();
       hasFetched.current = true;
     }
   }, []);
@@ -232,8 +289,66 @@ export default function ApplicationsPage() {
     }
   };
 
+  const fetchSavedJobs = async () => {
+    setIsLoadingSavedJobs(true);
+    try {
+      const response = await jobServices.getMySavedJobs({
+        page: 1,
+        limit: 100,
+      });
+      
+      // Fetch match explanations for each saved job
+      const savedJobsWithExplanations = await Promise.all(
+        (response?.savedJobs || []).map(async (savedJob: any) => {
+          try {
+            const matchExplanation = await jobServices.getMatchExplanation(savedJob.job.id);
+            return {
+              ...savedJob,
+              job: {
+                ...savedJob.job,
+                matchExplanation: matchExplanation,
+              },
+            };
+          } catch (error) {
+            console.error(`Error fetching match explanation for job ${savedJob.job.id}:`, error);
+            return savedJob; // Return job without explanation if fetch fails
+          }
+        })
+      );
+      
+      setSavedJobs(savedJobsWithExplanations);
+    } catch (error: unknown) {
+      console.error('Fetch saved jobs error:', error);
+      toast.error("Failed to load saved jobs");
+    } finally {
+      setIsLoadingSavedJobs(false);
+    }
+  };
+
   const handleActionClick = (jobId: string): void => {
     setSelectedApplication(jobId);
+  };
+
+  const handleJobAction = async (action: "save" | "apply" | "reject", jobId: string) => {
+    try {
+      if (action === "save") {
+        // Handle unsave
+        await jobServices.unsaveJob(jobId);
+        toast.success("Job removed from saved jobs");
+        fetchSavedJobs(); // Refresh the list
+      } else if (action === "apply") {
+        // Handle apply
+        toast.success("Application submitted!");
+        // You might want to refresh the saved jobs list or handle the application
+      } else if (action === "reject") {
+        // Handle reject
+        toast.success("Job removed from saved jobs");
+        fetchSavedJobs(); // Refresh the list
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} job:`, error);
+      toast.error(`Failed to ${action} job`);
+    }
   };
 
   const filteredApplications = allApplications.filter(app => {
@@ -260,6 +375,7 @@ export default function ApplicationsPage() {
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="interviews">Interviews</TabsTrigger>
                 <TabsTrigger value="offers">Offers</TabsTrigger>
+                <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
               </TabsList>
 
               <TabsContent value={activeTab}>
@@ -302,7 +418,7 @@ export default function ApplicationsPage() {
                               jobType: formatEmploymentType(app.job.employmentType),
                               appliedDate: app.applicationDate,
                               salary: app.job.salaryMin && app.job.salaryMax
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}`
+                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
                                 : "N/A",
                               matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
                               feedback: app.feedback ?? "",
@@ -313,6 +429,50 @@ export default function ApplicationsPage() {
                         );
                       })}
                     </div>
+                )}
+              </TabsContent>
+              <TabsContent value="saved">
+                {isLoadingSavedJobs ? (
+                  <p>Loading saved jobs...</p>
+                ) : savedJobs.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No saved jobs found</p>
+                ) : (
+                  <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
+                    {savedJobs.map((savedJob, index) => {
+                      const job = savedJob.job;
+                      
+                      return (
+                        <InteractiveJobCard
+                          key={savedJob.id || index}
+                          id={job.id}
+                          logo={job.company?.logoUrl || ""}
+                          title={job.title}
+                          company={job.company?.companyName || job.company}
+                          location={job.location}
+                          tags={job.requiredSkills || []}
+                          salaryRange={job.salaryMin && job.salaryMax 
+                            ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}/${(job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
+                            : "Negotiable"
+                          }
+                          matchPercentage={job.matchScore ? parseFloat(job.matchScore) : 0}
+                          description={job.description || ""}
+                          responsibilities={job.responsibilities || ""}
+                          jobType={job.employmentType || "Full-Time"}
+                          postedDate={new Date(job.createdAt || Date.now()).toLocaleDateString()}
+                          whyYouFit={job.matchExplanation?.explanation || "This role aligns well with your background and skills."}
+                          aiSummary={job.matchExplanation?.explanation || "Based on your profile, this position offers a great opportunity for growth and matches your career goals."}
+                          fullJobDescription={job.description || ""}
+                          fullResponsibilities={job.responsibilities || ""}
+                          companyDescription={job.companyDescription || ""}
+                          isSaved={true}
+                          isApplied={false}
+                          onAction={(action, jobId) => {
+                            handleJobAction(action, jobId);
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </TabsContent>
             </Tabs>

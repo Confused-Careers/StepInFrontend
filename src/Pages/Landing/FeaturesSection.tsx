@@ -1,44 +1,37 @@
-import { Sparkles, Users, Briefcase, Shield, CheckCircle, Star, Zap } from "lucide-react";
+import { Sparkles, Users, Shield, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 const features = [
   {
     icon: <Sparkles className="h-10 w-10" />,
-    title: "AI-Powered Matching"
+    title: "Proprietary AI Matching",
+    description: "StepIn's algorithm uses behavior + experience data to predict job fit with unmatched accuracy"
   },
   {
     icon: <Users className="h-10 w-10" />,
-    title: "Behavioral Insights"
-  },
-  {
-    icon: <Briefcase className="h-10 w-10" />,
-    title: "Quick Applications"
+    title: "Behavioral Insights",
+    description: "Go beyond resumes — see why each role fits your strengths, style, and preferences"
   },
   {
     icon: <Shield className="h-10 w-10" />,
-    title: "Privacy Protection"
-  },
-  {
-    icon: <CheckCircle className="h-10 w-10" />,
-    title: "Skill Assessment"
-  },
-  {
-    icon: <Star className="h-10 w-10" />,
-    title: "Career Growth"
+    title: "Private by Default",
+    description: "You stay in control. Employers only see your profile after you apply"
   }
 ];
 
 interface FeatureItemProps {
   icon: React.ReactNode;
   title: string;
+  description: string;
 }
 
-const FeatureItem = ({ icon, title }: FeatureItemProps) => (
-  <div className="flex flex-col items-center justify-center text-center hover:bg-primary/10 transition-colors rounded-lg p-2 min-w-[100px]">
-    <div className="text-primary mb-1 flex items-center justify-center">
+const FeatureItem = ({ icon, title, description }: FeatureItemProps) => (
+  <div className="flex flex-col items-center justify-center text-center hover:bg-primary/10 transition-colors rounded-lg p-4 min-w-[200px] max-w-[300px]">
+    <div className="text-primary mb-3 flex items-center justify-center">
       {icon}
     </div>
-    <span className="text-xs font-medium max-w-[120px]">{title}</span>
+    <h3 className="text-sm font-semibold mb-2">{title}</h3>
+    <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
   </div>
 );
 
@@ -65,9 +58,9 @@ const ResponsiveFeatureStrip = () => {
               </p>
             </motion.div>
           </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4 justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
           {features.map((feature, index) => (
-            <FeatureItem key={index} icon={feature.icon} title={feature.title} />
+            <FeatureItem key={index} icon={feature.icon} title={feature.title} description={feature.description} />
           ))}
         </div>
       </div>

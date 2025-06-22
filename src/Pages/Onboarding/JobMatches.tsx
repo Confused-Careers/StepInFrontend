@@ -99,7 +99,7 @@ export function JobMatches({ matches, onComplete }: JobMatchesProps) {
                           <Clock className="h-3.5 w-3.5" />
                           <span>{formatEmploymentType(job.employmentType)}</span>
                         </div>
-                        {job.salary && (
+                        {job.salary && job.salary !== "N/A" && job.salary.trim() !== "" && (
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-3.5 w-3.5" />
                             <span>{job.salary}</span>
