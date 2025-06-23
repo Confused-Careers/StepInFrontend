@@ -71,7 +71,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
           <CardHeader>
             <CardTitle>Reset Password</CardTitle>
             <CardDescription>
-              Enter the OTP sent to your email and your new password.
+              Enter the Authentication Code sent to your email and your new password.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -83,11 +83,11 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                 <div className="text-green-500 text-sm text-center">{success}</div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="otpCode">OTP Code</Label>
+                <Label htmlFor="otpCode">Authentication Code</Label>
                 <Input
                   id="otpCode"
                   type="text"
-                  placeholder="Enter 6-digit OTP"
+                  placeholder="Enter 6-digit Authentication Code"
                   value={formData.otpCode}
                   onChange={handleInputChange}
                   required

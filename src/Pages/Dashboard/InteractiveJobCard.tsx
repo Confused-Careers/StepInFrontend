@@ -19,6 +19,7 @@ export interface JobCardProps {
   whyYouFit: string;
   aiSummary: string;
   fullJobDescription: string;
+  salary: string;
   fullResponsibilities: string;
   companyDescription: string;
   isTargetedRecommendation?: boolean;
@@ -133,7 +134,6 @@ const JobCard = ({
   matchPercentage,
   description,
   responsibilities,
-  jobType,
   postedDate,
   whyYouFit,
   aiSummary,
@@ -324,7 +324,9 @@ const JobCard = ({
                   ))}
                 </div>
                 <div className="flex justify-end items-center mb-4 gap-3 mt-2">
+                  {salaryRange && salaryRange !== "Not specified" && (
                   <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{salaryRange}</span>
+                  )}
                   <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{Math.round(matchPercentage)}% Match</span>
                 </div>
                 <div className="bg-jobcardsecondary1 rounded-lg p-3 mb-4 border border-gray-400 border-opacity-20">
@@ -417,7 +419,9 @@ const JobCard = ({
                   ))}
                 </div>
                 <div className="flex justify-end items-center mb-4 gap-3 mt-0">
-                  <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{nextJobData.salaryRange}</span>
+                  {nextJobData.salaryRange && nextJobData.salaryRange !== "Not specified" && (
+                  <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{nextJobData.salary}</span>
+                  )}
                   <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{Math.round(nextJobData.matchPercentage)}% Match</span>
                 </div>
                 <div className="bg-jobcardsecondary rounded-lg p-3 mb-4 border border-gray-400 border-opacity-20">
@@ -518,13 +522,15 @@ const JobCard = ({
                       <div className="flex-1 text-center mt-2 mb-3">
                         <h2 className="font-bold text-3xl text-jobcardtext">{title}</h2>
                         <p className="text-sm text-jobcardforeground">
-                          {company} • {location} • {jobType}
+                          {company} • {location}
                         </p>
                       </div>
                       <div className="w-24"></div>
                     </div>
                     <div className="flex justify-center items-center gap-7 mt-0 flex-wrap">
+                      {salaryRange && salaryRange !== "Not specified" && (
                       <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1 min-w-[80px] text-center">{salaryRange}</span>
+                      )}
                       {tags.map((tag, index) => (
                         <span key={index} className="bg-jobcardsecondary text-jobcardforeground text-xs rounded-md px-3 py-1 min-w-[80px] text-center">
                           {tag}

@@ -47,6 +47,7 @@ export const jobServices = {
     postedWithinDays?: number;
     salaryMin?: number;
     salaryMax?: number;
+    payPeriod?: string;
     location?: string;
     isRemote?: boolean;
     skills?: string[];

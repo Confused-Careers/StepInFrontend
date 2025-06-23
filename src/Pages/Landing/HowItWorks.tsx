@@ -4,23 +4,18 @@ import { CheckCircle } from "lucide-react";
 const steps = [
   {
     step: "01",
-    title: "Create Profile",
-    description: "Begin your journey and answer a few questions about your preferences.",
+    title: "Answer 4 Quick Questions",
+    description: "About how you think, work, and thrive",
   },
   {
     step: "02",
-    title: "Upload Resume",
-    description: "Our AI analyzes your skills and experience from your resume.",
+    title: "See Your Matches",
+    description: "Instantly scored based on your personality and strengths",
   },
   {
     step: "03",
-    title: "Get Matched",
-    description: "Receive personalized job recommendations based on your profile.",
-  },
-  {
-    step: "04",
-    title: "Apply & Connect",
-    description: "Apply to jobs with one click and connect with employers.",
+    title: "Apply in 1 Click",
+    description: "Skip the resume spam. Apply directly inside StepIn",
   },
 ];
 
@@ -49,7 +44,7 @@ export function HowItWorksSection() {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
             {steps.map((step, index) => (
               <motion.div
                 key={index}

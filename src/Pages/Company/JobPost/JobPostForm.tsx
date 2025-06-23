@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -19,8 +19,10 @@ interface JobFormData {
   experienceLevel: string;
   location: string;
   isRemote: boolean;
+  unpaid: boolean;
   salaryMin: string;
   salaryMax: string;
+  payPeriod: string;
   applicationDeadline: string;
   requiredSkills: string[];
   requiredLanguages: Array<{
@@ -31,7 +33,7 @@ interface JobFormData {
   requiredCertifications: Array<{
     certificationId: string;
     isRequired: boolean;
-    minimumYears?: number; 
+    minimumYears?: number;
   }>;
   requiredEducation: Array<{
     educationLevel: string;
@@ -52,25 +54,24 @@ interface ConfirmationModalProps {
   isLoading?: boolean;
 }
 
-const ConfirmationModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
-  message, 
-  confirmText = "Delete", 
+const ConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = "Delete",
   cancelText = "Cancel",
-  isLoading = false 
+  isLoading = false,
 }: ConfirmationModalProps) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -114,7 +115,6 @@ const ConfirmationModal = ({
   );
 };
 
-// Custom hook for auto-resizing textarea
 const useAutoResize = (value: string) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -146,8 +146,10 @@ export default function JobPostForm() {
     experienceLevel: "senior",
     location: "",
     isRemote: false,
+    unpaid: false,
     salaryMin: "",
     salaryMax: "",
+    payPeriod: "annually",
     applicationDeadline: "",
     requiredSkills: [],
     requiredLanguages: [{ languageId: "", proficiencyLevel: "fluent", isRequired: true }],
@@ -156,12 +158,10 @@ export default function JobPostForm() {
     department: "",
   });
 
-  // Auto-resize hooks for different textareas
   const titleResize = useAutoResize(job.title);
   const descriptionResize = useAutoResize(job.description);
   const requirementsResize = useAutoResize(job.requirements);
   const locationResize = useAutoResize(job.location);
-  const departmentResize = useAutoResize(job.department);
 
   useEffect(() => {
     if (jobId) {
@@ -169,7 +169,6 @@ export default function JobPostForm() {
         try {
           const response = await companyServices.getJob(jobId);
           const jobData = response;
-          
           setJob({
             title: jobData.title || "",
             description: jobData.description || "",
@@ -178,8 +177,10 @@ export default function JobPostForm() {
             experienceLevel: jobData.experienceLevel || "senior",
             location: jobData.location || "",
             isRemote: jobData.isRemote || false,
+            unpaid: jobData.salaryMin === undefined && jobData.salaryMax === undefined,
             salaryMin: jobData.salaryMin ? jobData.salaryMin.toString() : "",
             salaryMax: jobData.salaryMax ? jobData.salaryMax.toString() : "",
+            payPeriod: jobData.payPeriod || "annually",
             applicationDeadline: jobData.applicationDeadline ? jobData.applicationDeadline.split("T")[0] : "",
             requiredSkills: jobData.requiredSkills || [],
             requiredLanguages: jobData.requiredLanguages || [{ languageId: "", proficiencyLevel: "fluent", isRequired: true }],
@@ -213,8 +214,21 @@ export default function JobPostForm() {
     setJob((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleCheckboxChange = (checked: boolean) => {
-    setJob((prev) => ({ ...prev, isRemote: checked }));
+  const handleCheckboxChange = (field: string, checked: boolean) => {
+    if (field === "isRemote") {
+      setJob((prev) => ({
+        ...prev,
+        isRemote: checked,
+        location: checked ? "" : prev.location,
+      }));
+    } else if (field === "unpaid") {
+      setJob((prev) => ({
+        ...prev,
+        unpaid: checked,
+        salaryMin: checked ? "" : prev.salaryMin,
+        salaryMax: checked ? "" : prev.salaryMax,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -229,8 +243,10 @@ export default function JobPostForm() {
       experienceLevel: job.experienceLevel,
       location: job.location,
       isRemote: job.isRemote,
-      salaryMin: job.salaryMin ? parseInt(job.salaryMin) : undefined,
-      salaryMax: job.salaryMax ? parseInt(job.salaryMax) : undefined,
+      unpaid: job.unpaid,
+      salaryMin: job.unpaid ? undefined : (job.salaryMin ? parseInt(job.salaryMin) : undefined),
+      salaryMax: job.unpaid ? undefined : (job.salaryMax ? parseInt(job.salaryMax) : undefined),
+      payPeriod: job.unpaid ? undefined : job.payPeriod,
       applicationDeadline: job.applicationDeadline ? new Date(job.applicationDeadline).toISOString() : undefined,
       requiredSkills: job.requiredSkills,
       requiredLanguages: job.requiredLanguages.filter((lang) => lang.languageId),
@@ -239,7 +255,7 @@ export default function JobPostForm() {
         .map((cert) => ({
           certificationId: cert.certificationId,
           isRequired: cert.isRequired,
-          minimumYears: cert.minimumYears, 
+          minimumYears: cert.minimumYears,
         })),
       requiredEducation: job.requiredEducation.filter((edu) => edu.fieldOfStudy),
       department: job.department,
@@ -328,7 +344,6 @@ export default function JobPostForm() {
                       style={{ height: 'auto', minHeight: '40px' }}
                     />
                   </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="description" className="text-white">Job Description</Label>
                     <textarea
@@ -343,7 +358,6 @@ export default function JobPostForm() {
                       style={{ height: 'auto', minHeight: '40px' }}
                     />
                   </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="requirements" className="text-white">Job Requirements</Label>
                     <textarea
@@ -355,15 +369,14 @@ export default function JobPostForm() {
                       required
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
                       rows={1}
-                      style={{ 
-                        height: 'auto', 
+                      style={{
+                        height: 'auto',
                         minHeight: '40px',
                         whiteSpace: 'pre-wrap',
                         wordBreak: 'break-word'
                       }}
                     />
                   </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="employmentType" className="text-white">Employment Type</Label>
                     <Select
@@ -381,7 +394,6 @@ export default function JobPostForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="experienceLevel" className="text-white">Experience Level</Label>
                     <Select
@@ -400,70 +412,96 @@ export default function JobPostForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
                   <div className="space-y-2">
-                    <Label htmlFor="location" className="text-white">Location</Label>
+                    <Label htmlFor="location" className="text-white">Location (City, State)</Label>
                     <textarea
                       ref={locationResize.textareaRef}
                       id="location"
                       value={job.location}
                       onChange={handleInputChange}
                       onInput={locationResize.adjustHeight}
-                      required
-                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      required={!job.isRemote}
+                      disabled={job.isRemote}
+                      placeholder={job.isRemote ? "Not required for remote positions" : "Enter city and state"}
+                      className={`bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden ${
+                        job.isRemote ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                       rows={1}
                       style={{ height: 'auto', minHeight: '40px' }}
                     />
                   </div>
-                  
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="isRemote"
                       checked={job.isRemote}
-                      onCheckedChange={handleCheckboxChange}
+                      onCheckedChange={(checked) => handleCheckboxChange("isRemote", Boolean(checked))}
                       className="border border-[rgba(209,209,214,0.2)]"
                     />
                     <Label htmlFor="isRemote" className="text-white">Remote</Label>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="department" className="text-white">Department</Label>
-                    <textarea
-                      ref={departmentResize.textareaRef}
-                      id="department"
-                      value={job.department}
-                      onChange={handleInputChange}
-                      onInput={departmentResize.adjustHeight}
-                      required
-                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
-                      rows={1}
-                      style={{ height: 'auto', minHeight: '40px' }}
+                  <AnimatePresence>
+                    {!job.unpaid && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-6"
+                      >
+                        <div className="grid [grid-template-columns:41%_41%_16%] gap-4 w-full">
+                          <div className="space-y-2">
+                            <Label htmlFor="salaryMin" className="text-white">Min Salary</Label>
+                            <Input
+                              id="salaryMin"
+                              type="number"
+                              value={job.salaryMin}
+                              onChange={handleInputChange}
+                              className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="salaryMax" className="text-white">Max Salary</Label>
+                            <Input
+                              id="salaryMax"
+                              type="number"
+                              value={job.salaryMax}
+                              onChange={handleInputChange}
+                              className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="payPeriod" className="text-white">Pay Period</Label>
+                            <Select
+                              onValueChange={(value) => handleSelectChange("payPeriod", value)}
+                              value={job.payPeriod}
+                            >
+                              <SelectTrigger className="bg-black border border-[rgba(209,209,214,0.2)] text-white">
+                                <SelectValue placeholder="Select pay period" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
+                                <SelectItem value="hr">Hourly</SelectItem>
+                                <SelectItem value="dy">Daily</SelectItem>
+                                <SelectItem value="wk">Weekly</SelectItem>
+                                <SelectItem value="bw">Biweekly</SelectItem>
+                                <SelectItem value="mo">Monthly</SelectItem>
+                                <SelectItem value="yr">Annually</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="unpaid"
+                      checked={job.unpaid}
+                      onCheckedChange={(checked) => handleCheckboxChange("unpaid", Boolean(checked))}
+                      className="border border-[rgba(209,209,214,0.2)]"
                     />
+                    <Label htmlFor="unpaid" className="text-white">Unpaid Position</Label>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="salaryMin" className="text-white">Min Salary</Label>
-                      <Input
-                        id="salaryMin"
-                        type="number"
-                        value={job.salaryMin}
-                        onChange={handleInputChange}
-                        className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="salaryMax" className="text-white">Max Salary</Label>
-                      <Input
-                        id="salaryMax"
-                        type="number"
-                        value={job.salaryMax}
-                        onChange={handleInputChange}
-                        className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
-                      />
-                    </div>
-                  </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="applicationDeadline" className="text-white">Application Deadline</Label>
                     <Input
@@ -474,7 +512,6 @@ export default function JobPostForm() {
                       className="bg-black border border-[rgba(209,209,214,0.2)] text-white"
                     />
                   </div>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button
                       type="submit"
@@ -501,7 +538,6 @@ export default function JobPostForm() {
           </motion.div>
         </div>
       </div>
-
       <ConfirmationModal
         isOpen={showDeleteModal}
         onClose={handleDeleteCancel}

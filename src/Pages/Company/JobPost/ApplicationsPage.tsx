@@ -21,6 +21,8 @@ export interface Applicant {
   weakness: string[];
   match: string;
   location: string;
+  resumeUrl: string | URL;
+  imageUrl?: string | null;
 }
 
 interface Tag {
@@ -127,6 +129,7 @@ export default function CompanyApplicationsPage() {
           match: dto.matchPercentage ? Math.round(dto.matchPercentage).toString() : "0",
           location: dto.location || "Not specified",
           imageUrl: dto.profilePictureUrl || null,
+          resumeUrl: dto.resumeUrl ?? "",
         }));
         setApplicants(mappedApplicants);
         setAllApplicants(mappedApplicants);
@@ -315,7 +318,7 @@ export default function CompanyApplicationsPage() {
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsContent value={activeTab}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-11 gap-y-11">
+                <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-11 gap-y-11 [@media(max-width:1024px)]:grid-cols-2">
                   {applicants.length > 0 ? (
                     applicants.map((app) => <ApplicantsCard key={app.id} applicant={app} />)
                   ) : (

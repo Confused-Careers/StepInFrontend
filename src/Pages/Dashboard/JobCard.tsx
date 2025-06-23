@@ -89,12 +89,14 @@ export function JobCard({
               <MapPin className="h-4 w-4 text-primary/70" />
               <span>{job.location}</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Building className="h-4 w-4 text-primary/70" />
-              <span>
-                {job.salary} {job.salaryType === "yearly" ? "per year" : "per hour"}
-              </span>
-            </div>
+            {job.salary && job.salary !== "N/A" && job.salary.trim() !== "" && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Building className="h-4 w-4 text-primary/70" />
+                <span>
+                  {job.salary} {job.salaryType === "yearly" ? "per year" : "per hour"}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-4 w-4 text-primary/70" />
               <span>Posted {job.posted}</span>

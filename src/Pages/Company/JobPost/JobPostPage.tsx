@@ -27,6 +27,7 @@ interface Application {
   skills: string[];
   applications: string;
   responsiblities: string;
+  payPeriod?: string;
 }
 
 function ApplicationDetail({ application, onBackClick }: { application: Application | null; onBackClick: () => void }) {
@@ -151,26 +152,37 @@ export function JobsPostPage() {
     const fetchJobs = async () => {
       try {
         const response = await companyServices.getCompanyJobs();
-        const formattedJobs: Application[] = response.map((job) => ({
-          id: job.id,
-          jobTitle: job.title,
-          company: job.company.companyName,
-          companyLogo: job.company.logoUrl,
-          appliedDate: new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric" }),
-          status: job.status || "active",
-          feedback: "Manage applications for this job posting.",
-          department: job.department || "General",
-          jobType: job.employmentType === "full_time" ? "Full Time" : 
-                   job.employmentType === "part_time" ? "Part Time" : 
-                   job.employmentType === "contract" ? "Contract" : 
-                   job.employmentType || "Full Time",
-          location: job.isRemote ? "Remote" : job.location,
-          salary: job.salaryMin && job.salaryMax ? `$${parseFloat(String(job.salaryMin)).toLocaleString()} - $${parseFloat(String(job.salaryMax)).toLocaleString()}/yr` : "Negotiable",
-          matchPercentage: "N/A",
-          skills: job.requirements ? job.requirements.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0) : [],
-          applications: job.totalApplications,
-          responsiblities: job.requirements || "No responsibilities provided.",
-        }));
+        const formattedJobs: Application[] = response.map((job) => {
+          let salary = "Unpaid";
+          if (job.salaryMin && job.salaryMax) {
+            const min = parseFloat(String(job.salaryMin));
+            const max = parseFloat(String(job.salaryMax));
+            const period = job.payPeriod || "Yearly";
+            salary = `$${min} - $${max}/${period}`;
+          }
+          return {
+            id: job.id,
+            jobTitle: job.title,
+            company: job.company.companyName,
+            companyLogo: job.company.logoUrl,
+            appliedDate: new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric" }),
+            status: job.status || "active",
+            feedback: "Manage applications for this job posting.",
+            department: job.company.industry,
+            jobType: job.employmentType === "full_time" ? "Full Time" : 
+              job.employmentType === "part_time" ? "Part Time" : 
+              job.employmentType === "contract" ? "Contract" : 
+              job.employmentType === "internship" ? "Internship" :
+              job.employmentType || "Full Time",
+            location: job.isRemote ? "Remote" : job.location,
+            salary,
+            matchPercentage: "N/A",
+            payPeriod: job.payPeriod || "Yearly",
+            skills: job.requirements ? job.requirements.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0) : [],
+            applications: job.totalApplications,
+            responsiblities: job.requirements || "No responsibilities provided.",
+          };
+        });
 
         setJobs(formattedJobs);
         setCompanyName(response[0]?.company?.companyName || "Your Company");
@@ -252,7 +264,7 @@ export function JobsPostPage() {
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsContent value={activeTab}>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-16 gap-y-16">
+                  <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-16 gap-y-16 [@media(max-width:1024px)]:grid-cols-2">
                     {filteredApplications.length > 0 ? (
                       filteredApplications.map((app) => (
                         <JobPostCard

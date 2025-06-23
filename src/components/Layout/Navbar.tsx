@@ -36,8 +36,11 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate("/contact")} className="hidden md:inline-flex">
+                Contact Us
+            </Button>
             <Button variant="ghost" onClick={() => navigate("/individual-login")} className="hidden md:inline-flex">
-            Log in
+                Log in
             </Button>
             <Button
             variant="ghost"
@@ -80,6 +83,9 @@ const Navbar = () => {
             >
                 Testimonials
             </a> */}
+            <Button onClick={() => navigate("/contact")} variant="ghost" className="justify-start">
+                Contact Us
+            </Button>
             <Button onClick={() => navigate("/login")} variant="ghost" className="justify-start">
                 Log in
             </Button>

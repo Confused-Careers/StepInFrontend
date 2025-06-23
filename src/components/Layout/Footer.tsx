@@ -17,6 +17,12 @@ const Footer = () => {
         </div>
         <div className="flex flex-col items-center md:items-end gap-2">
           <span className="font-semibold text-base mb-1">Contact Us</span>
+          <a 
+            href="mailto:crecords@stepincompany.com" 
+            className="text-muted-foreground hover:text-primary transition-colors mb-2"
+          >
+            crecords@stepincompany.com
+          </a>
           <div className="flex gap-4 mb-2">
             <a href="https://x.com/StepInCompany" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
               <X className="h-6 w-6 hover:text-primary transition-colors" />

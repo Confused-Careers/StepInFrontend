@@ -16,6 +16,7 @@ interface CompanyProfile {
 }
 
 interface Job {
+  payPeriod: string;
   totalApplications: any;
   department: string;
   data: Job | PromiseLike<Job>;
@@ -49,8 +50,10 @@ interface Job {
     isRequired: boolean;
   }>;
   company: {
+    industry: string;
     companyName: string;
     logoUrl?: string;
+
   };
   createdAt: string;
 }

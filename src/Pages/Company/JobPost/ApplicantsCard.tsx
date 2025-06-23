@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Applicant as ImportedApplicant } from "./ApplicationsPage";
 
 export interface Applicant extends ImportedApplicant {
+  resumeUrl: string | URL;
   imageUrl?: string | null;
 }
 import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
@@ -46,6 +47,42 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [feedback, setFeedback] = useState<string>("");
   const [existingFeedback, setExistingFeedback] = useState<string | null>(null);
   const [applicationId] = useState(applicant.id);
+
+  const formatEducation = (education: string) => {
+    if (!education || education === "Not specified") return education;
+    
+    // Common degree type mappings
+    const degreeTypeMap: Record<string, string> = {
+      'bachelor': "Bachelor's",
+      'bachelors': "Bachelor's",
+      'master': "Master's", 
+      'masters': "Master's",
+      'phd': "PhD",
+      'doctorate': "Doctorate",
+      'associate': "Associate's",
+      'associates': "Associate's",
+      'diploma': "Diploma",
+      'certificate': "Certificate",
+      'high school': "High School",
+      'highschool': "High School"
+    };
+
+    // Split the education string into parts
+    const parts = education.split(' in ');
+    if (parts.length >= 2) {
+      const degreeType = parts[0].toLowerCase().trim();
+      const rest = parts.slice(1).join(' in ');
+      
+      // Format the degree type
+      const formattedDegreeType = degreeTypeMap[degreeType] || 
+        degreeType.charAt(0).toUpperCase() + degreeType.slice(1);
+      
+      return `${formattedDegreeType} in ${rest}`;
+    }
+    
+    // If no "in" found, just capitalize the first letter
+    return education.charAt(0).toUpperCase() + education.slice(1);
+  };
 
     const hasValidImage = (imageUrl?: string | null): boolean => {
     return imageUrl !== null && 
@@ -148,7 +185,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
         onClick={handleOpenPopup}
       >
         <div className="py-2 px-5 space-y-4 mb-2 mt-2">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 [@media(max-width:1072px)]:gap-0">
             {hasValidImage(applicant.imageUrl) ? (
               <div className="bg-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
                 <img 
@@ -163,8 +200,8 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
               <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
             )}
             <div className="flex-1 ml-5 flex flex-col justify-center">
-              <div className="flex justify-center items-center gap-2 pr-9">
-                <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3">{applicant.name}</h3>
+              <div className="flex justify-center items-center gap-2 pr-9 [@media(max-width:1240px)]:pr-0">
+                <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3 [@media(max-width:1240px)]:ml-0">{applicant.name}</h3>
               </div>
                 <div className="flex flex-col [@media(min-width:1248px)]:flex-row items-center justify-center gap-2">
                   <p className="text-sm text-[rgba(209,209,214,1)]">{applicant.location}</p>
@@ -177,7 +214,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
           </div>
 
           <div className="rounded-lg px-8 py-2 text-center border border-[rgba(42,42,42,1)]" style={{ backgroundColor: "rgba(17, 17, 19, 1)" }}>
-            <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{applicant.education}</p>
+            <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{formatEducation(applicant.education)}</p>
             <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{applicant.currentPosition} @ {applicant.currentCompany}</p>
           </div>
 
@@ -298,13 +335,13 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     <div className="bg-[rgba(10,132,255,0.05)] rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
                       <p className="text-[13px] text-white m-3">{aiSummary}</p>
                     </div>
-                    {/** 
+                     
                     <div className="flex justify-start mt-4 mb-4">
-                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]">
-                        Talk To {applicant.name}’s AI
+                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" onClick={() => window.open(applicant.resumeUrl, "_blank")}>
+                        View Resume
                       </button>
                     </div>
-                    */}
+
                   </div>
                 </motion.div>
                 <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">
@@ -320,7 +357,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   <div className="px-6 pb-6">
                     <h3 className="font-bold text-[18px] text-white mb-0 ml-3">Education</h3>
                     <div className="rounded-lg p-3 border border-[rgba(255,255,255,0.03)] bg-[rgba(26,31,43,1)]">
-                      <p className="text-sm text-white m-1">{applicant.education}</p>
+                      <p className="text-sm text-white m-1">{formatEducation(applicant.education)}</p>
                     </div>
                   </div>
                 </motion.div>

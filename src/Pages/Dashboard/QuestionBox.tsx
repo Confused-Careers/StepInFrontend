@@ -49,7 +49,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
   return (
     <motion.div
       layout
-      animate={isSubmitted ? { height: 80, marginTop: 0, marginBottom: 20, y: -30 } : { height: "auto", y: 0 }}
+      animate={isSubmitted ? { height: 80, marginTop: 0, marginBottom: 20 } : { height: "auto" }}
       transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
       className="relative overflow-hidden"
     >

@@ -26,6 +26,20 @@ interface JobMatchesProps {
 export function JobMatches({ matches, onComplete }: JobMatchesProps) {
   const [explanations, setExplanations] = useState<Record<string, string>>({});
 
+  const formatEmploymentType = (type: string) => {
+    const typeMap: Record<string, string> = {
+      'full_time': 'Full-Time',
+      'part_time': 'Part-Time', 
+      'contract': 'Contract',
+      'internship': 'Internship'
+    };
+    
+    return typeMap[type] || type
+      .split("_")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("-");
+  };
+
   const fetchExplanation = async (jobId: string) => {
     try {
       const response = await authServices.getJobMatchExplanation(jobId);
@@ -83,9 +97,9 @@ export function JobMatches({ matches, onComplete }: JobMatchesProps) {
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
-                          <span>{job.employmentType}</span>
+                          <span>{formatEmploymentType(job.employmentType)}</span>
                         </div>
-                        {job.salary && (
+                        {job.salary && job.salary !== "N/A" && job.salary.trim() !== "" && (
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-3.5 w-3.5" />
                             <span>{job.salary}</span>

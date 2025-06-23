@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,40 @@ export function EducationForm({ isOpen, onClose, onSubmit, initialData }: Educat
     thesisProject: initialData?.thesisProject || "",
     displayOrder: initialData?.displayOrder,
   });
+
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData({
+        institutionName: initialData.institutionName || "",
+        degreeType: initialData.degreeType || "",
+        fieldOfStudy: initialData.fieldOfStudy || "",
+        location: initialData.location || "",
+        startDate: initialData.startDate ? new Date(initialData.startDate) : undefined,
+        endDate: initialData.endDate ? new Date(initialData.endDate) : undefined,
+        isCurrentlyStudying: initialData.isCurrentlyStudying || false,
+        gpa: initialData.gpa?.toString() || "",
+        gpaScale: initialData.gpaScale || "4.00",
+        description: initialData.description || "",
+        thesisProject: initialData.thesisProject || "",
+        displayOrder: initialData.displayOrder,
+      });
+    } else if (isOpen && !initialData) {
+      setFormData({
+        institutionName: "",
+        degreeType: "",
+        fieldOfStudy: "",
+        location: "",
+        startDate: undefined,
+        endDate: undefined,
+        isCurrentlyStudying: false,
+        gpa: "",
+        gpaScale: "4.00",
+        description: "",
+        thesisProject: "",
+        displayOrder: undefined,
+      });
+    }
+  }, [isOpen, initialData]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 

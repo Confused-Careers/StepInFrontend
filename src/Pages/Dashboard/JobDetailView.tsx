@@ -111,17 +111,19 @@ export function JobDetailView({ job }: JobDetailViewProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <DollarSign className="h-5 w-5 text-primary" />
+                {job.salary && job.salary !== "N/A" && job.salary.trim() !== "" && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Salary</p>
+                      <p className="font-medium">
+                        {job.salary} {job.salaryType === "yearly" ? "per year" : "per hour"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Salary</p>
-                    <p className="font-medium">
-                      {job.salary} {job.salaryType === "yearly" ? "per year" : "per hour"}
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

@@ -23,6 +23,7 @@ import CompanyProfile from './Pages/Company/ProfilePage/CompanyProfile';
 import JobPostForm from './Pages/Company/JobPost/JobPostForm';
 import { GoogleAuthCallback } from './components/Others/GoogleAuthCallback';
 import { Toaster } from 'sonner';
+import ContactUsPage from './Pages/Contact/ContactUsPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="/company/forgot-password" element={<ForgotPassword />} />
             <Route path="/onboarding/*" element={<OnboardingFlow />} />
             <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+            <Route path="/contact" element={<ContactUsPage />} />
           </Route>
 
           {/* Protected Individual Routes */}

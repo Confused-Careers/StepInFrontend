@@ -109,9 +109,11 @@ export function JobApplicationCard({ job, onActionClick }: JobApplicationCardPro
         <div className="flex flex-wrap items-center justify-around">
           <div className="flex items-center gap-6">
             <span className="text-[#b0b3b8] text-xs ml-1">Applied {job.appliedDate}</span>
+            {job.salary && job.salary !== "N/A" && job.salary.trim() !== "" && (
             <span className="px-1 py-0.5 rounded-md bg-jobcardsecondary text-[#ffffff] text-xs">
               {job.salary}
             </span>
+            )}
             <span className="px-1 py-0.5 rounded-md bg-[#0A84FF] text-[#ffffff] text-xs">
               {job.matchPercentage} Match
             </span>
