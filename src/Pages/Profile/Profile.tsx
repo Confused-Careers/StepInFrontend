@@ -13,7 +13,6 @@ import {
   Upload,
   X,
   Mail,
-  Phone,
   Code,
 } from "lucide-react";
 import { PageHeader } from "@/components/Layout/PageHeader";
