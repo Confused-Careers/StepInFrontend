@@ -32,7 +32,7 @@ export default function LandingPage() {
             muted
             playsInline
             className="absolute inset-0 w-full h-full object-cover -z-20"
-            src={heroVideo}
+            src={"https://res.cloudinary.com/dpepst3w7/video/upload/v1750697224/edutuiqcpq3l2vewhrlb.mp4"}
           />
           <div className="absolute inset-0 -z-10 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent" />
