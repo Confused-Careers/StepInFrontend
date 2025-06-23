@@ -159,7 +159,7 @@ export function JobsPostPage() {
           appliedDate: new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric" }),
           status: job.status || "active",
           feedback: "Manage applications for this job posting.",
-          department: job.department || "General",
+          department: job.company.industry,
           jobType: job.employmentType === "full_time" ? "Full Time" : 
                    job.employmentType === "part_time" ? "Part Time" : 
                    job.employmentType === "contract" ? "Contract" : 
@@ -253,7 +253,7 @@ export function JobsPostPage() {
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsContent value={activeTab}>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-16 gap-y-16">
+                  <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-16 gap-y-16 [@media(max-width:1024px)]:grid-cols-2">
                     {filteredApplications.length > 0 ? (
                       filteredApplications.map((app) => (
                         <JobPostCard

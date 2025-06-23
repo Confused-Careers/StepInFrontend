@@ -184,7 +184,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
         onClick={handleOpenPopup}
       >
         <div className="py-2 px-5 space-y-4 mb-2 mt-2">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 [@media(max-width:1072px)]:gap-0">
             {hasValidImage(applicant.imageUrl) ? (
               <div className="bg-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
                 <img 
@@ -199,8 +199,8 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
               <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
             )}
             <div className="flex-1 ml-5 flex flex-col justify-center">
-              <div className="flex justify-center items-center gap-2 pr-9">
-                <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3">{applicant.name}</h3>
+              <div className="flex justify-center items-center gap-2 pr-9 [@media(max-width:1240px)]:pr-0">
+                <h3 className="font-[700] text-[20px] text-white flex justify-start ml-3 [@media(max-width:1240px)]:ml-0">{applicant.name}</h3>
               </div>
                 <div className="flex flex-col [@media(min-width:1248px)]:flex-row items-center justify-center gap-2">
                   <p className="text-sm text-[rgba(209,209,214,1)]">{applicant.location}</p>
@@ -334,13 +334,13 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     <div className="bg-[rgba(10,132,255,0.05)] rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
                       <p className="text-[13px] text-white m-3">{aiSummary}</p>
                     </div>
-                    {/** 
+                     
                     <div className="flex justify-start mt-4 mb-4">
                       <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]">
-                        Talk To {applicant.name}’s AI
+                        View Resume
                       </button>
                     </div>
-                    */}
+
                   </div>
                 </motion.div>
                 <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">

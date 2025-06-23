@@ -28,6 +28,9 @@ interface Question {
   options: Array<{
     id: string;
     optionText: string;
+    personalityTrait: string;
+    behavioralIndicator: string;
+    insight: string | null;
   }>;
   onboardingOrder: number;
 }
@@ -38,7 +41,7 @@ interface Step {
   content?: string;
   questionId?: string;
   questionText?: string;
-  options?: Array<{ id: string; optionText: string }>;
+  options?: Array<{ id: string; optionText: string; personalityTrait: string; behavioralIndicator: string; insight: string | null }>;
   progress: number;
 }
 
@@ -71,7 +74,6 @@ export function OnboardingFlow() {
     { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
   ]);
 
-  // Fetch onboarding questions and build dynamic steps
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -80,65 +82,48 @@ export function OnboardingFlow() {
           (a: { onboardingOrder: number; }, b: { onboardingOrder: number; }) => a.onboardingOrder - b.onboardingOrder
         );
         const totalQuestions = questions.length;
-
-        // Calculate questions before and after registration
-        const questionsBefore = totalQuestions % 2 === 0
-          ? totalQuestions / 2
-          : Math.ceil(totalQuestions / 2);
-
-        // Build dynamic steps
+        const questionsBefore = totalQuestions % 2 === 0 ? totalQuestions / 2 : Math.ceil(totalQuestions / 2);
         const newSteps: Step[] = [
           { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
         ];
-
-        // Add questions before registration
         questions.slice(0, questionsBefore).forEach((q, index) => {
           newSteps.push({
             id: `q${index + 1}`,
             type: "question",
             questionId: q.id,
             questionText: q.questionText,
-            options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText })),
+            options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText, personalityTrait: opt.personalityTrait, behavioralIndicator: opt.behavioralIndicator, insight: opt.insight })),
             progress: ((index + 1) / (totalQuestions + 3)) * 80,
           });
         });
-
-        // Add registration
         newSteps.push({
           id: "register",
           type: "register",
           content: "Let's save your progress – and send your matches straight to you",
           progress: (questionsBefore / (totalQuestions + 3)) * 80,
         });
-
-        // Add resume
         newSteps.push({
           id: "resume",
           type: "resume",
           content: "Now let's connect your experience — we'll use it to show matches that actually fit.",
           progress: ((questionsBefore + 1) / (totalQuestions + 3)) * 80,
         });
-
-        // Add questions after registration
         questions.slice(questionsBefore).forEach((q, index) => {
           newSteps.push({
             id: `q${questionsBefore + index + 1}`,
             type: "question",
             questionId: q.id,
             questionText: q.questionText,
-            options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText })),
+            options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText, personalityTrait: opt.personalityTrait, behavioralIndicator: opt.behavioralIndicator, insight: opt.insight })),
             progress: ((questionsBefore + 1 + index + 1) / (totalQuestions + 3)) * 80,
           });
         });
-
-        // Add verify
         newSteps.push({
           id: "verify",
           type: "verify",
           content: "Verify your email to continue",
           progress: 90,
         });
-
         setDynamicSteps(newSteps);
       } catch {
         toast.error("Failed to load onboarding questions.");
@@ -147,7 +132,6 @@ export function OnboardingFlow() {
     fetchQuestions();
   }, []);
 
-  // Persist state to localStorage
   useEffect(() => {
     localStorage.setItem('onboarding_currentStep', currentStep.toString());
   }, [currentStep]);
@@ -164,7 +148,6 @@ export function OnboardingFlow() {
     localStorage.setItem('onboarding_resumeUploaded', JSON.stringify(resumeUploaded));
   }, [resumeUploaded]);
 
-  // Update progress and handle intro auto-advance
   useEffect(() => {
     const timer = setTimeout(() => {
       setProgress(dynamicSteps[currentStep]?.progress || 0);
@@ -184,26 +167,21 @@ export function OnboardingFlow() {
   const handleAnswer = async (stepId: string, optionId: string) => {
     const questionId = dynamicSteps.find(step => step.id === stepId)?.questionId;
     if (!questionId) return;
-
     setAnswers(prev => ({ ...prev, [stepId]: optionId }));
     const newAnswer = { questionId, selectedOptionId: optionId };
     setOnboardingAnswers(prev => [...prev.filter(a => a.questionId !== questionId), newAnswer]);
-
     setIsTransitioning(true);
     setShowContent(false);
-
     const questionIndex = dynamicSteps.findIndex(step => step.id === stepId);
     const totalQuestions = dynamicSteps.filter(step => step.type === "question").length;
     const questionCount = dynamicSteps.slice(0, questionIndex + 1).filter(step => step.type === "question").length;
     const isLastQuestion = questionCount === totalQuestions && totalQuestions > 0;
-
     if (isLastQuestion) {
       setIsLoading(true);
       try {
         const isGoogleAuth = !!localStorage.getItem("google_accessToken");
         const registerData = JSON.parse(localStorage.getItem("registerData") || "{}");
         const updatedAnswers = [...onboardingAnswers.filter(a => a.questionId !== questionId), newAnswer];
-
         if (isGoogleAuth) {
           const googleAccessToken = localStorage.getItem("google_accessToken");
           await authServices.googleAuth({
@@ -229,26 +207,25 @@ export function OnboardingFlow() {
           await authServices.register(formData);
         }
         setUserEmail(registerData.email || localStorage.getItem("google_email") || "");
-        setShowVerifyModal(true); // Show modal only after successful POST
-        setCurrentStep(prev => prev + 1); // Advance to verify step
+        setShowVerifyModal(true);
+        setCurrentStep(prev => prev + 1);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Registration failed.");
         setIsTransitioning(false);
         setShowContent(true);
         setIsLoading(false);
-        return; // Stay on current question if POST fails
+        return;
       } finally {
         setIsLoading(false);
       }
     } else {
-      // Advance to next step
       setTimeout(() => {
         setCurrentStep(prev => prev + 1);
         setTimeout(() => {
           setIsTransitioning(false);
           setShowContent(true);
         }, 700);
-      }, 1400);
+      }, 3000);
     }
   };
 
@@ -293,7 +270,6 @@ export function OnboardingFlow() {
   const renderStep = () => {
     const step = dynamicSteps[currentStep];
     if (!step) return null;
-
     switch (step.type) {
       case "intro":
         return (
@@ -359,7 +335,7 @@ export function OnboardingFlow() {
           </motion.div>
         );
       case "verify":
-        return null; // Handled by VerifyEmailModal
+        return null;
       default:
         return null;
     }
