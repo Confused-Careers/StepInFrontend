@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, easeInOut } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from 'react-router-dom';
@@ -343,15 +343,15 @@ export function OnboardingFlow() {
 
   const contentVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 1.4, ease: "easeInOut" } },
-    exit: { opacity: 0, y: -20, transition: { duration: 1, ease: "easeInOut" } },
+    visible: { opacity: 1, y: 0, transition: { duration: 1.4, ease: easeInOut } },
+    exit: { opacity: 0, y: -20, transition: { duration: 1, ease: easeInOut } },
   };
 
   const progressBarVariants = {
     initial: { width: "0%" },
     animate: {
       width: `${progress}%`,
-      transition: { duration: 1.9, ease: "easeInOut" },
+      transition: { duration: 1.9, ease: easeInOut },
     },
   };
 

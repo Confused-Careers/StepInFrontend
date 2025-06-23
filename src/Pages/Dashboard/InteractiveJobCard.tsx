@@ -50,7 +50,6 @@ const modalVariants: Variants = {
         damping: 20,
         mass: 0.8,
         times: [0, 0.5, 1],
-        values: [1, 1.02, 1],
       },
       y: { type: "spring", stiffness: 200, damping: 20 },
       borderRadius: { duration: 0.35, ease: "easeInOut" },

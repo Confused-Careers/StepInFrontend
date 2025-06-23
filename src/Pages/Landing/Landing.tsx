@@ -8,7 +8,6 @@ import Footer from "@/components/Layout/Footer";
 import Navbar from "@/components/Layout/Navbar";
 import ResponsiveFeatureStrip from "./FeaturesSection";
 import { TestimonialsSection } from "./TestimonialCarousel";
-import heroVideo from "@/assets/hero-bg.mp4";
 
 export default function LandingPage() {
   const navigate = useNavigate();
