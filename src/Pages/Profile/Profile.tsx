@@ -104,6 +104,7 @@ export default function ProfilePage() {
   const [resumePreview, setResumePreview] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -571,7 +572,7 @@ export default function ProfilePage() {
             <div className="h-24 bg-gradient-to-r from-primary/20 to-primary/5"></div>
             <CardContent className="pt-0 relative">
               <div className="flex flex-col items-center text-center">
-                <Avatar className="h-24 w-24 border-4 border-background -mt-12 mb-4">
+                <Avatar className="h-24 w-24 border-4 border-background -mt-12 mb-4" onClick={() => setIsProfilePictureModalOpen(true)} style={{ cursor: 'pointer' }}>
                   <AvatarImage src={profilePicturePreview || profile.profilePictureUrl || "/placeholder.svg?height=96&width=96"} alt={`${profile.firstName} ${profile.lastName}`} />
                   <AvatarFallback>{profile.firstName?.[0]}{profile.lastName?.[0]}</AvatarFallback>
                 </Avatar>
@@ -659,12 +660,14 @@ export default function ProfilePage() {
                   {profilePicturePreview && (
                     <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4 transition-all hover:border-blue-400/50 group cursor-pointer">
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden border border-slate-600/50 flex-shrink-0">
+                        <a href={profile.profilePictureUrl || profilePicturePreview} target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-lg overflow-hidden border border-slate-600/50 flex-shrink-0 block">
                           <img src={profilePicturePreview} alt="Profile Picture Preview" className="w-full h-full object-cover" />
-                        </div>
+                        </a>
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-medium truncate">Current Profile Picture</p>
-                          <p className="text-slate-400 text-sm">Click to view</p>
+                          <p className="text-slate-400 text-sm">
+                            <a href={profile.profilePictureUrl || profilePicturePreview} target="_blank" rel="noopener noreferrer">Click to view</a>
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -1286,8 +1289,9 @@ export default function ProfilePage() {
         setSelectedFile={setResumeFile}
       />
       <ProfilePictureUploadModal
-        isOpen={profilePictureFile !== null}
+        isOpen={isProfilePictureModalOpen}
         onClose={() => {
+          setIsProfilePictureModalOpen(false);
           setProfilePictureFile(null);
           if (profilePicturePreview && !profile?.profilePictureUrl) {
             URL.revokeObjectURL(profilePicturePreview);

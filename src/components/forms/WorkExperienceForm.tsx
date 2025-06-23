@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,36 @@ export function WorkExperienceForm({ isOpen, onClose, onSubmit, initialData }: W
     displayOrder: initialData?.displayOrder,
     achievements: initialData?.achievements || [],
   });
+
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData({
+        positionTitle: initialData.positionTitle || "",
+        companyName: initialData.companyName || "",
+        location: initialData.location || "",
+        startDate: initialData.startDate ? new Date(initialData.startDate) : undefined,
+        endDate: initialData.endDate ? new Date(initialData.endDate) : undefined,
+        isCurrent: initialData.isCurrent || false,
+        description: initialData.description || "",
+        workEnvironmentTags: initialData.workEnvironmentTags || [],
+        displayOrder: initialData.displayOrder,
+        achievements: initialData.achievements || [],
+      });
+    } else if (isOpen && !initialData) {
+      setFormData({
+        positionTitle: "",
+        companyName: "",
+        location: "",
+        startDate: undefined,
+        endDate: undefined,
+        isCurrent: false,
+        description: "",
+        workEnvironmentTags: [],
+        displayOrder: undefined,
+        achievements: [],
+      });
+    }
+  }, [isOpen, initialData]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
