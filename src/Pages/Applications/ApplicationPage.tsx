@@ -386,7 +386,166 @@ export default function ApplicationsPage() {
                 <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
               </TabsList>
 
-              <TabsContent value={activeTab}>
+              <TabsContent value="all">
+                {isLoading ? (
+                  <p>Loading applications...</p>
+                ) : filteredApplications.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No applications found</p>
+                ) : (
+                    <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
+                      {filteredApplications.map(app => {
+                        // Helper to format employment type
+                        const formatEmploymentType = (type?: string) => {
+                          if (!type) return "N/A";
+                          
+                          // Handle specific cases
+                          const typeMap: Record<string, string> = {
+                            'full_time': 'Full-Time',
+                            'part_time': 'Part-Time', 
+                            'contract': 'Contract',
+                            'internship': 'Internship'
+                          };
+                          
+                          return typeMap[type] || type
+                            .split("_")
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join("-");
+                        };
+
+                        return (
+                          <JobApplicationCard
+                            key={app.id}
+                            job={{
+                              id: app.id,
+                              status: app.status,
+                              company: app.company.companyName,
+                              companyLogo: app.company.logoUrl,
+                              jobTitle: app.job.title,
+                              location: app.job.location,
+                              department: app.job.department ?? "General",
+                              jobType: formatEmploymentType(app.job.employmentType),
+                              appliedDate: app.applicationDate,
+                              salary: app.job.salaryMin && app.job.salaryMax
+                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
+                                : "N/A",
+                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
+                              feedback: app.feedback ?? "",
+                              interviewDate: app.nextStepDate,
+                            }}
+                            onActionClick={handleActionClick}
+                          />
+                        );
+                      })}
+                    </div>
+                )}
+              </TabsContent>
+              <TabsContent value="active">
+                {isLoading ? (
+                  <p>Loading applications...</p>
+                ) : filteredApplications.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No applications found</p>
+                ) : (
+                    <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
+                      {filteredApplications.map(app => {
+                        // Helper to format employment type
+                        const formatEmploymentType = (type?: string) => {
+                          if (!type) return "N/A";
+                          
+                          // Handle specific cases
+                          const typeMap: Record<string, string> = {
+                            'full_time': 'Full-Time',
+                            'part_time': 'Part-Time', 
+                            'contract': 'Contract',
+                            'internship': 'Internship'
+                          };
+                          
+                          return typeMap[type] || type
+                            .split("_")
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join("-");
+                        };
+
+                        return (
+                          <JobApplicationCard
+                            key={app.id}
+                            job={{
+                              id: app.id,
+                              status: app.status,
+                              company: app.company.companyName,
+                              companyLogo: app.company.logoUrl,
+                              jobTitle: app.job.title,
+                              location: app.job.location,
+                              department: app.job.department ?? "General",
+                              jobType: formatEmploymentType(app.job.employmentType),
+                              appliedDate: app.applicationDate,
+                              salary: app.job.salaryMin && app.job.salaryMax
+                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
+                                : "N/A",
+                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
+                              feedback: app.feedback ?? "",
+                              interviewDate: app.nextStepDate,
+                            }}
+                            onActionClick={handleActionClick}
+                          />
+                        );
+                      })}
+                    </div>
+                )}
+              </TabsContent>
+              <TabsContent value="interviews">
+                {isLoading ? (
+                  <p>Loading applications...</p>
+                ) : filteredApplications.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No applications found</p>
+                ) : (
+                    <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
+                      {filteredApplications.map(app => {
+                        // Helper to format employment type
+                        const formatEmploymentType = (type?: string) => {
+                          if (!type) return "N/A";
+                          
+                          // Handle specific cases
+                          const typeMap: Record<string, string> = {
+                            'full_time': 'Full-Time',
+                            'part_time': 'Part-Time', 
+                            'contract': 'Contract',
+                            'internship': 'Internship'
+                          };
+                          
+                          return typeMap[type] || type
+                            .split("_")
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join("-");
+                        };
+
+                        return (
+                          <JobApplicationCard
+                            key={app.id}
+                            job={{
+                              id: app.id,
+                              status: app.status,
+                              company: app.company.companyName,
+                              companyLogo: app.company.logoUrl,
+                              jobTitle: app.job.title,
+                              location: app.job.location,
+                              department: app.job.department ?? "General",
+                              jobType: formatEmploymentType(app.job.employmentType),
+                              appliedDate: app.applicationDate,
+                              salary: app.job.salaryMin && app.job.salaryMax
+                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
+                                : "N/A",
+                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
+                              feedback: app.feedback ?? "",
+                              interviewDate: app.nextStepDate,
+                            }}
+                            onActionClick={handleActionClick}
+                          />
+                        );
+                      })}
+                    </div>
+                )}
+              </TabsContent>
+              <TabsContent value="offers">
                 {isLoading ? (
                   <p>Loading applications...</p>
                 ) : filteredApplications.length === 0 ? (
@@ -474,10 +633,10 @@ export default function ApplicationsPage() {
                           onAction={(action, jobId) => {
                             handleJobAction(action, jobId);
                           }}
-                        />
-                      );
-                    })}
-                  </div>
+                          />
+                        );
+                      })}
+                    </div>
                 )}
               </TabsContent>
             </Tabs>
