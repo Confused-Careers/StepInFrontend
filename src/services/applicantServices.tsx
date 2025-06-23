@@ -18,6 +18,7 @@ export const getAuthHeaders = () => {
 };
 
 export interface ApplicantCardDto {
+  resumeUrl: null;
   applicationId: string | null;
   jobSeekerId: string;
   firstName: string;

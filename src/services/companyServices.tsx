@@ -50,9 +50,10 @@ interface Job {
     isRequired: boolean;
   }>;
   company: {
-    industry: any;
+    industry: string;
     companyName: string;
     logoUrl?: string;
+
   };
   createdAt: string;
 }

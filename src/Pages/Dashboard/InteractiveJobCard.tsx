@@ -19,6 +19,7 @@ export interface JobCardProps {
   whyYouFit: string;
   aiSummary: string;
   fullJobDescription: string;
+  salary: string;
   fullResponsibilities: string;
   companyDescription: string;
   isTargetedRecommendation?: boolean;
@@ -419,7 +420,7 @@ const JobCard = ({
                 </div>
                 <div className="flex justify-end items-center mb-4 gap-3 mt-0">
                   {nextJobData.salaryRange && nextJobData.salaryRange !== "Not specified" && (
-                  <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{nextJobData.salaryRange}</span>
+                  <span className="text-jobcardforeground bg-jobcardsecondary text-xs rounded-md px-3 py-1">{nextJobData.salary}</span>
                   )}
                   <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{Math.round(nextJobData.matchPercentage)}% Match</span>
                 </div>

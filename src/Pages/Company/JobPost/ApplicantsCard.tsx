@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Applicant as ImportedApplicant } from "./ApplicationsPage";
 
 export interface Applicant extends ImportedApplicant {
+  resumeUrl: string | URL;
   imageUrl?: string | null;
 }
 import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
@@ -336,7 +337,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     </div>
                      
                     <div className="flex justify-start mt-4 mb-4">
-                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]">
+                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" onClick={() => window.open(applicant.resumeUrl, "_blank")}>
                         View Resume
                       </button>
                     </div>

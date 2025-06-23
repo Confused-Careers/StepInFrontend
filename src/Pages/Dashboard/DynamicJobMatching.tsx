@@ -44,6 +44,7 @@ interface BackendJob {
   description: string;
   responsibilities: string;
   createdAt: string;
+  payPeriod?: string;
   matchExplanation?: {
     explanation?: string;
     overallScore?: number;
@@ -87,6 +88,15 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     internship: "Internship",
     contract: "Contract",
   };
+
+  let salary = "Unpaid";
+  if (jobDetails.salaryMin && jobDetails.salaryMax) {
+    const min = parseFloat(String(jobDetails.salaryMin));
+    const max = parseFloat(String(jobDetails.salaryMax));
+    const period = jobDetails.payPeriod || "mo";
+    salary = `$${min} - $${max}/${period}`;
+  }
+
   const readableEmploymentType =
     employmentTypeMap[jobDetails.employmentType?.toLowerCase()] || jobDetails.employmentType;
 
@@ -96,11 +106,11 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     title: jobDetails.title,
     company: jobDetails.company?.companyName || job.company,
     location: jobDetails.location,
-    tags: [jobDetails.category?.categoryName || "General", readableEmploymentType],
-    salaryRange:
-      jobDetails.salaryMin && jobDetails.salaryMax
-        ? `$${Number(jobDetails.salaryMin) / 1000}k - $${Number(jobDetails.salaryMax) / 1000}k/yr`
-        : "Not specified",
+    tags: [jobDetails.company.industry || "General", readableEmploymentType],
+    salary,
+    salaryRange: jobDetails.salaryMin && jobDetails.salaryMax
+      ? `$${jobDetails.salaryMin} - $${jobDetails.salaryMax}/${jobDetails.payPeriod || "mo"}`
+      : "Unpaid",
     matchPercentage: jobDetails.matchScore !== undefined ? Math.round(Number(jobDetails.matchScore)) || 0 : 0,
     description: jobDetails.description,
     responsibilities: jobDetails.responsibilities || "",

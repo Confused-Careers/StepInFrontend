@@ -13,6 +13,7 @@ export enum ApplicationStatus {
 export interface Application {
   id: string;
   job: {
+    company: { companyName: string; logoUrl?: string; industry?: string };
     id: string;
     title: string;
     employmentType: string;
@@ -20,6 +21,7 @@ export interface Application {
     isRemote: boolean;
     salaryMin?: number;
     salaryMax?: number;
+    payPeriod?: string;
     requiredSkills?: string[];
     department?: string;
     description?: string;
@@ -27,6 +29,7 @@ export interface Application {
   company: {
     companyName: string;
     logoUrl?: string;
+    industry?: string;
   };
   applicationDate: string;
   status: ApplicationStatus | 'first-round' | 'under-review' | 'offer';
@@ -53,6 +56,7 @@ interface SavedJob {
   company: {
     companyName: string;
     logoUrl?: string;
+    industry?: string;
   };
   savedDate: string;
   notes?: string;
@@ -103,6 +107,7 @@ interface ApiCompany {
   id?: string;
   companyName?: string;
   logoUrl?: string;
+  industry?: string;
 }
 
 interface ApiJob {
@@ -114,6 +119,8 @@ interface ApiJob {
   company?: ApiCompany;
   salaryMin?: string;
   salaryMax?: string;
+  payPeriod?: string;
+  industry?: string;
   requiredSkills?: string[];
   department?: string;
   description?: string;
@@ -157,6 +164,7 @@ interface ApiJobResponse {
   statusCode: number;
   message: string;
   data: ApiJob;
+  
 }
 
 const applicationServices = {
@@ -210,13 +218,19 @@ const applicationServices = {
               isRemote: app?.job?.isRemote ?? false,
               salaryMin: app?.job?.salaryMin ? Number(app.job.salaryMin) : undefined,
               salaryMax: app?.job?.salaryMax ? Number(app.job.salaryMax) : undefined,
+              payPeriod: app?.job?.payPeriod ?? 'Unknown',
               requiredSkills: app?.job?.requiredSkills ?? [],
               department: app?.job?.department ?? undefined,
               description: app?.job?.description ?? '',
+              company: {
+                companyName: '',
+                logoUrl: undefined
+              }
             },
             company: {
               companyName: app?.job?.company?.companyName ?? 'Unknown',
               logoUrl: app?.job?.company?.logoUrl ?? undefined,
+              industry: app?.job?.company?.industry ?? undefined,
             },
             applicationDate: app?.applicationDate
               ? new Date(app.applicationDate).toLocaleDateString('en-US', {
@@ -292,6 +306,12 @@ const applicationServices = {
         requiredSkills: jobData?.requiredSkills ?? [],
         department: jobData?.department ?? undefined,
         description: jobData?.description ?? undefined,
+        company: {
+          companyName: jobData?.company?.companyName ?? 'Unknown',
+          logoUrl: jobData?.company?.logoUrl ?? undefined,
+          industry: jobData?.company?.industry ?? undefined,
+        },
+        payPeriod: jobData?.payPeriod ?? undefined,
       };
     } catch (error: unknown) {
       console.error('Error fetching job details:', error);

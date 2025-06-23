@@ -480,12 +480,12 @@ export default function JobPostForm() {
                                 <SelectValue placeholder="Select pay period" />
                               </SelectTrigger>
                               <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
-                                <SelectItem value="hourly">Hourly</SelectItem>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="biweekly">Biweekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                                <SelectItem value="annually">Annually</SelectItem>
+                                <SelectItem value="hr">Hourly</SelectItem>
+                                <SelectItem value="dy">Daily</SelectItem>
+                                <SelectItem value="wk">Weekly</SelectItem>
+                                <SelectItem value="bw">Biweekly</SelectItem>
+                                <SelectItem value="mo">Monthly</SelectItem>
+                                <SelectItem value="yr">Annually</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

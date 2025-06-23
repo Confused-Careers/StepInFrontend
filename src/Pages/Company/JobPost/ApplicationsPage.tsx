@@ -21,6 +21,8 @@ export interface Applicant {
   weakness: string[];
   match: string;
   location: string;
+  resumeUrl: string | URL;
+  imageUrl?: string | null;
 }
 
 interface Tag {
@@ -127,6 +129,7 @@ export default function CompanyApplicationsPage() {
           match: dto.matchPercentage ? Math.round(dto.matchPercentage).toString() : "0",
           location: dto.location || "Not specified",
           imageUrl: dto.profilePictureUrl || null,
+          resumeUrl: dto.resumeUrl ?? "",
         }));
         setApplicants(mappedApplicants);
         setAllApplicants(mappedApplicants);

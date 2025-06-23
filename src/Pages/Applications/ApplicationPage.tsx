@@ -36,6 +36,7 @@ interface Application {
   company: {
     companyName: string;
     logoUrl?: string;
+    industry?: string;
   };
   applicationDate: string;
   status: ApplicationStatus | 'first-round' | 'under-review' | 'offer';
@@ -136,11 +137,18 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
           <div>
             <h3 className="font-semibold text-sm">Salary Range</h3>
             <p className="text-sm text-muted-foreground">
-              {application.job.salaryMin && application.job.salaryMax
-                ? `$${application.job.salaryMin.toLocaleString()} - $${application.job.salaryMax.toLocaleString()} USD/${(application.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
-                : application.job.salaryMin
-                ? `$${application.job.salaryMin.toLocaleString()} USD/${(application.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
-                : `$${application.job.salaryMax?.toLocaleString()} USD/${(application.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`}
+              {(() => {
+                let salary = "Unpaid";
+                const min = application.job.salaryMin;
+                const max = application.job.salaryMax;
+                const period = application.job.payPeriod
+                  ? application.job.payPeriod.charAt(0).toUpperCase() + application.job.payPeriod.slice(1)
+                  : "Yearly";
+                if (min && max) {
+                  salary = `$${parseFloat(String(min)).toLocaleString()} - $${parseFloat(String(max)).toLocaleString()}/${period}`;
+                }
+                return salary;
+              })()}
             </p>
           </div>
         )}
@@ -261,7 +269,6 @@ export default function ApplicationsPage() {
         page: 1,
         limit: 100,
       });
-      // Fetch job details for each application
 
       const enrichedApplications = await Promise.all(
         applications.map(async (app) => {
@@ -271,7 +278,8 @@ export default function ApplicationsPage() {
               ...app,
               job: {
                 ...app.job,
-                ...jobDetails, // Override with detailed job data
+                ...jobDetails,
+                company: app.job.company ?? app.company, // Ensure company is present
               },
             };
           } catch (error) {
@@ -398,7 +406,7 @@ export default function ApplicationsPage() {
                             'internship': 'Internship'
                           };
                           
-                          return typeMap[type] || type
+                          return typeMap[type]
                             .split("_")
                             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                             .join("-");
@@ -414,12 +422,11 @@ export default function ApplicationsPage() {
                               companyLogo: app.company.logoUrl,
                               jobTitle: app.job.title,
                               location: app.job.location,
-                              department: app.job.department ?? "General",
+                              department: app.company.industry || "N/A",
                               jobType: formatEmploymentType(app.job.employmentType),
                               appliedDate: app.applicationDate,
-                              salary: app.job.salaryMin && app.job.salaryMax
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
-                                : "N/A",
+                              salary: app.job.salaryMin && app.job.salaryMax 
+                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${app.job.payPeriod}` : "Unpaid",
                               matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
                               feedback: app.feedback ?? "",
                               interviewDate: app.nextStepDate,
@@ -450,10 +457,8 @@ export default function ApplicationsPage() {
                           company={job.company?.companyName || job.company}
                           location={job.location}
                           tags={job.requiredSkills || []}
-                          salaryRange={job.salaryMin && job.salaryMax 
-                            ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}/${(job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
-                            : "Negotiable"
-                          }
+                          salary={job.salary}
+                          salaryRange={job.salaryMin && job.salaryMax}
                           matchPercentage={job.matchScore ? parseFloat(job.matchScore) : 0}
                           description={job.description || ""}
                           responsibilities={job.responsibilities || ""}
