@@ -422,11 +422,11 @@ export default function ApplicationsPage() {
                               companyLogo: app.company.logoUrl,
                               jobTitle: app.job.title,
                               location: app.job.location,
-                              department: app.job.department ?? "General",
+                              department: app.company.industry || "N/A",
                               jobType: formatEmploymentType(app.job.employmentType),
                               appliedDate: app.applicationDate,
                               salary: app.job.salaryMin && app.job.salaryMax
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
+                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${app.job.payPeriod}`
                                 : "N/A",
                               matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
                               feedback: app.feedback ?? "",
