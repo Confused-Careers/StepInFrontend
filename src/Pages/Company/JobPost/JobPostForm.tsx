@@ -15,6 +15,7 @@ interface JobFormData {
   title: string;
   description: string;
   requirements: string;
+  responsibilities: string;
   employmentType: string;
   experienceLevel: string;
   location: string;
@@ -142,6 +143,7 @@ export default function JobPostForm() {
     title: "",
     description: "",
     requirements: "",
+    responsibilities: "",
     employmentType: "full_time",
     experienceLevel: "senior",
     location: "",
@@ -161,6 +163,7 @@ export default function JobPostForm() {
   const titleResize = useAutoResize(job.title);
   const descriptionResize = useAutoResize(job.description);
   const requirementsResize = useAutoResize(job.requirements);
+  const responsibilitiesResize = useAutoResize(job.responsibilities);
   const locationResize = useAutoResize(job.location);
 
   useEffect(() => {
@@ -173,6 +176,7 @@ export default function JobPostForm() {
             title: jobData.title || "",
             description: jobData.description || "",
             requirements: jobData.requirements || "",
+            responsibilities: jobData.responsibilities || "",
             employmentType: jobData.employmentType || "full_time",
             experienceLevel: jobData.experienceLevel || "senior",
             location: jobData.location || "",
@@ -239,6 +243,7 @@ export default function JobPostForm() {
       title: job.title,
       description: job.description,
       requirements: job.requirements,
+      responsibilities: job.responsibilities,
       employmentType: job.employmentType,
       experienceLevel: job.experienceLevel,
       location: job.location,
@@ -378,6 +383,25 @@ export default function JobPostForm() {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="responsibilities" className="text-white">Job Responsibilities</Label>
+                    <textarea
+                      ref={responsibilitiesResize.textareaRef}
+                      id="responsibilities"
+                      value={job.responsibilities}
+                      onChange={handleInputChange}
+                      onInput={responsibilitiesResize.adjustHeight}
+                      required
+                      className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full px-3 py-2 rounded-md resize-none overflow-hidden"
+                      rows={1}
+                      style={{
+                        height: 'auto',
+                        minHeight: '40px',
+                        whiteSpace: 'pre wrap',
+                        wordBreak: 'break-word'
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="employmentType" className="text-white">Employment Type</Label>
                     <Select
                       onValueChange={(value) => handleSelectChange("employmentType", value)}
@@ -403,7 +427,7 @@ export default function JobPostForm() {
                       <SelectTrigger className="bg-black border border-[rgba(209,209,214,0.2)] text-white">
                         <SelectValue placeholder="Select level" />
                       </SelectTrigger>
-                      <SelectContent className="bg-black text-white border border-[rgba(209,209,214,0.2)]">
+                      <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
                         <SelectItem value="entry">Entry</SelectItem>
                         <SelectItem value="mid">Mid</SelectItem>
                         <SelectItem value="senior">Senior</SelectItem>
@@ -439,7 +463,6 @@ export default function JobPostForm() {
                     />
                     <Label htmlFor="isRemote" className="text-white">Remote</Label>
                   </div>
-                  
                   <AnimatePresence>
                     {!job.unpaid && (
                       <motion.div

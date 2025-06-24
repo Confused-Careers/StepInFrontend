@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import companyServices from "@/services/companyServices";
 import Logo from "../../../assets/StepIn Transparent Logo.png";
-import { Globe, MapPin, Users, Building2, Upload, X, Camera, Check } from "lucide-react";
+import { Globe, MapPin, Users, Building2, Upload, X, Camera } from "lucide-react";
 
 interface CompanyProfileData {
   companyName: string;
@@ -61,8 +60,6 @@ export default function CompanyProfile() {
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isIndustryOpen, setIsIndustryOpen] = useState(false);
-  const [newIndustry, setNewIndustry] = useState("");
 
   const fetchProfile = useCallback(async (signal: AbortSignal) => {
     try {
@@ -80,7 +77,6 @@ export default function CompanyProfile() {
         location: data.location || "",
         logoUrl: data.logoUrl || "",
       });
-      setNewIndustry(data.industry || "");
     } catch (error) {
       if (signal.aborted) return;
       toast.error(
@@ -126,16 +122,9 @@ export default function CompanyProfile() {
   };
 
   const handleIndustryChange = (value: string) => {
+    console.log("Selected industry:", value);
     setProfile((prev) => ({ ...prev, industry: value }));
-    setNewIndustry(value);
-    setIsIndustryOpen(false);
   };
-
-  useEffect(() => {
-    if (newIndustry) {
-      setProfile((prev) => ({ ...prev, industry: newIndustry }));
-    }
-  }, [newIndustry]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -272,34 +261,16 @@ export default function CompanyProfile() {
                         <Label htmlFor="industry" className="text-white font-medium flex items-center gap-2">
                           Industry
                         </Label>
-                        <Select open={isIndustryOpen} onOpenChange={setIsIndustryOpen} value={profile.industry} onValueChange={handleIndustryChange}>
+                        <Select value={profile.industry} onValueChange={handleIndustryChange}>
                           <SelectTrigger className="bg-black border border-[rgba(209,209,214,0.2)] text-white w-full">
-                            <SelectValue placeholder="Select industry">
-                              {profile.industry || "Select industry"}
-                            </SelectValue>
+                            <SelectValue placeholder="Select industry" />
                           </SelectTrigger>
                           <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)] max-h-60 no-scrollbar w-full">
-                            <Command className="bg-black text-white">
-                              <CommandInput placeholder="Search industries..." className="bg-black border-[rgba(209,209,214,0.2)] text-white placeholder:text-slate-400 no-scrollbar" />
-                              <CommandList className="no-scrollbar">
-                                <CommandEmpty className="text-slate-400 py-2 text-center no-scrollbar">No industries found.</CommandEmpty>
-                                <CommandGroup className="no-scrollbar">
-                                  {industries.map((industry) => (
-                                    <CommandItem
-                                      key={industry}
-                                      value={industry}
-                                      onSelect={() => handleIndustryChange(industry)}
-                                      className="text-white hover:bg-[rgba(209,209,214,0.1)] data-[selected=true]:bg-[rgba(209,209,214,0.2)] no-scrollbar"
-                                    >
-                                      <Check
-                                        className={`mr-2 h-4 w-4 ${profile.industry === industry ? "opacity-100" : "opacity-0"}`}
-                                      />
-                                      {industry}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
+                            {industries.map((industry) => (
+                              <SelectItem key={industry} value={industry}>
+                                {industry}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

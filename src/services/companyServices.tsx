@@ -63,6 +63,7 @@ interface CreateJobData {
   title: string;
   description: string;
   requirements: string;
+  responsibilities?: string;
   employmentType: string;
   experienceLevel: string;
   location: string;
