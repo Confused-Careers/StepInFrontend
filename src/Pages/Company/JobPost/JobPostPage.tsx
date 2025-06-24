@@ -197,23 +197,7 @@ export function JobsPostPage() {
       }
     };
 
-    const fetchJobInsights = async () => {
-      try {
-        for (const job of jobs) {
-          const insights = await companyServices.getJobInsights(job.id);
-          console.log(`Insights for job ${job.id}:`, insights);
-        }
-      } catch (error) {
-        toast.error(
-          typeof error === "object" && error !== null && "message" in error
-            ? (error as { message?: string }).message || "Failed to fetch job insights"
-            : "Failed to fetch job insights"
-        );
-      }
-    }
-
     fetchJobs();
-    fetchJobInsights();
   }, []);
 
   const handleActionClick = (jobId: string): void => {

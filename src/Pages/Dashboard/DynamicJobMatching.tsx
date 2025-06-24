@@ -342,12 +342,9 @@ export function DynamicJobMatching() {
   const fetchProgress = async () => {
     if (isLoading) return;
     setIsLoading(true);
-    console.log("Fetching progress...");
     try {
       const progress: UserProgressResponseDto = await getUserProgress();
-      console.log("Progress received:", JSON.stringify(progress, null, 2));
       const tier = progress.currentTier || 1;
-      console.log("Setting current tier:", tier);
       setCurrentTier(tier);
 
       if (progress.tiers && Array.isArray(progress.tiers)) {

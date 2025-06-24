@@ -135,7 +135,6 @@ const JobCard = ({
   responsibilities,
   postedDate,
   whyYouFit,
-  aiSummary,
   fullJobDescription,
   fullResponsibilities,
   companyDescription,
