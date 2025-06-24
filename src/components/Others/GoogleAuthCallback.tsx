@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import StarryBackground from "@/components/Others/StarryBackground";
 import Logo from "../../assets/StepIn Transparent Logo.png";
 import { toast } from "sonner";
-import axios from "axios";
+import authServices from "@/services/authServices";
 
 export function GoogleAuthCallback() {
   const navigate = useNavigate();
@@ -12,54 +12,82 @@ export function GoogleAuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(location.hash.replace('#', ''));
-    const accessToken = hashParams.get('access_token');
-    const errorParam = hashParams.get('error');
+    const hashParams = new URLSearchParams(location.hash.replace("#", ""));
+    const idToken = hashParams.get("id_token");
+    const errorParam = hashParams.get("error");
+    const state = hashParams.get("state");
+    const nonce = hashParams.get("nonce");
+    const storedNonce = sessionStorage.getItem("google_nonce");
+    let flow = "login";
+    let onboardingAnswers: Array<{ questionId: string; selectedOptionId: string }> = [];
+
+    // Validate nonce
+    if (nonce !== storedNonce) {
+      setError("Invalid nonce. Possible security issue.");
+      toast.error("Authentication error: Invalid nonce.");
+      sessionStorage.removeItem("google_nonce");
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 3000);
+      return;
+    }
+    sessionStorage.removeItem("google_nonce");
+
+    // Parse state
+    try {
+      const parsedState = state ? JSON.parse(decodeURIComponent(state)) : {};
+      flow = parsedState.flow || "login";
+      onboardingAnswers = parsedState.onboardingAnswers || [];
+    } catch {
+      console.warn("Invalid state parameter");
+    }
 
     if (errorParam) {
       setError("Authentication failed. Please try again.");
       toast.error("Google authentication failed. Please try again.");
       setTimeout(() => {
-        navigate("/onboarding", { replace: true });
+        navigate(flow === "register" ? "/onboarding" : "/login", { replace: true });
       }, 3000);
       return;
     }
 
-    if (accessToken) {
-      const fetchUserEmail = async () => {
+    if (idToken) {
+      const handleAuth = async () => {
         try {
-          const response = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          localStorage.setItem("google_email", response.data.email);
-          localStorage.setItem("google_accessToken", accessToken);
-          const storedAnswers = sessionStorage.getItem('onboardingAnswers');
-          if (storedAnswers) {
-            const parsedAnswers = JSON.parse(storedAnswers);
-            const currentOnboardingAnswers = localStorage.getItem('onboarding_onboardingAnswers');
-            const updatedOnboardingAnswers = currentOnboardingAnswers
-              ? [...JSON.parse(currentOnboardingAnswers), ...parsedAnswers]
-              : parsedAnswers;
-            localStorage.setItem('onboarding_onboardingAnswers', JSON.stringify(updatedOnboardingAnswers));
-          }
-          sessionStorage.removeItem('onboardingAnswers');
-          const currentStep = parseInt(localStorage.getItem('onboarding_currentStep') || '4', 10);
-          localStorage.setItem('onboarding_currentStep', (currentStep + 1).toString());
-          navigate("/onboarding", { replace: true });
-        } catch {
-          setError("Failed to fetch user info. Redirecting...");
-          toast.error("Authentication error: Failed to fetch user info.");
-          setTimeout(() => {
+          let response;
+          if (flow === "login") {
+            response = await authServices.googleLogin({ idToken });
+            localStorage.setItem("accessToken", response.accessToken || "");
+            localStorage.setItem("userType", "individual");
+            toast.success("Login successful!", { description: "Welcome back!" });
+            navigate("/dashboard/interactive", { replace: true });
+          } else {
+            response = await authServices.googleAuth({ idToken, onboardingAnswers });
+            localStorage.setItem("accessToken", response.accessToken || "");
+            localStorage.setItem("userType", "individual");
+            toast.success("Registration successful!", { description: "Welcome to StepIn!" });
+            const currentStep = parseInt(localStorage.getItem("onboarding_currentStep") || "4", 10);
+            localStorage.setItem("onboarding_currentStep", (currentStep + 1).toString());
             navigate("/onboarding", { replace: true });
+          }
+        } catch (error: unknown) {
+          setError("Authentication failed. Please try again.");
+          let errorMessage = "Authentication error.";
+          if (error && typeof error === "object" && "message" in error) {
+            errorMessage = (error as { message: string }).message;
+          }
+          toast.error(errorMessage, { description: "Please try again." });
+          setTimeout(() => {
+            navigate(flow === "register" ? "/onboarding" : "/login", { replace: true });
           }, 3000);
         }
       };
-      fetchUserEmail();
+      handleAuth();
     } else {
-      setError("No access token received. Redirecting...");
-      toast.error("Authentication error: No access token received.");
+      setError("No ID token received. Redirecting...");
+      toast.error("Authentication error: No ID token received.");
       setTimeout(() => {
-        navigate("/onboarding", { replace: true });
+        navigate(flow === "register" ? "/onboarding" : "/login", { replace: true });
       }, 3000);
     }
   }, [location, navigate]);

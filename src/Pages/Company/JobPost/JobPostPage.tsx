@@ -248,7 +248,7 @@ export function JobsPostPage() {
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsContent value={activeTab}>
-                  <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-16 gap-y-16 [@media(max-width:1024px)]:grid-cols-2">
+                  <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-10 gap-y-10 [@media(max-width:1024px)]:grid-cols-2">
                     {filteredApplications.length > 0 ? (
                       filteredApplications.map((app) => (
                         <JobPostCard

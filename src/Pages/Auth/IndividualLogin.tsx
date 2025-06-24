@@ -39,26 +39,19 @@ const IndividualLogin: React.FC = () => {
         password: formData.password,
       });
       localStorage.setItem("accessToken", response.accessToken || "");
+      localStorage.setItem("userType", "individual");
       setIsLoading(false);
       toast.success("Login successful!", {
         description: "Welcome back!",
       });
-      localStorage.setItem("userType", "individual");
       navigate("/dashboard/interactive");
     } catch (error: unknown) {
       setIsLoading(false);
       let errorMessage = "Login failed. Please try again.";
-      if (
-        error &&
-        typeof error === "object" &&
-        "message" in error &&
-        typeof (error as { message?: unknown }).message === "string"
-      ) {
+      if (error && typeof error === "object" && "message" in error) {
         errorMessage = (error as { message: string }).message;
       }
-      toast.error(errorMessage, {
-        description: "Error",
-      });
+      toast.error(errorMessage, { description: "Error" });
     }
   };
 
@@ -68,8 +61,10 @@ const IndividualLogin: React.FC = () => {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
       const redirectUri = `${window.location.origin}/auth/google/callback`;
       const scope = "profile email";
-      const state = JSON.stringify({ from: "login" }); // Add state to indicate login flow
-      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&state=${encodeURIComponent(state)}`;
+      const state = JSON.stringify({ flow: "login" });
+      const nonce = crypto.randomUUID(); 
+      sessionStorage.setItem("google_nonce", nonce);
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=id_token&scope=${scope}&state=${encodeURIComponent(state)}&nonce=${nonce}`;
       window.location.href = googleAuthUrl;
     } catch (error) {
       setIsLoading(false);
@@ -91,12 +86,8 @@ const IndividualLogin: React.FC = () => {
         </div>
         <Card className="border-primary/20 bg-background/80 backdrop-blur-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              Welcome Back
-            </CardTitle>
-            <CardDescription className="text-center">
-              Sign in to continue your job search journey
-            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+            <CardDescription className="text-center">Sign in to continue your job search journey</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
@@ -130,9 +121,7 @@ const IndividualLogin: React.FC = () => {
                 <div className="w-full border-t border-muted-foreground/20"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -150,10 +139,7 @@ const IndividualLogin: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <a
-                    href="/individual-forget-password"
-                    className="text-sm text-primary hover:underline"
-                  >
+                  <a href="/individual-forget-password" className="text-sm text-primary hover:underline">
                     Forgot password?
                   </a>
                 </div>
@@ -171,19 +157,13 @@ const IndividualLogin: React.FC = () => {
             </form>
             <div className="mt-4 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
-              <a
-                href="/onboarding"
-                className="text-primary hover:underline"
-              >
+              <a href="/onboarding" className="text-primary hover:underline">
                 Register here
               </a>
             </div>
           </CardContent>
           <CardFooter className="flex justify-center border-t pt-6">
-            <a
-              href="/company/login"
-              className="text-sm text-muted-foreground hover:text-primary"
-            >
+            <a href="/company/login" className="text-sm text-muted-foreground hover:text-primary">
               Hiring? Sign in as a company
             </a>
           </CardFooter>

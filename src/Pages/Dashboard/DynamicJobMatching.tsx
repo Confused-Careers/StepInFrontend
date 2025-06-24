@@ -130,7 +130,6 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
   };
 };
 
-// Error Boundary Component
 interface ErrorBoundaryProps {
   children: React.ReactNode;
 }
@@ -148,8 +147,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    // TODO: Integrate with a monitoring service like Sentry
-    // Sentry.captureException(error, { extra: errorInfo });
   }
 
   handleRetry = () => {
@@ -192,6 +189,7 @@ export function DynamicJobMatching() {
   const jobsRef = useRef<HTMLDivElement>(null);
   const questionCache = useRef<Map<number, GetQuestionsResponseDto>>(new Map());
   const hasFetchedQuestions = useRef<boolean>(false);
+  const [questionAnswered, setQuestionAnswered] = useState<number>(0);
 
   const isValidUUID = (str: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -359,6 +357,7 @@ export function DynamicJobMatching() {
       const progress: UserProgressResponseDto = await getUserProgress();
       const tier = progress.currentTier || 1;
       setCurrentTier(tier);
+      setQuestionAnswered(progress.questionsAnsweredInCurrentTier || 0);
 
       if (!progress.tiers || !Array.isArray(progress.tiers)) {
         console.error("Invalid tiers data in progress");
@@ -469,6 +468,7 @@ export function DynamicJobMatching() {
 
       // Fetch updated progress
       const progress = await getUserProgress();
+
       const newTier = progress.currentTier || 1;
       setCurrentTier(newTier);
 
@@ -630,9 +630,10 @@ export function DynamicJobMatching() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="text-xl font-semibold mb-6 flex items-center"
+            className="text-xl font-semibold mb-6 flex items-center justify-between"
           >
-            Answer Questions
+            <p className="text-xl font-semibold mb-6 flex items-center">Answer Questions</p>
+            <p className="text-xl font-semibold mb-6 flex items-center text-[#6B7280] mr-4">{questionAnswered}</p>
           </motion.h2>
           <motion.div
             variants={containerVariants}

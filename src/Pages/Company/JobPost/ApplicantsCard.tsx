@@ -213,7 +213,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
             </div>
           </div>
 
-          <div className="rounded-lg px-8 py-2 text-center border border-[rgba(42,42,42,1)]" style={{ backgroundColor: "rgba(17, 17, 19, 1)" }}>
+          <div className="rounded-lg px-4 py-2 text-center border border-[rgba(42,42,42,1)]" style={{ backgroundColor: "rgba(17, 17, 19, 1)" }}>
             <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{formatEducation(applicant.education)}</p>
             <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{applicant.currentPosition} @ {applicant.currentCompany}</p>
           </div>
