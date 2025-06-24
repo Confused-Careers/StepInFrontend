@@ -171,6 +171,7 @@ export default function JobPostForm() {
       const fetchJob = async () => {
         try {
           const response = await companyServices.getJob(jobId);
+          console.log("Fetched job data:", response);
           const jobData = response;
           setJob({
             title: jobData.title || "",

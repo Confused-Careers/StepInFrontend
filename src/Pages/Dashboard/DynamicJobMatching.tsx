@@ -676,8 +676,8 @@ export function DynamicJobMatching() {
                           exit="exit"
                           className="mb-2"
                         >
-                          <Card className="dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] border-2 border-blue-500 items-center py-3 h-[75.2px]">
-                            <CardContent className="px-1 py-1 dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] flex justify-center text-center">
+                          <Card className="dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] border-2 border-blue-500 py-3 h-[75.2px] justify-center items-center">
+                            <CardContent className="px-2 py-2 dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] flex justify-center text-center">
                               <p className="text-sm dark:text-gray-300 text-gray-300 flex justify-center text-center">
                                 {insight.text}
                               </p>

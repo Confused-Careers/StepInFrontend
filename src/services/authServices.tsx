@@ -32,6 +32,7 @@ interface GoogleAuthData {
 
 interface GoogleLoginData {
   idToken: string;
+  
 }
 
 interface VerifyEmailData {
