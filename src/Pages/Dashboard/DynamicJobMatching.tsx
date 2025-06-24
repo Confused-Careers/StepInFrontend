@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import React from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Briefcase, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import QuestionBox from "./QuestionBox";
 import { jobServices } from "../../services/jobServices";
 import { formatDistanceToNow } from "date-fns";
@@ -30,7 +32,7 @@ interface BackendJob {
   id: string;
   title: string;
   company: string;
-  companyDescription?:string;
+  companyDescription?: string;
   location: string;
   logoUrl?: string;
   category?: {
@@ -69,7 +71,7 @@ const itemVariants: Variants = {
 const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
   let jobDetails;
   let matchExplanation = job.matchExplanation?.explanation || "Your skills and preferences align with this role.";
-  
+
   try {
     const [jobResponse, explanationResponse] = await Promise.all([
       jobServices.getJobById(job.id),
@@ -116,7 +118,7 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     responsibilities: jobDetails.responsibilities || "",
     jobType: readableEmploymentType,
     postedDate: `Posted ${formatDistanceToNow(new Date(jobDetails.createdAt), { addSuffix: true })}`,
-    whyYouFit: "You are a great fit for this role because of your skills and preferences.",
+    whyYouFit: matchExplanation,
     aiSummary: "This job matches your profile based on your skills and preferences.",
     fullJobDescription: jobDetails.description,
     fullResponsibilities: jobDetails.responsibilities || "",
@@ -127,6 +129,39 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     isApplied: jobDetails.hasApplied ?? false,
   };
 };
+
+// Error Boundary Component
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 text-center">
+          <h2>Something went wrong.</h2>
+          <p>Please refresh the page or contact support.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function DynamicJobMatching() {
   const [columnInsights, setColumnInsights] = useState<Insight[][]>([[], [], []]);
@@ -141,7 +176,9 @@ export function DynamicJobMatching() {
   const [appliedJobs, setAppliedJobs] = useState<string[]>([]);
   const [rejectedJobs, setRejectedJobs] = useState<string[]>([]);
   const [currentMobileQuestionIndex, setCurrentMobileQuestionIndex] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const jobsRef = useRef<HTMLDivElement>(null);
+  const questionCache = useRef<Map<number, GetQuestionsResponseDto>>(new Map());
 
   const isValidUUID = (str: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -162,16 +199,18 @@ export function DynamicJobMatching() {
     try {
       const response = await jobServices.getJobs({
         limit: 3,
-        sortBy: 'relevance',
+        sortBy: "relevance",
         useVectorSearch: true,
       });
-      console.log("Fetched jobs:", response);
       if (response?.data && Array.isArray(response.data)) {
         if (response.data.length === 0) {
           setMatchedJobs([]);
           return;
-        } else if (response.data.length > 3) {
-          console.warn("More than 3 jobs returned, truncating to 3.");
+        }
+        if (response.data.length > 3) {
+          console.warn(
+            `Expected 3 jobs, but received ${response.data.length}. Truncating to 3. Check API limit parameter.`
+          );
           response.data = response.data.slice(0, 3);
         }
         const jobs = await Promise.all(response.data.map(mapJobToJobCardProps));
@@ -182,6 +221,7 @@ export function DynamicJobMatching() {
     } catch (error) {
       console.error("Error fetching jobs:", error);
       setMatchedJobs([]);
+      toast.error("Failed to fetch jobs. Please try again.");
     }
   };
 
@@ -215,57 +255,26 @@ export function DynamicJobMatching() {
 
   const fetchQuestions = async (tier: number) => {
     try {
+      if (questionCache.current.has(tier)) {
+        const cached = questionCache.current.get(tier)!;
+        distributeQuestions(cached.questions);
+        return;
+      }
       const response: GetQuestionsResponseDto = await getQuestionsForTier(tier);
+      questionCache.current.set(tier, response);
       if (response.questions && Array.isArray(response.questions) && response.questions.length > 0) {
         distributeQuestions(response.questions);
       } else {
         console.warn(`No questions returned for tier ${tier}`);
         setAvailableQuestions([]);
         setColumnQuestions([null, null, null]);
+        toast.error("No questions available for this tier. Try again later.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Failed to fetch questions for tier ${tier}:`, error);
       setAvailableQuestions([]);
       setColumnQuestions([null, null, null]);
-    }
-  };
-
-  const fetchProgress = async () => {
-    try {
-      const progress: UserProgressResponseDto = await getUserProgress();
-      const tier = progress.currentTier || 1;
-      setCurrentTier(tier);
-
-      if (progress.tiers && Array.isArray(progress.tiers)) {
-        const currentTierData = progress.tiers[tier - 1];
-        const tierCompletion =
-          currentTierData && currentTierData.questionsRequiredToComplete > 0
-            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
-            : 0;
-        setProfileCompletion(tierCompletion);
-        if (currentTierData.isCompleted && tier < 5) {
-          setCurrentTier(tier + 1);
-          setProfileCompletion(0);
-          setColumnInsights([[], [], []]);
-          setAnsweredQuestionIds(new Set());
-          await fetchQuestions(tier + 1);
-          await fetchAnswerHistory();
-          await fetchJobs();
-        } else {
-          await fetchQuestions(tier);
-          await fetchAnswerHistory();
-        }
-      } else {
-        setProfileCompletion(0);
-        await fetchQuestions(1);
-        await fetchAnswerHistory();
-      }
-    } catch (error) {
-      console.error("Failed to fetch progress:", error);
-      setProfileCompletion(0);
-      setCurrentTier(1);
-      await fetchQuestions(1);
-      await fetchAnswerHistory();
+      toast.error(error.response?.data?.message || "Failed to fetch questions. Please try again.");
     }
   };
 
@@ -279,19 +288,9 @@ export function DynamicJobMatching() {
         return;
       }
 
-      // Collect all tiers from answer history
-      const tiers = [...new Set(history.map((answer) => answer.tierWhenAnswered))];
+      const response: GetQuestionsResponseDto = await getQuestionsForTier(currentTier);
+      const allQuestions = response.questions && Array.isArray(response.questions) ? response.questions : [];
 
-      // Fetch questions for all relevant tiers
-      let allQuestions: QuestionResponseDto[] = [];
-      for (const tier of tiers) {
-        const response: GetQuestionsResponseDto = await getQuestionsForTier(tier);
-        if (response.questions && Array.isArray(response.questions)) {
-          allQuestions = [...allQuestions, ...response.questions];
-        }
-      }
-
-      // Build question map, prioritizing question data from answer history
       const questionMap = new Map<string, QuestionResponseDto>();
       history.forEach((answer) => {
         if (answer.question && answer.questionId) {
@@ -323,7 +322,7 @@ export function DynamicJobMatching() {
         const insight: Insight = {
           id: answer.questionId,
           questionText: question.questionText,
-          text: `${answer.selectedOption.insight || "No insight available"}`,
+          text: answer.selectedOption?.insight || "No insight available",
           category: question.insightCategory || "preferences",
           tier: answer.tierWhenAnswered,
         };
@@ -332,16 +331,58 @@ export function DynamicJobMatching() {
 
       setAnsweredQuestionIds(newAnsweredQuestionIds);
       setColumnInsights(newInsights);
-    } catch (error) {
-      console.error("Failed to fetch answer history:", error);
+    } catch (error: any) {
+      console.error(`Failed to fetch answer history for tier ${currentTier}:`, error);
       setAnsweredQuestionIds(new Set());
       setColumnInsights([[], [], []]);
+      toast.error(error.response?.data?.message || "Failed to fetch answer history. Please try again.");
+    }
+  };
+
+  const fetchProgress = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    console.log("Fetching progress...");
+    try {
+      const progress: UserProgressResponseDto = await getUserProgress();
+      console.log("Progress received:", JSON.stringify(progress, null, 2));
+      const tier = progress.currentTier || 1;
+      console.log("Setting current tier:", tier);
+      setCurrentTier(tier);
+
+      if (progress.tiers && Array.isArray(progress.tiers)) {
+        const currentTierData = progress.tiers[tier - 1];
+        const tierCompletion =
+          currentTierData && currentTierData.questionsRequiredToComplete > 0
+            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
+            : 0;
+        setProfileCompletion(tierCompletion);
+        await fetchQuestions(tier);
+        await fetchAnswerHistory();
+        await fetchJobs();
+      } else {
+        setProfileCompletion(0);
+        setCurrentTier(1);
+        await fetchQuestions(1);
+        await fetchAnswerHistory();
+        await fetchJobs();
+      }
+    } catch (error) {
+      console.error("Failed to fetch progress:", error);
+      setProfileCompletion(0);
+      setCurrentTier(1);
+      await fetchQuestions(1);
+      await fetchAnswerHistory();
+      toast.error("Failed to fetch progress. Defaulting to tier 1.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     const initialize = async () => {
-      await Promise.all([fetchJobs(), fetchSavedJobs(), fetchAppliedJobs(), fetchProgress()]);
+      await fetchProgress();
+      await Promise.all([fetchSavedJobs(), fetchAppliedJobs()]);
     };
     initialize();
   }, []);
@@ -361,9 +402,7 @@ export function DynamicJobMatching() {
         return;
       }
 
-      // Fetch the latest answer to get the insight
       const latestAnswer = (await getAnswerHistory(currentTier)).find((a) => a.questionId === questionId);
-      console.log("Latest answer for question:", latestAnswer);
       const insightText = latestAnswer?.selectedOption?.insight || "No insight available";
 
       const insight: Insight = {
@@ -398,44 +437,47 @@ export function DynamicJobMatching() {
       }
 
       const progress = await getUserProgress();
-      setCurrentTier(progress.currentTier || 1);
+      const newTier = progress.currentTier || 1;
+      setCurrentTier(newTier);
+
       if (progress.tiers && Array.isArray(progress.tiers)) {
-        const currentTierData = progress.tiers[progress.currentTier - 1];
+        const currentTierData = progress.tiers[newTier - 1];
         const tierCompletion =
           currentTierData && currentTierData.questionsRequiredToComplete > 0
             ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
             : 0;
         setProfileCompletion(tierCompletion);
-        if (currentTierData.isCompleted && progress.currentTier < 5) {
-          setCurrentTier(progress.currentTier + 1);
+
+        if (currentTierData.isCompleted && newTier < 5) {
+          setCurrentTier(newTier + 1);
           setProfileCompletion(0);
           setColumnInsights([[], [], []]);
           setAnsweredQuestionIds(new Set());
-          await fetchQuestions(progress.currentTier + 1);
+          await fetchQuestions(newTier + 1);
           await fetchAnswerHistory();
           await fetchJobs();
         } else {
-          await fetchQuestions(progress.currentTier);
+          await fetchQuestions(newTier);
           await fetchAnswerHistory();
           await fetchJobs();
         }
       } else {
         setProfileCompletion(0);
+        setCurrentTier(1);
         await fetchQuestions(1);
         await fetchAnswerHistory();
         await fetchJobs();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to submit answer:", {
-        message: (error as Error)?.message,
-        response: (typeof error === "object" && error !== null && "response" in error && typeof (error as { response?: { data?: unknown } }).response === "object"
-          ? (error as { response?: { data?: unknown } }).response?.data
-          : undefined),
+        message: error.message,
+        response: error.response?.data,
         questionId,
         optionId,
         optionText,
         columnIndex,
       });
+      toast.error(error.response?.data?.message || "Failed to submit answer. Please try again.");
     }
   };
 
@@ -443,7 +485,7 @@ export function DynamicJobMatching() {
     try {
       const response = await jobServices.getJobs({
         limit: 1,
-        sortBy: 'relevance',
+        sortBy: "relevance",
         useVectorSearch: true,
       });
       if (response?.jobs && Array.isArray(response.jobs) && response.jobs.length > 0) {
@@ -463,10 +505,7 @@ export function DynamicJobMatching() {
     }
   };
 
-  const handleJobAction = async (
-    jobId: string,
-    action: "save" | "apply" | "reject"
-  ) => {
+  const handleJobAction = async (jobId: string, action: "save" | "apply" | "reject") => {
     try {
       if (action === "save") {
         await jobServices.saveJob(jobId);
@@ -494,194 +533,196 @@ export function DynamicJobMatching() {
       await fetchJobs();
     } catch (error) {
       console.error(`Failed to ${action} job:`, error);
+      toast.error(`Failed to ${action} job. Please try again.`);
     }
   };
 
   return (
-    <div className="space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        className="flex justify-center items-center mb-3"
-      >
-        <div className="space-y-0 flex flex-col justify-center items-center">
-          <h1 className="text-2xl font-bold">Jobs Dashboard</h1>
-          <p className="text-muted-foreground">Answer questions to unlock better matches, then apply in one click</p>
-        </div>
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
-      >
-      </motion.div>
-      <div className="mb-12 px-4 mt-3">
-        <motion.h2
+    <ErrorBoundary>
+      <div className="space-y-8">
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="text-xl font-semibold mb-6 flex items-center"
+          className="flex justify-center items-center mb-3"
         >
-          Answer Questions
-        </motion.h2>
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 gap-6"
-        >
-          {window.innerWidth < 640 ? (
-            (() => {
-              const currentQuestion = availableQuestions[currentMobileQuestionIndex];
-              if (!currentQuestion || answeredQuestionIds.has(currentQuestion.id)) return null;
-              return (
-                <motion.div
-                  key={currentQuestion.id}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <QuestionBox
-                    question={currentQuestion}
-                    onAnswer={(optionId, optionText) =>
-                      handleAnswer(currentQuestion.id, optionId, optionText, 0)
-                    }
-                  />
-                </motion.div>
-              );
-            })()
-          ) : (
-            [0, 1, 2].map((columnIndex) => (
-              <div key={`column-${columnIndex}`} className="space-y-4 min-h-[200px] w-[95%] ">
-                <AnimatePresence mode="wait">
-                  {columnInsights[columnIndex].map((insight, idx) => (
-                    <motion.div
-                      key={`insight-${insight.id}-${idx}`}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="mb-2"
-                    >
-                      <Card className="dark:bg-[rgba(17, 8,21,1)] bg-[#202536] border-2 border-blue-500 items-center custom-bg-dark">
-                        <CardContent className="px-2 py-1 dark:bg-[rgba(17, 8,21,1)] bg-[#202536] custom-bg-dark">
+          <div className="space-y-0 flex flex-col justify-center items-center">
+            <h1 className="text-2xl font-bold">Jobs Dashboard</h1>
+            <p className="text-muted-foreground">Answer questions to unlock better matches, then apply in one click</p>
+          </div>
+        </motion.div>
+        {isLoading && (
+          <div className="text-center py-4">
+            <p>Loading...</p>
+          </div>
+        )}
+        <div className="mb-12 px-4 mt-3">
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+            className="text-xl font-semibold mb-6 flex items-center"
+          >
+            Answer Questions
+          </motion.h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            {window.innerWidth < 640 ? (
+              (() => {
+                const currentQuestion = availableQuestions[currentMobileQuestionIndex];
+                if (!currentQuestion || answeredQuestionIds.has(currentQuestion.id)) return null;
+                return (
+                  <motion.div
+                    key={currentQuestion.id}
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <QuestionBox
+                      question={currentQuestion}
+                      onAnswer={(optionId, optionText) =>
+                        handleAnswer(currentQuestion.id, optionId, optionText, 0)
+                      }
+                    />
+                  </motion.div>
+                );
+              })()
+            ) : (
+              [0, 1, 2].map((columnIndex) => (
+                <div key={`column-${columnIndex}`} className="space-y-4 min-h-[100px] w-[100%]">
+                  <AnimatePresence mode="wait">
+                    {columnInsights[columnIndex].map((insight, idx) => (
+                      <motion.div
+                        key={`insight-${insight.id}-${idx}`}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="mb-2"
+                      >
+                        <Card className="dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] border-2 border-blue-500 items-center custom-bg-dark py-3">
+                          <CardContent className="px-2 py-1 dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] custom-bg-dark">
                             <p className="text-sm dark:text-gray-300 text-gray-300 bg-[#202536] items-center text-center custom-bg-dark">
                               {insight.text}
                             </p>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  <AnimatePresence mode="wait">
+                    {columnQuestions[columnIndex] && !answeredQuestionIds.has(columnQuestions[columnIndex]!.id) && (
+                      <motion.div
+                        key={columnQuestions[columnIndex]!.id}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                      >
+                        <QuestionBox
+                          question={columnQuestions[columnIndex]!}
+                          onAnswer={(optionId, optionText) =>
+                            handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex)
+                          }
+                        />
+                      </motion.div>
+                    )}
+                    {!columnQuestions[columnIndex] && columnInsights[columnIndex].length > 0 && (
+                      <motion.div
+                        key={`placeholder-${columnIndex}`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 0.5, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        className="bg-jobcardsecondary rounded-lg p-6 border border-primary/10 flex items-center justify-center"
+                      >
+                        <p className="text-muted-foreground text-center">All questions completed!</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))
+            )}
+            {availableQuestions.length === 0 && columnQuestions.every((q) => q === null) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-full"
+              >
+                <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">No questions available</h3>
+                <p className="text-muted-foreground text-center">
+                  Please try again later or contact support.
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+        <div ref={jobsRef} className="mt-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+            className="flex flex-col md:flex-row-reverse md:items-center justify-between mb-6 mt-6"
+          >
+            <div className="flex items-center gap-4 mt-6">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Briefcase className="h-5 w-5 text-primary mr-2" />Your Jobs
+              </h2>
+              <p className="text-muted-foreground"></p>
+            </div>
+          </motion.div>
+          <Tabs defaultValue="all" className="mb-6">
+            <TabsList className="flex justify-center gap-2">
+              <TabsTrigger value="all">All Jobs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all" className="mt-4">
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              >
+                <AnimatePresence>
+                  {matchedJobs.map((job, index) => (
+                    <motion.div key={job.id} variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                      <JobCard
+                        {...job}
+                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                        delay={index * 0.1}
+                        expanded={expandedJob === job.id}
+                        onAction={(action, jobId) => handleJobAction(jobId, action)}
+                        isSaved={savedJobs.includes(job.id)}
+                        isApplied={appliedJobs.includes(job.id)}
+                        nextJob={getNextJob}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                <AnimatePresence mode="wait">
-                  {columnQuestions[columnIndex] && !answeredQuestionIds.has(columnQuestions[columnIndex]!.id) && (
-                    <motion.div
-                      key={columnQuestions[columnIndex]!.id}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                    >
-                      <QuestionBox
-                        question={columnQuestions[columnIndex]!}
-                        onAnswer={(optionId, optionText) =>
-                          handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex)
-                        }
-                      />
-                    </motion.div>
-                  )}
-                  {!columnQuestions[columnIndex] && columnInsights[columnIndex].length > 0 && (
-                    <motion.div
-                      key={`placeholder-${columnIndex}`}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 0.5, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                      className="bg-jobcardsecondary rounded-lg p-6 border border-primary/10 h-48 flex items-center justify-center"
-                    >
-                      <p className="text-muted-foreground text-center">All questions completed!</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))
-          )}
-          {availableQuestions.length === 0 && columnQuestions.every((q) => q === null) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-              className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-full"
-            >
-              <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No questions available</h3>
-              <p className="text-muted-foreground text-center">
-                Please try again later or contact support.
-              </p>
-            </motion.div>
-          )}
-        </motion.div>
-      </div>
-      <div ref={jobsRef} className="mt-6">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="flex flex-col md:flex-row-reverse md:items-center justify-between mb-6 mt-6"
-        >
-          <div className="flex items-center gap-4 mt-6">
-            <h2 className="text-xl font-semibold flex items-center">
-              <Briefcase className="h-5 w-5 text-primary mr-2" />Your Jobs
-            </h2>
-            <p className="text-muted-foreground"></p>
-          </div>
-        </motion.div>
-        <Tabs defaultValue="all" className="mb-6">
-          <TabsList className="flex justify-center gap-2">
-            <TabsTrigger value="all">All Jobs</TabsTrigger>
-          </TabsList>
-          <TabsContent value="all" className="mt-4">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            >
-              <AnimatePresence>
-                {matchedJobs.map((job, index) => (
-                  <motion.div key={job.id} variants={itemVariants} initial="hidden" animate="visible" exit="exit">
-                    <JobCard
-                      {...job}
-                      onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
-                      delay={index * 0.1}
-                      expanded={expandedJob === job.id}
-                      onAction={(action, jobId) => handleJobAction(jobId, action)}
-                      isSaved={savedJobs.includes(job.id)}
-                      isApplied={appliedJobs.includes(job.id)}
-                      nextJob={getNextJob}
-                    />
+                {matchedJobs.length === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                    className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
+                  >
+                    <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-medium mb-2">No jobs found</h3>
+                    <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
                   </motion.div>
-                ))}
-              </AnimatePresence>
-              {matchedJobs.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
-                >
-                  <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">No jobs found</h3>
-                  <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
-                </motion.div>
-              )}
-            </motion.div>
-          </TabsContent>
-        </Tabs>
+                )}
+              </motion.div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }
 

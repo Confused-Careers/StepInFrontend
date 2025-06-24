@@ -551,7 +551,7 @@ const JobCard = ({
                     </div>
                   </div>
                 </motion.div>
-                <motion.div variants={contentVariants} custom={0.25} initial="hidden" animate="visible">
+                {/**<motion.div variants={contentVariants} custom={0.25} initial="hidden" animate="visible">
                   <div className="px-6 pb-4">
                     <h3 className="font-bold text-[18px] text-jobcardtext mb-0 ml-3">AI Agent Conversation Summary</h3>
                     <div className="bg-jobcardsummary rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
@@ -559,7 +559,7 @@ const JobCard = ({
                     </div>
                     <hr className="mt-3 border-blue-500 border-opacity-100" />
                   </div>
-                </motion.div>
+                </motion.div> */}
                 <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">
                   <div className="px-6 pb-4">
                     <h3 className="font-bold text-[18px] text-jobcardtext mb-0 ml-3">Job Description</h3>

@@ -122,7 +122,6 @@ export default function CompanyProfile() {
   };
 
   const handleIndustryChange = (value: string) => {
-    console.log("Selected industry:", value);
     setProfile((prev) => ({ ...prev, industry: value }));
   };
 
@@ -145,9 +144,9 @@ export default function CompanyProfile() {
     setLogoFile(null);
     setLogoPreview(null);
     const fileInput = document.getElementById('logo') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
+    const profileFileInput = document.getElementById('profile-logo') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+    if (profileFileInput) profileFileInput.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -191,6 +190,10 @@ export default function CompanyProfile() {
     }
   };
 
+  const triggerProfileLogoUpload = () => {
+    document.getElementById('profile-logo')?.click();
+  };
+
   if (isFetching) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -219,7 +222,7 @@ export default function CompanyProfile() {
             <Card className="border border-blue-500/20 backdrop-blur-xl shadow-2xl">
               <CardHeader className="relative pb-8">
                 <div className="flex justify-center mb-6">
-                  <div className="relative group">
+                  <div className="relative group cursor-pointer" onClick={triggerProfileLogoUpload}>
                     <div className="w-24 h-24 rounded-full border-2 border-blue-400/40 flex items-center justify-center overflow-hidden hover:border-blue-400/60 transition-colors bg-slate-800/50">
                       {profile.logoUrl ? (
                         <img
@@ -236,7 +239,17 @@ export default function CompanyProfile() {
                           <Camera className="w-8 h-8" />
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Upload className="w-6 h-6 text-white" />
+                      </div>
                     </div>
+                    <Input
+                      id="profile-logo"
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/svg+xml"
+                      onChange={handleLogoChange}
+                      className="hidden"
+                    />
                   </div>
                 </div>
                 <CardTitle className="text-3xl font-bold text-center text-white">

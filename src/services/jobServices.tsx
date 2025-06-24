@@ -70,7 +70,6 @@ export const jobServices = {
         headers: getAuthHeaders(),
         params: sanitizedFilters,
       });
-      console.log('Jobs response:', response.data);
       return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) return;
@@ -83,7 +82,6 @@ export const jobServices = {
       const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs/${jobId}`, {
         headers: getAuthHeaders(),
       });
-      console.log('Job details response:', response.data);
       return response.data;
     } catch (error) {
       if (handleAuthError(error)) return;
