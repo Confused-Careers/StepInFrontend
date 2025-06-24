@@ -30,6 +30,10 @@ interface GoogleAuthData {
   }>;
 }
 
+interface GoogleLoginData {
+  idToken: string;
+}
+
 interface VerifyEmailData {
   email: string;
   otpCode: string;
@@ -135,9 +139,6 @@ const authServices = {
       if (!response.data.data) {
         throw new Error('Invalid response from server');
       }
-      if (!response.data.data) {
-        throw new Error('Invalid response from server');
-      }
       return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
@@ -207,6 +208,26 @@ const authServices = {
         throw new Error(error.response.data.message || 'Google Sign-In failed');
       }
       throw new Error('Google Sign-In failed');
+    }
+  },
+
+  async googleLogin(data: GoogleLoginData): Promise<AuthResponse> {
+    try {
+      const response: AxiosResponse<AuthResponse> = await axios.post(
+        `${SERVER_BASE_URL}/api/v1/auth/google/login`,
+        data,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response) {
+        throw new Error(error.response.data.message || 'Google Login failed');
+      }
+      throw new Error('Google Login failed');
     }
   },
 

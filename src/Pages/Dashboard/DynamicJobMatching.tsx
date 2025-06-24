@@ -148,14 +148,26 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+    // TODO: Integrate with a monitoring service like Sentry
+    // Sentry.captureException(error, { extra: errorInfo });
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false });
+  };
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="p-4 text-center">
-          <h2>Something went wrong.</h2>
-          <p>Please refresh the page or contact support.</p>
+          <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
+          <p className="text-muted-foreground mb-4">Please try again or contact support.</p>
+          <button
+            onClick={this.handleRetry}
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+          >
+            Retry
+          </button>
         </div>
       );
     }
@@ -164,7 +176,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export function DynamicJobMatching() {
-  const [columnInsights, setColumnInsights] = useState<Insight[][]>([[], [], []]);
+  const [columnInsights, setColumnInsights] = useState<Insight[]>([]);
   const [columnQuestions, setColumnQuestions] = useState<(QuestionResponseDto | null)[]>([null, null, null]);
   const [availableQuestions, setAvailableQuestions] = useState<QuestionResponseDto[]>([]);
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
@@ -179,6 +191,7 @@ export function DynamicJobMatching() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const jobsRef = useRef<HTMLDivElement>(null);
   const questionCache = useRef<Map<number, GetQuestionsResponseDto>>(new Map());
+  const hasFetchedQuestions = useRef<boolean>(false);
 
   const isValidUUID = (str: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -216,6 +229,7 @@ export function DynamicJobMatching() {
         const jobs = await Promise.all(response.data.map(mapJobToJobCardProps));
         setMatchedJobs(jobs);
       } else {
+        console.warn("Invalid jobs response:", response);
         setMatchedJobs([]);
       }
     } catch (error) {
@@ -268,7 +282,6 @@ export function DynamicJobMatching() {
         console.warn(`No questions returned for tier ${tier}`);
         setAvailableQuestions([]);
         setColumnQuestions([null, null, null]);
-        toast.error("No questions available for this tier. Try again later.");
       }
     } catch (error: any) {
       console.error(`Failed to fetch questions for tier ${tier}:`, error);
@@ -278,17 +291,17 @@ export function DynamicJobMatching() {
     }
   };
 
-  const fetchAnswerHistory = async () => {
+  const fetchAnswerHistory = async (tier: number) => {
     try {
-      const history: AnswerResponseDto[] = await getAnswerHistory(currentTier);
+      const history: AnswerResponseDto[] = await getAnswerHistory(tier);
       if (!Array.isArray(history) || history.length === 0) {
-        console.warn(`No answer history for tier ${currentTier}`);
+        console.warn(`No answer history for tier ${tier}`);
         setAnsweredQuestionIds(new Set());
-        setColumnInsights([[], [], []]);
+        setColumnInsights([]);
         return;
       }
 
-      const response: GetQuestionsResponseDto = await getQuestionsForTier(currentTier);
+      const response: GetQuestionsResponseDto = await getQuestionsForTier(tier);
       const allQuestions = response.questions && Array.isArray(response.questions) ? response.questions : [];
 
       const questionMap = new Map<string, QuestionResponseDto>();
@@ -304,9 +317,9 @@ export function DynamicJobMatching() {
       });
 
       const newAnsweredQuestionIds = new Set<string>();
-      const newInsights: Insight[][] = [[], [], []];
+      const newInsights: Insight[] = [];
 
-      history.forEach((answer, index) => {
+      history.forEach((answer) => {
         if (!answer.questionId || !answer.selectedOption) {
           console.warn(`Invalid answer data for tier ${answer.tierWhenAnswered}:`, answer);
           return;
@@ -326,15 +339,15 @@ export function DynamicJobMatching() {
           category: question.insightCategory || "preferences",
           tier: answer.tierWhenAnswered,
         };
-        newInsights[index % 3].push(insight);
+        newInsights.push(insight);
       });
 
       setAnsweredQuestionIds(newAnsweredQuestionIds);
       setColumnInsights(newInsights);
     } catch (error: any) {
-      console.error(`Failed to fetch answer history for tier ${currentTier}:`, error);
+      console.error(`Failed to fetch answer history for tier ${tier}:`, error);
       setAnsweredQuestionIds(new Set());
-      setColumnInsights([[], [], []]);
+      setColumnInsights([]);
       toast.error(error.response?.data?.message || "Failed to fetch answer history. Please try again.");
     }
   };
@@ -342,37 +355,55 @@ export function DynamicJobMatching() {
   const fetchProgress = async () => {
     if (isLoading) return;
     setIsLoading(true);
-    console.log("Fetching progress...");
     try {
       const progress: UserProgressResponseDto = await getUserProgress();
-      console.log("Progress received:", JSON.stringify(progress, null, 2));
       const tier = progress.currentTier || 1;
-      console.log("Setting current tier:", tier);
       setCurrentTier(tier);
 
-      if (progress.tiers && Array.isArray(progress.tiers)) {
-        const currentTierData = progress.tiers[tier - 1];
-        const tierCompletion =
-          currentTierData && currentTierData.questionsRequiredToComplete > 0
-            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
-            : 0;
-        setProfileCompletion(tierCompletion);
-        await fetchQuestions(tier);
-        await fetchAnswerHistory();
-        await fetchJobs();
-      } else {
+      if (!progress.tiers || !Array.isArray(progress.tiers)) {
+        console.error("Invalid tiers data in progress");
         setProfileCompletion(0);
         setCurrentTier(1);
-        await fetchQuestions(1);
-        await fetchAnswerHistory();
+        if (!hasFetchedQuestions.current) {
+          await fetchQuestions(1);
+          await fetchAnswerHistory(1);
+          hasFetchedQuestions.current = true;
+        }
         await fetchJobs();
+        return;
       }
+
+      const currentTierData = progress.tiers.find((t) => t.tierNumber === tier);
+      if (!currentTierData) {
+        console.error(`No data found for tier ${tier}`);
+        toast.error("Error fetching tier data. Reverting to tier 1.");
+        setCurrentTier(1);
+        await fetchQuestions(1);
+        await fetchAnswerHistory(1);
+        return;
+      }
+
+      const tierCompletion =
+        currentTierData.questionsRequiredToComplete > 0
+          ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
+          : 0;
+      setProfileCompletion(tierCompletion);
+
+      if (!hasFetchedQuestions.current || !questionCache.current.has(tier)) {
+        await fetchQuestions(tier);
+        await fetchAnswerHistory(tier);
+        hasFetchedQuestions.current = true;
+      }
+      await fetchJobs();
     } catch (error) {
       console.error("Failed to fetch progress:", error);
       setProfileCompletion(0);
       setCurrentTier(1);
-      await fetchQuestions(1);
-      await fetchAnswerHistory();
+      if (!hasFetchedQuestions.current) {
+        await fetchQuestions(1);
+        await fetchAnswerHistory(1);
+        hasFetchedQuestions.current = true;
+      }
       toast.error("Failed to fetch progress. Defaulting to tier 1.");
     } finally {
       setIsLoading(false);
@@ -392,9 +423,11 @@ export function DynamicJobMatching() {
       if (!isValidUUID(questionId)) throw new Error(`Invalid questionId UUID: ${questionId}`);
       if (!isValidUUID(optionId)) throw new Error(`Invalid optionId UUID: ${optionId}`);
 
+      // Submit answer
       const payload = { questionId, selectedOptionId: optionId };
       await submitAnswer(payload);
 
+      // Update answered question IDs
       setAnsweredQuestionIds((prev) => new Set(prev).add(questionId));
       const question = availableQuestions.find((q) => q.id === questionId);
       if (!question) {
@@ -402,6 +435,7 @@ export function DynamicJobMatching() {
         return;
       }
 
+      // Fetch latest answer history to get insight
       const latestAnswer = (await getAnswerHistory(currentTier)).find((a) => a.questionId === questionId);
       const insightText = latestAnswer?.selectedOption?.insight || "No insight available";
 
@@ -413,12 +447,9 @@ export function DynamicJobMatching() {
         tier: currentTier,
       };
 
-      setColumnInsights((prev) => {
-        const newInsights = [...prev];
-        newInsights[columnIndex] = [...newInsights[columnIndex], insight];
-        return newInsights;
-      });
+      setColumnInsights((prev) => [...prev, insight]);
 
+      // Update questions display
       setColumnQuestions((prev) => {
         const newQuestions = [...prev];
         const nextQuestionIndex = availableQuestions.findIndex((q) => q.id === questionId) + 1;
@@ -436,36 +467,74 @@ export function DynamicJobMatching() {
         setCurrentMobileQuestionIndex((prev) => prev + 1);
       }
 
+      // Fetch updated progress
       const progress = await getUserProgress();
       const newTier = progress.currentTier || 1;
       setCurrentTier(newTier);
 
-      if (progress.tiers && Array.isArray(progress.tiers)) {
-        const currentTierData = progress.tiers[newTier - 1];
-        const tierCompletion =
-          currentTierData && currentTierData.questionsRequiredToComplete > 0
-            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
-            : 0;
-        setProfileCompletion(tierCompletion);
+      if (!progress.tiers || !Array.isArray(progress.tiers)) {
+        console.error("Invalid tiers data in progress");
+        setProfileCompletion(0);
+        setCurrentTier(1);
+        if (!hasFetchedQuestions.current) {
+          await fetchQuestions(1);
+          await fetchAnswerHistory(1);
+          hasFetchedQuestions.current = true;
+        }
+        await fetchJobs();
+        toast.error("Invalid progress data. Reverted to Tier 1.");
+        return;
+      }
 
-        if (currentTierData.isCompleted && newTier < 5) {
-          setCurrentTier(newTier + 1);
+      const currentTierData = progress.tiers.find((t) => t.tierNumber === newTier);
+      if (!currentTierData) {
+        console.error(`No data found for tier ${newTier}`);
+        toast.error(`Error fetching data for Tier ${newTier}. Reverting to Tier 1.`);
+        setCurrentTier(1);
+        await fetchQuestions(1);
+        await fetchAnswerHistory(1);
+        hasFetchedQuestions.current = true;
+        await fetchJobs();
+        return;
+      }
+
+      // Calculate tier completion
+      const tierCompletion =
+        currentTierData.questionsRequiredToComplete > 0
+          ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
+          : 0;
+      setProfileCompletion(tierCompletion);
+
+      // Check if current tier is completed and next tier is unlocked
+      if (
+        currentTierData.isCompleted &&
+        currentTierData.questionsAnsweredInTier >= currentTierData.questionsRequiredToComplete &&
+        newTier < 5
+      ) {
+        const nextTier = newTier + 1;
+        const nextTierData = progress.tiers.find((t) => t.tierNumber === nextTier);
+        if (nextTierData && nextTierData.isUnlocked) {
+          setCurrentTier(nextTier);
           setProfileCompletion(0);
-          setColumnInsights([[], [], []]);
+          setColumnInsights([]);
           setAnsweredQuestionIds(new Set());
-          await fetchQuestions(newTier + 1);
-          await fetchAnswerHistory();
+          questionCache.current.clear();
+          hasFetchedQuestions.current = false;
+          await fetchQuestions(nextTier);
+          await fetchAnswerHistory(nextTier);
           await fetchJobs();
+          toast.success(`Advanced to Tier ${nextTier}!`);
         } else {
-          await fetchQuestions(newTier);
-          await fetchAnswerHistory();
+          toast.info(`Next tier (${nextTier}) is not unlocked yet. Continue answering questions in Tier ${newTier}.`);
           await fetchJobs();
         }
       } else {
-        setProfileCompletion(0);
-        setCurrentTier(1);
-        await fetchQuestions(1);
-        await fetchAnswerHistory();
+        // Stay in current tier, refresh questions if needed
+        if (!hasFetchedQuestions.current || !questionCache.current.has(newTier)) {
+          await fetchQuestions(newTier);
+          await fetchAnswerHistory(newTier);
+          hasFetchedQuestions.current = true;
+        }
         await fetchJobs();
       }
     } catch (error: any) {
@@ -595,27 +664,29 @@ export function DynamicJobMatching() {
             ) : (
               [0, 1, 2].map((columnIndex) => (
                 <div key={`column-${columnIndex}`} className="space-y-4 min-h-[100px] w-[100%]">
-                  <AnimatePresence mode="wait">
-                    {columnInsights[columnIndex].map((insight, idx) => (
-                      <motion.div
-                        key={`insight-${insight.id}-${idx}`}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        className="mb-2"
-                      >
-                        <Card className="dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] border-2 border-blue-500 items-center custom-bg-dark py-3">
-                          <CardContent className="px-2 py-1 dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] custom-bg-dark">
-                            <p className="text-sm dark:text-gray-300 text-gray-300 bg-[#202536] items-center text-center custom-bg-dark">
-                              {insight.text}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
+                  <AnimatePresence mode="sync">
+                    {columnInsights
+                      .filter((_, idx) => idx % 3 === columnIndex)
+                      .map((insight, idx) => (
+                        <motion.div
+                          key={`insight-${insight.id}-${idx}`}
+                          variants={itemVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          className="mb-2"
+                        >
+                          <Card className="dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] border-2 border-blue-500 items-center py-3 h-[75.2px]">
+                            <CardContent className="px-1 py-1 dark:bg-[rgba(17, 8, 21, 1)] bg-[#202536] flex justify-center text-center">
+                              <p className="text-sm dark:text-gray-300 text-gray-300 flex justify-center text-center">
+                                {insight.text}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
                   </AnimatePresence>
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence mode="sync">
                     {columnQuestions[columnIndex] && !answeredQuestionIds.has(columnQuestions[columnIndex]!.id) && (
                       <motion.div
                         key={columnQuestions[columnIndex]!.id}
@@ -632,36 +703,39 @@ export function DynamicJobMatching() {
                         />
                       </motion.div>
                     )}
-                    {!columnQuestions[columnIndex] && columnInsights[columnIndex].length > 0 && (
-                      <motion.div
-                        key={`placeholder-${columnIndex}`}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 0.5, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                        className="bg-jobcardsecondary rounded-lg p-6 border border-primary/10 flex items-center justify-center"
-                      >
-                        <p className="text-muted-foreground text-center">All questions completed!</p>
-                      </motion.div>
-                    )}
+                    {!columnQuestions[columnIndex] &&
+                      columnInsights.filter((_, idx) => idx % 3 === columnIndex).length > 0 && (
+                        <motion.div
+                          key={`placeholder-${columnIndex}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 0.5, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                          className="bg-jobcardsecondary rounded-lg p-6 border border-primary/10 h-20 flex items-center justify-center"
+                        >
+                          <p className="text-muted-foreground text-center">All questions completed!</p>
+                        </motion.div>
+                      )}
                   </AnimatePresence>
                 </div>
               ))
             )}
-            {availableQuestions.length === 0 && columnQuestions.every((q) => q === null) && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-full"
-              >
-                <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">No questions available</h3>
-                <p className="text-muted-foreground text-center">
-                  Please try again later or contact support.
-                </p>
-              </motion.div>
-            )}
+            {availableQuestions.length === 0 &&
+              columnQuestions.every((q) => q === null) &&
+              columnInsights.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-full"
+                >
+                  <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No questions available</h3>
+                  <p className="text-muted-foreground text-center">
+                    Please try again later or contact support.
+                  </p>
+                </motion.div>
+              )}
           </motion.div>
         </div>
         <div ref={jobsRef} className="mt-6">
@@ -671,9 +745,10 @@ export function DynamicJobMatching() {
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
             className="flex flex-col md:flex-row-reverse md:items-center justify-between mb-6 mt-6"
           >
-            <div className="flex items-center gap-4 mt-6">
+            <div className="flex items-center gap-4 mt-4">
               <h2 className="text-xl font-semibold flex items-center">
-                <Briefcase className="h-5 w-5 text-primary mr-2" />Your Jobs
+                <Briefcase className="h-5 w-5 text-primary mr-2" />
+                Your Jobs
               </h2>
               <p className="text-muted-foreground"></p>
             </div>
@@ -689,7 +764,7 @@ export function DynamicJobMatching() {
                 animate="visible"
                 className="grid grid-cols-1 md:grid-cols-3 gap-6"
               >
-                <AnimatePresence>
+                <AnimatePresence mode="sync">
                   {matchedJobs.map((job, index) => (
                     <motion.div key={job.id} variants={itemVariants} initial="hidden" animate="visible" exit="exit">
                       <JobCard
@@ -710,11 +785,11 @@ export function DynamicJobMatching() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                    className="text-center py-12 bg-gradient-to-br from-background to-primary/5 rounded-lg border border-primary/10 col-span-3"
+                    className="text-center py-12 bg-gradient-to-br from-background to-primary/20 rounded-lg border border-primary/10 col-span-full"
                   >
                     <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-medium mb-2">No jobs found</h3>
-                    <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches</p>
+                    <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+                    <p className="text-muted-foreground text-center">Answer a few questions to unlock your job matches.</p>
                   </motion.div>
                 )}
               </motion.div>

@@ -16,6 +16,7 @@ interface CompanyProfile {
 }
 
 interface Job {
+  responsibilities: string;
   payPeriod: string;
   totalApplications: any;
   department: string;

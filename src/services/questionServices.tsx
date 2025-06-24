@@ -30,6 +30,7 @@ interface QuestionResponseDto {
 }
 
 interface QuestionTierResponseDto {
+  isUnlocked: QuestionTierResponseDto | undefined;
   tierNumber: number;
   questionsRequiredToComplete: number;
   questionsAnsweredInTier: number;

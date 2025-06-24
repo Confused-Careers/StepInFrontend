@@ -62,13 +62,21 @@ const IndividualLogin: React.FC = () => {
     }
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/google/callback`;
-    const scope = "profile email";
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
-    window.location.href = googleAuthUrl;
+    try {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      const scope = "profile email";
+      const state = JSON.stringify({ from: "login" }); // Add state to indicate login flow
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&state=${encodeURIComponent(state)}`;
+      window.location.href = googleAuthUrl;
+    } catch (error) {
+      setIsLoading(false);
+      toast.error("Failed to initiate Google Sign-In", {
+        description: "Please try again",
+      });
+    }
   };
 
   return (
