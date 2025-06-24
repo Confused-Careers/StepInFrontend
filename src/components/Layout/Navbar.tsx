@@ -40,7 +40,7 @@ const Navbar = () => {
                 Contact Us
             </Button>
             <Button variant="ghost" onClick={() => navigate("/individual-login")} className="hidden md:inline-flex">
-                Log in
+                Log In
             </Button>
             <Button
             variant="ghost"
