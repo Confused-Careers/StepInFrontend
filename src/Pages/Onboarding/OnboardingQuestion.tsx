@@ -101,7 +101,7 @@ export function OnboardingQuestion({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 1, ease: "easeInOut" }}
-            className="text-center text-3xl md:text-3xl font-semibold max-w-lg mx-auto min-w-[400px]"
+            className="text-center text-3xl md:text-3xl font-semibold mx-auto min-w-[400px]"
           >
             {insightText.split(". ").map((line, index) => (
               <motion.p
