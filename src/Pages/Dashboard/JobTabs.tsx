@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { FilterPanel } from "./FilterPanel";
 import { JobCard } from "./JobCard";
 import { Briefcase, Star, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { jobServices } from "@/services/jobServices";
+import { useState } from "react";
 
 interface JobTabsProps {
   filteredJobs: any[];
@@ -19,7 +21,7 @@ interface JobTabsProps {
 }
 
 export function JobTabs({
-  filteredJobs,
+  filteredJobs: initialFilteredJobs,
   filtersOpen,
   setFiltersOpen,
   filters,
@@ -29,6 +31,20 @@ export function JobTabs({
   skills,
   onJobClick,
 }: JobTabsProps) {
+  const [filteredJobs, setFilteredJobs] = useState(initialFilteredJobs);
+
+  const handleJobAction = async (jobId: string, action: "reject" | "save" | "apply") => {
+    if (action === "reject") {
+      try {
+        await jobServices.markJobAsNotInterested(jobId);
+        setFilteredJobs((prev) => prev.filter((job) => job.id !== jobId));
+      } catch (error) {
+        // Optionally show a toast or error
+      }
+    }
+    // You can handle other actions (save/apply) here if needed
+  };
+
   return (
     <Tabs defaultValue="recommended" className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,7 +93,13 @@ export function JobTabs({
         {filteredJobs.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredJobs.map((job, index) => (
-              <JobCard key={job.id} job={job} onClick={() => onJobClick(job.id)} delay={index * 0.1} />
+              <JobCard
+                key={job.id}
+                job={job}
+                onClick={() => onJobClick(job.id)}
+                delay={index * 0.1}
+                onAction={(action) => handleJobAction(job.id, action)}
+              />
             ))}
           </div>
         ) : (

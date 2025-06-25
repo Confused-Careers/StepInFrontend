@@ -5,6 +5,7 @@ import { Applicant as ImportedApplicant } from "./ApplicationsPage";
 export interface Applicant extends ImportedApplicant {
   resumeUrl: string | URL;
   imageUrl?: string | null;
+  status: string; // Added status property
 }
 import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
 import { toast } from "sonner";
@@ -47,6 +48,18 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [feedback, setFeedback] = useState<string>("");
   const [existingFeedback, setExistingFeedback] = useState<string | null>(null);
   const [applicationId] = useState(applicant.id);
+  // Track accepted status locally, initialize from applicant.status
+  const [isAccepted, setIsAccepted] = useState(applicant.status === 'accepted');
+  const [acceptLoading, setAcceptLoading] = useState(false);
+  // Add loading and state for new actions
+  const [rejectLoading, setRejectLoading] = useState(false);
+  const [notSuitableLoading, setNotSuitableLoading] = useState(false);
+  const [hireLoading, setHireLoading] = useState(false);
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [isRejected, setIsRejected] = useState(applicant.status === 'rejected');
+  const [isNotSuitable, setIsNotSuitable] = useState(applicant.status === 'not_suitable');
+  const [isHired, setIsHired] = useState(applicant.status === 'hired');
+  const [isInterviewed, setIsInterviewed] = useState(applicant.status === 'interview');
 
   const formatEducation = (education: string) => {
     if (!education || education === "Not specified") return education;
@@ -173,6 +186,85 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     }
   };
 
+  const handleAccept = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAcceptLoading(true);
+    try {
+      await ApplicantsService.acceptApplication(applicationId);
+      setIsAccepted(true);
+      toast.success(`Accepted ${applicant.name}`);
+    } catch (error) {
+      toast.error("Failed to accept candidate");
+      console.error(error);
+    } finally {
+      setAcceptLoading(false);
+    }
+  };
+
+  // Handler for reject
+  const handleReject = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRejectLoading(true);
+    try {
+      await ApplicantsService.rejectApplication(applicationId);
+      setIsRejected(true);
+      toast.success(`Rejected ${applicant.name}`);
+    } catch (error) {
+      toast.error("Failed to reject candidate");
+      console.error(error);
+    } finally {
+      setRejectLoading(false);
+    }
+  };
+
+  // Handler for not suitable
+  const handleNotSuitable = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotSuitableLoading(true);
+    try {
+      await ApplicantsService.markNotSuitable(applicationId);
+      setIsNotSuitable(true);
+      toast.success(`Marked ${applicant.name} as not suitable`);
+    } catch (error) {
+      toast.error("Failed to mark as not suitable");
+      console.error(error);
+    } finally {
+      setNotSuitableLoading(false);
+    }
+  };
+
+  // Handler for hire
+  const handleHire = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHireLoading(true);
+    try {
+      await ApplicantsService.hireApplicant(applicationId);
+      setIsHired(true);
+      toast.success(`Hired ${applicant.name}`);
+    } catch (error) {
+      toast.error("Failed to hire candidate");
+      console.error(error);
+    } finally {
+      setHireLoading(false);
+    }
+  };
+
+  // Handler for move to interview
+  const handleMoveToInterview = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setInterviewLoading(true);
+    try {
+      await ApplicantsService.moveToInterview(applicationId);
+      setIsInterviewed(true);
+      toast.success(`Moved ${applicant.name} to interview stage`);
+    } catch (error) {
+      toast.error("Failed to move to interview stage");
+      console.error(error);
+    } finally {
+      setInterviewLoading(false);
+    }
+  };
+
   const whyYouFit = `${applicant.name} is a strong fit due to their skills in ${applicant.strength[0]?.toLowerCase() || "relevant areas"} and experience as a ${applicant.currentPosition} at ${applicant.currentCompany}.`;
   const aiSummary = `Based on analysis, ${applicant.name} excels in ${applicant.strength[1]?.toLowerCase() || "key areas"}, but may need support in ${applicant.weakness[0]?.toLowerCase() || "certain areas"}.`;
   const fullJobDescription = `As a ${applicant.currentPosition}, ${applicant.name} has demonstrated ${applicant.strength.join(", ").toLowerCase()}. Their role at ${applicant.currentCompany} involved key responsibilities that align with this position.`;
@@ -180,7 +272,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   return (
     <>
       <div
-        className="w-full rounded-2xl overflow-hidden shadow-2xl border h-min bg-black p-3"
+        className="w-full rounded-2xl overflow-hidden shadow-2xl border h-min bg-black p-3 cursor-pointer"
         style={{ border: "1px solid rgba(10, 132, 255, 0.4)", boxShadow: "0 0 15px rgba(10, 132, 255, 0.3)" }}
         onClick={handleOpenPopup}
       >
@@ -242,10 +334,11 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
 
           <div className="flex items-center justify-evenly w-full gap-2 flex-col [@media(min-width:1248px)]:flex-row">
             <button
-              className="bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full"
-              onClick={(e) => handleAction("apply", e)}
+              className={`bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isAccepted ? 'opacity-60 cursor-not-allowed' : ''}`}
+              onClick={handleAccept}
+              disabled={isAccepted || acceptLoading}
             >
-              Accept
+              {isAccepted ? 'Accepted' : acceptLoading ? 'Accepting...' : 'Accept'}
             </button>
             <button
               className="border border-[rgba(59,130,246,1)] text-[rgba(59,130,246,1)] rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full"
@@ -254,10 +347,32 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
               Feedback
             </button>
             <button
-              className="text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap [@media(min-width:1248px)]:w-auto w-full"
-              onClick={(e) => handleAction("reject", e)}
+              className={`text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap [@media(min-width:1248px)]:w-auto w-full ${isRejected ? 'opacity-60 cursor-not-allowed' : ''}`}
+              onClick={handleReject}
+              disabled={isRejected || rejectLoading}
             >
-              Not Interested
+              {isRejected ? 'Rejected' : rejectLoading ? 'Rejecting...' : 'Reject'}
+            </button>
+            <button
+              className={`text-yellow-400 border border-yellow-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isNotSuitable ? 'opacity-60 cursor-not-allowed' : ''}`}
+              onClick={handleNotSuitable}
+              disabled={isNotSuitable || notSuitableLoading}
+            >
+              {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Marking...' : 'Not Suitable'}
+            </button>
+            <button
+              className={`text-green-400 border border-green-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isHired ? 'opacity-60 cursor-not-allowed' : ''}`}
+              onClick={handleHire}
+              disabled={isHired || hireLoading}
+            >
+              {isHired ? 'Hired' : hireLoading ? 'Hiring...' : 'Hire'}
+            </button>
+            <button
+              className={`text-blue-400 border border-blue-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isInterviewed ? 'opacity-60 cursor-not-allowed' : ''}`}
+              onClick={handleMoveToInterview}
+              disabled={isInterviewed || interviewLoading}
+            >
+              {isInterviewed ? 'Interview' : interviewLoading ? 'Moving...' : 'Move to Interview'}
             </button>
           </div>
         </div>
@@ -373,10 +488,11 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                 )}
                 <motion.div variants={buttonVariants} initial="hidden" animate="visible" className="px-6 pb-6 flex justify-center gap-5">
                   <button
-                    className="bg-[rgba(10,132,255,1)] text-white rounded-[6px] py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                    onClick={(e) => handleAction("apply", e)}
+                    className={`bg-[rgba(10,132,255,1)] text-white rounded-[6px] py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isAccepted ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    onClick={handleAccept}
+                    disabled={isAccepted || acceptLoading}
                   >
-                    Accept
+                    {isAccepted ? 'Accepted' : acceptLoading ? 'Accepting...' : 'Accept'}
                   </button>
                   <button
                     className="border border-[rgba(10,132,255,1)] text-[rgba(10,132,255,1)] rounded-[6px] px-6 py-1 font-bold text-xl text-center w-auto h-[35px] flex items-center justify-center"

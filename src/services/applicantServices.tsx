@@ -193,4 +193,49 @@ export const ApplicantsService = {
       throw error;
     }
   },
+
+  async acceptApplication(applicationId: string): Promise<{ message: string; status: string }> {
+    const response = await axios.put(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/accept`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
+  async rejectApplication(applicationId: string): Promise<{ message: string; status: string }> {
+    const response = await axios.put(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/reject`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
+  async markNotSuitable(applicationId: string): Promise<{ message: string; status: string }> {
+    const response = await axios.put(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/not-suitable`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
+  async hireApplicant(applicationId: string): Promise<{ message: string; status: string }> {
+    const response = await axios.put(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/hire`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
+  async moveToInterview(applicationId: string): Promise<{ message: string; status: string }> {
+    const response = await axios.put(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/interview`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
 };
