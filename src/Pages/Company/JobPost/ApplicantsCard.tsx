@@ -353,27 +353,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
             >
               {isRejected ? 'Rejected' : rejectLoading ? 'Rejecting...' : 'Reject'}
             </button>
-            <button
-              className={`text-yellow-400 border border-yellow-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isNotSuitable ? 'opacity-60 cursor-not-allowed' : ''}`}
-              onClick={handleNotSuitable}
-              disabled={isNotSuitable || notSuitableLoading}
-            >
-              {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Marking...' : 'Not Suitable'}
-            </button>
-            <button
-              className={`text-green-400 border border-green-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isHired ? 'opacity-60 cursor-not-allowed' : ''}`}
-              onClick={handleHire}
-              disabled={isHired || hireLoading}
-            >
-              {isHired ? 'Hired' : hireLoading ? 'Hiring...' : 'Hire'}
-            </button>
-            <button
-              className={`text-blue-400 border border-blue-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full ${isInterviewed ? 'opacity-60 cursor-not-allowed' : ''}`}
-              onClick={handleMoveToInterview}
-              disabled={isInterviewed || interviewLoading}
-            >
-              {isInterviewed ? 'Interview' : interviewLoading ? 'Moving...' : 'Move to Interview'}
-            </button>
           </div>
         </div>
       </div>
@@ -506,6 +485,31 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   >
                     Not Interested
                   </button>
+                </motion.div>
+                <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">
+                  <div className="flex flex-col md:flex-row gap-3 justify-center items-center mt-6">
+                    <button
+                      className={`text-yellow-400 border border-yellow-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min w-full md:w-auto ${isNotSuitable ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      onClick={handleNotSuitable}
+                      disabled={isNotSuitable || notSuitableLoading}
+                    >
+                      {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Marking...' : 'Not Suitable'}
+                    </button>
+                    <button
+                      className={`text-green-400 border border-green-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min w-full md:w-auto ${isHired ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      onClick={handleHire}
+                      disabled={isHired || hireLoading}
+                    >
+                      {isHired ? 'Hired' : hireLoading ? 'Hiring...' : 'Hire'}
+                    </button>
+                    <button
+                      className={`text-blue-400 border border-blue-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min w-full md:w-auto ${isInterviewed ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      onClick={handleMoveToInterview}
+                      disabled={isInterviewed || interviewLoading}
+                    >
+                      {isInterviewed ? 'Interview' : interviewLoading ? 'Moving...' : 'Move to Interview'}
+                    </button>
+                  </div>
                 </motion.div>
               </div>
             </motion.div>
