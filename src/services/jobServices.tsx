@@ -218,6 +218,7 @@ export const jobServices = {
         {},
         { headers: getAuthHeaders() }
       );
+      console.log('Job marked as not interested:', response.data);
       return response.data;
     } catch (error) {
       if (handleAuthError(error)) return;

@@ -405,6 +405,7 @@ export default function ApplicationsPage() {
               <TabsList className="mb-4">
                 <TabsTrigger value="all">All Applications</TabsTrigger>
                 <TabsTrigger value="active">Active</TabsTrigger>
+
                 <TabsTrigger value="interview">Interviews</TabsTrigger>
                 <TabsTrigger value="hired">Offers/Hired</TabsTrigger>
                 <TabsTrigger value="rejected">Rejected</TabsTrigger>
@@ -454,7 +455,7 @@ export default function ApplicationsPage() {
                                 app.job.salaryMin && app.job.salaryMax
                                   ? `$${parseFloat(String(app.job.salaryMin)).toLocaleString()} - $${parseFloat(
                                       String(app.job.salaryMax)
-                                    ).toLocaleString()}/${app.job.payPeriod}`
+                                    ).toLocaleString()}/${app.job.payPeriod ? app.job.payPeriod : "yr"}`
                                   : "Unpaid",
                               matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
                               feedback: app.feedback ?? "",

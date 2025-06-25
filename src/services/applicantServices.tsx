@@ -195,45 +195,45 @@ export const ApplicantsService = {
   },
 
   async acceptApplication(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.put(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/accept`,
-      {},
+    const response = await axios.patch(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+      {body: { status: "accepted" }},
       { headers: getAuthHeaders() }
     );
     return response.data;
   },
 
   async rejectApplication(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.put(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/reject`,
-      {},
+    const response = await axios.patch(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+      { body : { status: "rejected" } },
       { headers: getAuthHeaders() }
     );
     return response.data;
   },
 
   async markNotSuitable(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.put(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/not-suitable`,
-      {},
+    const response = await axios.patch(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+      { body: { status: "not_suitable" } },
       { headers: getAuthHeaders() }
     );
     return response.data;
   },
 
   async hireApplicant(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.put(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/hire`,
-      {},
+    const response = await axios.patch(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+      { body: { status: "hired" } },
       { headers: getAuthHeaders() }
     );
     return response.data;
   },
 
   async moveToInterview(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.put(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/interview`,
-      {},
+    const response = await axios.patch(
+      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+      { body: { status: "interview" } },
       { headers: getAuthHeaders() }
     );
     return response.data;
