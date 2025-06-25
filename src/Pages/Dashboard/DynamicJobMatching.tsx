@@ -213,7 +213,6 @@ export function DynamicJobMatching() {
         sortBy: "relevance",
         useVectorSearch: true,
       });
-      console.log("Jobs response:", response);
       if (response?.data && Array.isArray(response.data)) {
         if (response.data.length === 0) {
           setMatchedJobs([]);
