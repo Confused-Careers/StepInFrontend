@@ -588,6 +588,7 @@ export function DynamicJobMatching() {
           return filteredJobs;
         });
       } else if (action === "reject") {
+        await jobServices.markJobAsNotInterested(jobId);
         setRejectedJobs((prev) => [...prev, jobId]);
         setMatchedJobs((prev) => {
           const filteredJobs = prev.filter((job) => job.id !== jobId);
