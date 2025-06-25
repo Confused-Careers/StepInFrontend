@@ -219,12 +219,10 @@ export function DynamicJobMatching() {
           return;
         }
         if (response.data.length > 3) {
-          console.warn(
-            `Expected 3 jobs, but received ${response.data.length}. Truncating to 3. Check API limit parameter.`
-          );
           response.data = response.data.slice(0, 3);
         }
         const jobs = await Promise.all(response.data.map(mapJobToJobCardProps));
+        jobs.sort((a, b) => (b.matchPercentage ?? 0) - (a.matchPercentage ?? 0));
         setMatchedJobs(jobs);
       } else {
         console.warn("Invalid jobs response:", response);
