@@ -47,20 +47,6 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
     onCardClick(job.id);
   };
 
-  // Format salary with commas, no decimals unless .50
-  const formatSalary = (salary: string) => {
-    if (!salary) return '';
-    // Remove $ and commas for parsing
-    const cleaned = salary.replace(/[$,]/g, '');
-    const num = parseFloat(cleaned);
-    if (isNaN(num)) return salary;
-    // Check for .50
-    if (num % 1 === 0.5) {
-      return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return `$${Math.round(num).toLocaleString()}`;
-  };
-
   return (
     <div
       className="w-full rounded-2xl overflow-hidden shadow-2xl border h-min bg-black cursor-pointer hover:shadow-[0_0_20px_rgba(10,132,255,0.5)] transition-shadow duration-200"
@@ -91,7 +77,7 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
         <div className="flex flex-wrap gap-x-1 justify-evenly px-6 mt-2">
           {job.salary && job.salary !== "Negotiable" && job.salary.trim() !== "" && (
           <span className="px-2 py-0.5 rounded-md bg-jobcardsecondary text-[#ffffff] text-xs font-medium">
-            {formatSalary(job.salary)}
+            {job.salary}
           </span>
           )}
           <span className="px-2 py-0.5 rounded-md bg-[#0A84FF] text-[#ffffff] text-xs font-medium">
