@@ -140,20 +140,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     setFeedback(existingFeedback || "");
   };
 
-  const handleAction = async (action: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      if (action === "apply") {
-        toast.success(`Accepted ${applicant.name}`);
-      } else if (action === "reject") {
-        toast.success(`Rejected ${applicant.name}`);
-      }
-      handleClosePopup();
-    } catch (error) {
-      toast.error("Action failed");
-      console.error(error);
-    }
-  };
 
   const handleSubmitFeedback = async () => {
     try {
@@ -349,9 +335,10 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
             </button>
             <button
               className="text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap [@media(min-width:1248px)]:w-auto w-full"
-              onClick={(e) => handleAction("reject", e)}
+              onClick={handleNotSuitable}
+              disabled={isNotSuitable || notSuitableLoading}
             >
-              Not Interested
+              {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Processing...' : 'Not Interested'}
             </button>
           </div>
         </div>
@@ -482,9 +469,10 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   </button>
                   <button
                     className="text-[rgba(209,209,214,1)] text-xl py-1 px-6 w-auto text-center font-[600]"
-                    onClick={(e) => handleAction("reject", e)}
+                    onClick={handleNotSuitable}
+                    disabled={isNotSuitable || notSuitableLoading}
                   >
-                    Not Interested
+                    {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Processing...' : 'Not Interested'}
                   </button>
                   <button
                     className={`bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] ${isHired ? 'opacity-60 cursor-not-allowed' : ''}`}
@@ -492,13 +480,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     disabled={isHired || hireLoading}
                   >
                     {isHired ? 'Hired' : hireLoading ? 'Hiring...' : 'Hire'}
-                  </button>
-                  <button
-                    className={`bg-[rgba(255,193,7,1)] text-black rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] ${isNotSuitable ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    onClick={handleNotSuitable}
-                    disabled={isNotSuitable || notSuitableLoading}
-                  >
-                    {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Marking...' : 'Not Suitable'}
                   </button>
                   <button
                     className="bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px]"
