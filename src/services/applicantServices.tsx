@@ -195,47 +195,72 @@ export const ApplicantsService = {
   },
 
   async acceptApplication(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.patch(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
-      {body: { status: "accepted" }},
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+    try {
+      const response = await axios.patch(
+        `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+        { status: "accepted" },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
   },
 
   async rejectApplication(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.patch(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
-      { body : { status: "rejected" } },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+    try {
+      const response = await axios.patch(
+        `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+        { status: "rejected" },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
   },
 
   async markNotSuitable(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.patch(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
-      { body: { status: "not_suitable" } },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+    try {
+      const response = await axios.patch(
+        `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+        { status: "not_suitable" },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
   },
 
   async hireApplicant(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.patch(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
-      { body: { status: "hired" } },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+    try {
+      const response = await axios.patch(
+        `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+        { status: "hired" },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
   },
 
   async moveToInterview(applicationId: string): Promise<{ message: string; status: string }> {
-    const response = await axios.patch(
-      `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
-      { body: { status: "interview" } },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+    try {
+      const response = await axios.patch(
+        `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/status`,
+        { status: "interview" },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
   },
 };

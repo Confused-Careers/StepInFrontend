@@ -23,6 +23,7 @@ export interface Applicant {
   location: string;
   resumeUrl: string | URL;
   imageUrl?: string | null;
+  status: string;
 }
 
 interface Tag {
