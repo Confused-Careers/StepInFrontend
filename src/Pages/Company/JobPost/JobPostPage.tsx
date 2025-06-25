@@ -155,8 +155,10 @@ export function JobsPostPage() {
         const formattedJobs: Application[] = response.map((job) => {
           let salary = "Unpaid";
           if (job.salaryMin && job.salaryMax) {
-            const min = parseFloat(String(job.salaryMin));
-            const max = parseFloat(String(job.salaryMax));
+            const minNum = Number(job.salaryMin);
+            const maxNum = Number(job.salaryMax);
+            const min = Number.isInteger(minNum) ? minNum.toString() : minNum.toFixed(2).replace(/\.00$/, "");
+            const max = Number.isInteger(maxNum) ? maxNum.toString() : maxNum.toFixed(2).replace(/\.00$/, "");
             const period = job.payPeriod || "Yearly";
             salary = `$${min} - $${max}/${period}`;
           }
