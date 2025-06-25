@@ -342,16 +342,16 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
             </button>
             <button
               className="border border-[rgba(59,130,246,1)] text-[rgba(59,130,246,1)] rounded-md py-1 px-2 text-[17px] font-[700] h-min [@media(min-width:1248px)]:w-auto w-full"
-              onClick={handleOpenFeedbackModal}
+              onClick={handleMoveToInterview}
+              disabled={isInterviewed || interviewLoading}
             >
-              Feedback
+              {isInterviewed ? 'Interview' : interviewLoading ? 'Moving...' : 'Interview'}
             </button>
             <button
-              className={`text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap [@media(min-width:1248px)]:w-auto w-full ${isRejected ? 'opacity-60 cursor-not-allowed' : ''}`}
-              onClick={handleReject}
-              disabled={isRejected || rejectLoading}
+              className="text-[rgba(209,209,214,1)] text-[14px] font-[500] py-2 whitespace-nowrap [@media(min-width:1248px)]:w-auto w-full"
+              onClick={(e) => handleAction("reject", e)}
             >
-              {isRejected ? 'Rejected' : rejectLoading ? 'Rejecting...' : 'Reject'}
+              Not Interested
             </button>
           </div>
         </div>
@@ -465,19 +465,20 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     </div>
                   </motion.div>
                 )}
-                <motion.div variants={buttonVariants} initial="hidden" animate="visible" className="px-6 pb-6 flex justify-center gap-5">
+                <motion.div variants={buttonVariants} initial="hidden" animate="visible" className="px-6 pb-6 flex flex-wrap justify-center gap-5">
                   <button
-                    className={`bg-[rgba(10,132,255,1)] text-white rounded-[6px] py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isAccepted ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] ${isAccepted ? 'opacity-60 cursor-not-allowed' : ''}`}
                     onClick={handleAccept}
                     disabled={isAccepted || acceptLoading}
                   >
                     {isAccepted ? 'Accepted' : acceptLoading ? 'Accepting...' : 'Accept'}
                   </button>
                   <button
-                    className="border border-[rgba(10,132,255,1)] text-[rgba(10,132,255,1)] rounded-[6px] px-6 py-1 font-bold text-xl text-center w-auto h-[35px] flex items-center justify-center"
-                    onClick={handleOpenFeedbackModal}
+                    className="border border-[rgba(59,130,246,1)] text-[rgba(59,130,246,1)] rounded-md py-1 px-6 font-bold text-xl text-center w-auto h-[35px] flex items-center justify-center"
+                    onClick={handleMoveToInterview}
+                    disabled={isInterviewed || interviewLoading}
                   >
-                    {existingFeedback ? "Edit Feedback" : "Add Feedback"}
+                    {isInterviewed ? 'Interview' : interviewLoading ? 'Moving...' : 'Interview'}
                   </button>
                   <button
                     className="text-[rgba(209,209,214,1)] text-xl py-1 px-6 w-auto text-center font-[600]"
@@ -485,31 +486,33 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   >
                     Not Interested
                   </button>
-                </motion.div>
-                <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">
-                  <div className="flex flex-col md:flex-row gap-3 justify-center items-center mt-6">
-                    <button
-                      className={`text-yellow-400 border border-yellow-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min w-full md:w-auto ${isNotSuitable ? 'opacity-60 cursor-not-allowed' : ''}`}
-                      onClick={handleNotSuitable}
-                      disabled={isNotSuitable || notSuitableLoading}
-                    >
-                      {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Marking...' : 'Not Suitable'}
-                    </button>
-                    <button
-                      className={`text-green-400 border border-green-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min w-full md:w-auto ${isHired ? 'opacity-60 cursor-not-allowed' : ''}`}
-                      onClick={handleHire}
-                      disabled={isHired || hireLoading}
-                    >
-                      {isHired ? 'Hired' : hireLoading ? 'Hiring...' : 'Hire'}
-                    </button>
-                    <button
-                      className={`text-blue-400 border border-blue-400 rounded-md py-1 px-2 text-[17px] font-[700] h-min w-full md:w-auto ${isInterviewed ? 'opacity-60 cursor-not-allowed' : ''}`}
-                      onClick={handleMoveToInterview}
-                      disabled={isInterviewed || interviewLoading}
-                    >
-                      {isInterviewed ? 'Interview' : interviewLoading ? 'Moving...' : 'Move to Interview'}
-                    </button>
-                  </div>
+                  <button
+                    className={`bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] ${isHired ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    onClick={handleHire}
+                    disabled={isHired || hireLoading}
+                  >
+                    {isHired ? 'Hired' : hireLoading ? 'Hiring...' : 'Hire'}
+                  </button>
+                  <button
+                    className={`bg-[rgba(255,193,7,1)] text-black rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] ${isNotSuitable ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    onClick={handleNotSuitable}
+                    disabled={isNotSuitable || notSuitableLoading}
+                  >
+                    {isNotSuitable ? 'Not Suitable' : notSuitableLoading ? 'Marking...' : 'Not Suitable'}
+                  </button>
+                  <button
+                    className="bg-[rgba(59,130,246,1)] text-white rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px]"
+                    onClick={handleOpenFeedbackModal}
+                  >
+                    {existingFeedback ? "Edit Feedback" : "Add Feedback"}
+                  </button>
+                  <button
+                    className={`bg-[rgba(255,82,82,1)] text-white rounded-md py-1 px-6 font-bold text-xl leading-[140%] text-center w-auto h-[35px] ${isRejected ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    onClick={handleReject}
+                    disabled={isRejected || rejectLoading}
+                  >
+                    {isRejected ? 'Rejected' : rejectLoading ? 'Rejecting...' : 'Reject'}
+                  </button>
                 </motion.div>
               </div>
             </motion.div>

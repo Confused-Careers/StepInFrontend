@@ -131,6 +131,7 @@ export default function CompanyApplicationsPage() {
           location: dto.location || "Not specified",
           imageUrl: dto.profilePictureUrl || null,
           resumeUrl: dto.resumeUrl ?? "",
+          status: dto.applicationStatus || "Pending",
         }));
         setApplicants(mappedApplicants);
         setAllApplicants(mappedApplicants);
