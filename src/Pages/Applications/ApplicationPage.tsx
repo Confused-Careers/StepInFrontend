@@ -51,18 +51,14 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
   
   if (!application) return null;
 
-  // Helper to format employment type
   const formatEmploymentType = (type?: string) => {
     if (!type) return "N/A";
-    
-    // Handle specific cases
     const typeMap: Record<string, string> = {
       'full_time': 'Full-Time',
       'part_time': 'Part-Time', 
       'contract': 'Contract',
       'internship': 'Internship'
     };
-    
     return typeMap[type] || type
       .split("_")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -194,7 +190,6 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
         </div>
       </div>
 
-      {/* Job Description Modal */}
       {showJobDescription && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
@@ -254,6 +249,19 @@ export default function ApplicationsPage() {
   const [isLoadingSavedJobs, setIsLoadingSavedJobs] = useState(false);
   const hasFetched = useRef(false);
 
+  // Define status priority for sorting
+  const statusPriority: Record<string, number> = {
+    offer: 1,
+    interview: 2,
+    "first-round": 3,
+    "under-review": 4,
+    applied: 5,
+    in_progress: 6,
+    hired: 7,
+    rejected: 8,
+    withdrawn: 9,
+  };
+
   useEffect(() => {
     if (!hasFetched.current) {
       fetchAllApplications();
@@ -279,12 +287,12 @@ export default function ApplicationsPage() {
               job: {
                 ...app.job,
                 ...jobDetails,
-                company: app.job.company ?? app.company, // Ensure company is present
+                company: app.job.company ?? app.company,
               },
             };
           } catch (error) {
             console.error(`Error fetching job details for job ${app.job.id}:`, error);
-            return app; // Fallback to original application data
+            return app;
           }
         })
       );
@@ -305,7 +313,6 @@ export default function ApplicationsPage() {
         limit: 100,
       });
       
-      // Fetch match explanations for each saved job
       const savedJobsWithExplanations = await Promise.all(
         (response?.savedJobs || []).map(async (savedJob: any) => {
           try {
@@ -319,7 +326,7 @@ export default function ApplicationsPage() {
             };
           } catch (error) {
             console.error(`Error fetching match explanation for job ${savedJob.job.id}:`, error);
-            return savedJob; // Return job without explanation if fetch fails
+            return savedJob;
           }
         })
       );
@@ -340,18 +347,14 @@ export default function ApplicationsPage() {
   const handleJobAction = async (action: "save" | "apply" | "reject", jobId: string) => {
     try {
       if (action === "save") {
-        // Handle unsave
         await jobServices.unsaveJob(jobId);
         toast.success("Job removed from saved jobs");
-        fetchSavedJobs(); // Refresh the list
+        fetchSavedJobs();
       } else if (action === "apply") {
-        // Handle apply
         toast.success("Application submitted!");
-        // You might want to refresh the saved jobs list or handle the application
       } else if (action === "reject") {
-        // Handle reject
         toast.success("Job removed from saved jobs");
-        fetchSavedJobs(); // Refresh the list
+        fetchSavedJobs();
       }
     } catch (error) {
       console.error(`Failed to ${action} job:`, error);
@@ -359,57 +362,80 @@ export default function ApplicationsPage() {
     }
   };
 
-  const filteredApplications = allApplications.filter(app => {
+  const sortApplicationsByStatus = (applications: Application[]) => {
+    return [...applications].sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      return priorityA - priorityB;
+    });
+  };
 
+  const filteredApplications = allApplications.filter((app) => {
     if (activeTab === "all") return true;
     if (activeTab === "active") return app.status === "applied" || app.status === "under-review";
-    if (activeTab === "interviews") return app.status === "interview" || app.status === "first-round";
-    if (activeTab === "offers") return app.status === "offer";
+    if (activeTab === "in_progress") return app.status === "in_progress";
+    if (activeTab === "interview") return app.status === "interview" || app.status === "first-round";
+    if (activeTab === "hired") return app.status === "offer" || app.status === "hired";
+    if (activeTab === "rejected") return app.status === "rejected";
     return true;
   });
 
-  const selectedApplicationDetails = allApplications.find(app => app.id === selectedApplication);
+  const sortedApplications = sortApplicationsByStatus(filteredApplications);
+
+  const selectedApplicationDetails = allApplications.find((app) => app.id === selectedApplication);
 
   return (
     <div className="w-full px-6 py-4">
       <AnimatePresence mode="wait">
         {selectedApplication ? (
-          <ApplicationDetail key="application-detail" application={selectedApplicationDetails || null} onBackClick={() => setSelectedApplication(null)} />
+          <ApplicationDetail
+            key="application-detail"
+            application={selectedApplicationDetails || null}
+            onBackClick={() => setSelectedApplication(null)}
+          />
         ) : (
-          <motion.div key="application-list" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+          <motion.div
+            key="application-list"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="mb-4">
                 <TabsTrigger value="all">All Applications</TabsTrigger>
                 <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="interviews">Interviews</TabsTrigger>
-                <TabsTrigger value="offers">Offers</TabsTrigger>
+
+                <TabsTrigger value="interview">Interviews</TabsTrigger>
+                <TabsTrigger value="hired">Offers/Hired</TabsTrigger>
+                <TabsTrigger value="rejected">Rejected</TabsTrigger>
                 <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="all">
-                {isLoading ? (
-                  <p>Loading applications...</p>
-                ) : filteredApplications.length === 0 ? (
-                  <p className="text-center text-muted-foreground">No applications found</p>
-                ) : (
+              {["all", "active", "in_progress", "interview", "hired", "rejected"].map((tab) => (
+                <TabsContent key={tab} value={tab}>
+                  {isLoading ? (
+                    <p>Loading applications...</p>
+                  ) : sortedApplications.length === 0 ? (
+                    <p className="text-center text-muted-foreground">No applications found</p>
+                  ) : (
                     <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
-                      {filteredApplications.map(app => {
-                        // Helper to format employment type
+                      {sortedApplications.map((app) => {
                         const formatEmploymentType = (type?: string) => {
                           if (!type) return "N/A";
-                          
-                          // Handle specific cases
                           const typeMap: Record<string, string> = {
-                            'full_time': 'Full-Time',
-                            'part_time': 'Part-Time', 
-                            'contract': 'Contract',
-                            'internship': 'Internship'
+                            full_time: "Full-Time",
+                            part_time: "Part-Time",
+                            contract: "Contract",
+                            internship: "Internship",
                           };
-                          
-                          return typeMap[type] || type
-                            .split("_")
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join("-");
+                          return (
+                            typeMap[type] ||
+                            type
+                              .split("_")
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                              .join("-")
+                          );
                         };
 
                         return (
@@ -422,12 +448,15 @@ export default function ApplicationsPage() {
                               companyLogo: app.company.logoUrl,
                               jobTitle: app.job.title,
                               location: app.job.location,
-                              department: app.company.industry || "N/A",
+                              department: app.company.industry ?? "General",
                               jobType: formatEmploymentType(app.job.employmentType),
                               appliedDate: app.applicationDate,
-                              salary: app.job.salaryMin && app.job.salaryMax
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${app.job.payPeriod}`
-                                : "N/A",
+                              salary:
+                                app.job.salaryMin && app.job.salaryMax
+                                  ? `$${parseFloat(String(app.job.salaryMin)).toLocaleString()} - $${parseFloat(
+                                      String(app.job.salaryMax)
+                                    ).toLocaleString()}/${app.job.payPeriod ? app.job.payPeriod : "yr"}`
+                                  : "Unpaid",
                               matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
                               feedback: app.feedback ?? "",
                               interviewDate: app.nextStepDate,
@@ -437,166 +466,10 @@ export default function ApplicationsPage() {
                         );
                       })}
                     </div>
-                )}
-              </TabsContent>
-              <TabsContent value="active">
-                {isLoading ? (
-                  <p>Loading applications...</p>
-                ) : filteredApplications.length === 0 ? (
-                  <p className="text-center text-muted-foreground">No applications found</p>
-                ) : (
-                    <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
-                      {filteredApplications.map(app => {
-                        // Helper to format employment type
-                        const formatEmploymentType = (type?: string) => {
-                          if (!type) return "N/A";
-                          
-                          // Handle specific cases
-                          const typeMap: Record<string, string> = {
-                            'full_time': 'Full-Time',
-                            'part_time': 'Part-Time', 
-                            'contract': 'Contract',
-                            'internship': 'Internship'
-                          };
-                          
-                          return typeMap[type] || type
-                            .split("_")
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join("-");
-                        };
+                  )}
+                </TabsContent>
+              ))}
 
-                        return (
-                          <JobApplicationCard
-                            key={app.id}
-                            job={{
-                              id: app.id,
-                              status: app.status,
-                              company: app.company.companyName,
-                              companyLogo: app.company.logoUrl,
-                              jobTitle: app.job.title,
-                              location: app.job.location,
-                              department: app.job.department ?? "General",
-                              jobType: formatEmploymentType(app.job.employmentType),
-                              appliedDate: app.applicationDate,
-                              salary: app.job.salaryMin && app.job.salaryMax
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
-                                : "N/A",
-                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
-                              feedback: app.feedback ?? "",
-                              interviewDate: app.nextStepDate,
-                            }}
-                            onActionClick={handleActionClick}
-                          />
-                        );
-                      })}
-                    </div>
-                )}
-              </TabsContent>
-              <TabsContent value="interviews">
-                {isLoading ? (
-                  <p>Loading applications...</p>
-                ) : filteredApplications.length === 0 ? (
-                  <p className="text-center text-muted-foreground">No applications found</p>
-                ) : (
-                    <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
-                      {filteredApplications.map(app => {
-                        // Helper to format employment type
-                        const formatEmploymentType = (type?: string) => {
-                          if (!type) return "N/A";
-                          
-                          // Handle specific cases
-                          const typeMap: Record<string, string> = {
-                            'full_time': 'Full-Time',
-                            'part_time': 'Part-Time', 
-                            'contract': 'Contract',
-                            'internship': 'Internship'
-                          };
-                          
-                          return typeMap[type] || type
-                            .split("_")
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join("-");
-                        };
-
-                        return (
-                          <JobApplicationCard
-                            key={app.id}
-                            job={{
-                              id: app.id,
-                              status: app.status,
-                              company: app.company.companyName,
-                              companyLogo: app.company.logoUrl,
-                              jobTitle: app.job.title,
-                              location: app.job.location,
-                              department: app.job.department ?? "General",
-                              jobType: formatEmploymentType(app.job.employmentType),
-                              appliedDate: app.applicationDate,
-                              salary: app.job.salaryMin && app.job.salaryMax
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${(app.job as any).payPeriod === 'hourly' ? 'hr' : 'yr'}`
-                                : "N/A",
-                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
-                              feedback: app.feedback ?? "",
-                              interviewDate: app.nextStepDate,
-                            }}
-                            onActionClick={handleActionClick}
-                          />
-                        );
-                      })}
-                    </div>
-                )}
-              </TabsContent>
-              <TabsContent value="offers">
-                {isLoading ? (
-                  <p>Loading applications...</p>
-                ) : filteredApplications.length === 0 ? (
-                  <p className="text-center text-muted-foreground">No applications found</p>
-                ) : (
-                    <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
-                      {filteredApplications.map(app => {
-                        // Helper to format employment type
-                        const formatEmploymentType = (type?: string) => {
-                          if (!type) return "N/A";
-                          
-                          // Handle specific cases
-                          const typeMap: Record<string, string> = {
-                            'full_time': 'Full-Time',
-                            'part_time': 'Part-Time', 
-                            'contract': 'Contract',
-                            'internship': 'Internship'
-                          };
-                          
-                          return typeMap[type]
-                            .split("_")
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join("-");
-                        };
-
-                        return (
-                          <JobApplicationCard
-                            key={app.id}
-                            job={{
-                              id: app.id,
-                              status: app.status,
-                              company: app.company.companyName,
-                              companyLogo: app.company.logoUrl,
-                              jobTitle: app.job.title,
-                              location: app.job.location,
-                              department: app.company.industry || "N/A",
-                              jobType: formatEmploymentType(app.job.employmentType),
-                              appliedDate: app.applicationDate,
-                              salary: app.job.salaryMin && app.job.salaryMax 
-                                ? `$${app.job.salaryMin.toLocaleString()} - $${app.job.salaryMax.toLocaleString()}/${app.job.payPeriod}` : "Unpaid",
-                              matchPercentage: app.matchScore ? `${Math.round(app.matchScore)}%` : "N/A",
-                              feedback: app.feedback ?? "",
-                              interviewDate: app.nextStepDate,
-                            }}
-                            onActionClick={handleActionClick}
-                          />
-                        );
-                      })}
-                    </div>
-                )}
-              </TabsContent>
               <TabsContent value="saved">
                 {isLoadingSavedJobs ? (
                   <p>Loading saved jobs...</p>
@@ -606,7 +479,6 @@ export default function ApplicationsPage() {
                   <div className="grid [@media(max-width:744px)]:grid-cols-1 [@media(max-width:1097px)]:grid-cols-2 grid-cols-3 gap-x-8 gap-y-10">
                     {savedJobs.map((savedJob, index) => {
                       const job = savedJob.job;
-                      
                       return (
                         <InteractiveJobCard
                           key={savedJob.id || index}
@@ -624,7 +496,10 @@ export default function ApplicationsPage() {
                           jobType={job.employmentType || "Full-Time"}
                           postedDate={new Date(job.createdAt || Date.now()).toLocaleDateString()}
                           whyYouFit={job.matchExplanation?.explanation || "This role aligns well with your background and skills."}
-                          aiSummary={job.matchExplanation?.explanation || "Based on your profile, this position offers a great opportunity for growth and matches your career goals."}
+                          aiSummary={
+                            job.matchExplanation?.explanation ||
+                            "Based on your profile, this position offers a great opportunity for growth and matches your career goals."
+                          }
                           fullJobDescription={job.description || ""}
                           fullResponsibilities={job.responsibilities || ""}
                           companyDescription={job.companyDescription || ""}
@@ -633,10 +508,10 @@ export default function ApplicationsPage() {
                           onAction={(action, jobId) => {
                             handleJobAction(action, jobId);
                           }}
-                          />
-                        );
-                      })}
-                    </div>
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </TabsContent>
             </Tabs>

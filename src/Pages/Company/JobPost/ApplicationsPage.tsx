@@ -23,6 +23,7 @@ export interface Applicant {
   location: string;
   resumeUrl: string | URL;
   imageUrl?: string | null;
+  status: string;
 }
 
 interface Tag {
@@ -130,6 +131,7 @@ export default function CompanyApplicationsPage() {
           location: dto.location || "Not specified",
           imageUrl: dto.profilePictureUrl || null,
           resumeUrl: dto.resumeUrl ?? "",
+          status: dto.applicationStatus || "Pending",
         }));
         setApplicants(mappedApplicants);
         setAllApplicants(mappedApplicants);

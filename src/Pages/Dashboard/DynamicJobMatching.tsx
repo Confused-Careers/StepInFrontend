@@ -219,12 +219,10 @@ export function DynamicJobMatching() {
           return;
         }
         if (response.data.length > 3) {
-          console.warn(
-            `Expected 3 jobs, but received ${response.data.length}. Truncating to 3. Check API limit parameter.`
-          );
           response.data = response.data.slice(0, 3);
         }
         const jobs = await Promise.all(response.data.map(mapJobToJobCardProps));
+        jobs.sort((a, b) => (b.matchPercentage ?? 0) - (a.matchPercentage ?? 0));
         setMatchedJobs(jobs);
       } else {
         console.warn("Invalid jobs response:", response);
@@ -233,7 +231,7 @@ export function DynamicJobMatching() {
     } catch (error) {
       console.error("Error fetching jobs:", error);
       setMatchedJobs([]);
-      toast.error("Failed to fetch jobs. Please try again.");
+      toast.error("Failed to fetch jobs");
     }
   };
 
@@ -285,7 +283,7 @@ export function DynamicJobMatching() {
       console.error(`Failed to fetch questions for tier ${tier}:`, error);
       setAvailableQuestions([]);
       setColumnQuestions([null, null, null]);
-      toast.error(error.response?.data?.message || "Failed to fetch questions. Please try again.");
+      toast.error(error.response?.data?.message || "Failed to fetch questions");
     }
   };
 
@@ -346,7 +344,7 @@ export function DynamicJobMatching() {
       console.error(`Failed to fetch answer history for tier ${tier}:`, error);
       setAnsweredQuestionIds(new Set());
       setColumnInsights([]);
-      toast.error(error.response?.data?.message || "Failed to fetch answer history. Please try again.");
+      toast.error(error.response?.data?.message || "Failed to fetch answer history");
     }
   };
 
@@ -468,9 +466,8 @@ export function DynamicJobMatching() {
 
       // Fetch updated progress
       const progress = await getUserProgress();
-
       const newTier = progress.currentTier || 1;
-      setCurrentTier(newTier);
+      setQuestionAnswered(progress.questionsAnsweredInCurrentTier || 0);
 
       if (!progress.tiers || !Array.isArray(progress.tiers)) {
         console.error("Invalid tiers data in progress");
@@ -505,15 +502,38 @@ export function DynamicJobMatching() {
           : 0;
       setProfileCompletion(tierCompletion);
 
-      // Check if current tier is completed and next tier is unlocked
+      // Check if current tier is completed
       if (
-        currentTierData.isCompleted &&
         currentTierData.questionsAnsweredInTier >= currentTierData.questionsRequiredToComplete &&
         newTier < 5
       ) {
         const nextTier = newTier + 1;
         const nextTierData = progress.tiers.find((t) => t.tierNumber === nextTier);
-        if (nextTierData && nextTierData.isUnlocked) {
+
+        // Force tier update if backend hasn't updated currentTier yet
+        if (!nextTierData || !nextTierData.isUnlocked) {
+          // Retry fetching progress after a short delay to account for backend processing
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const updatedProgress = await getUserProgress();
+          const updatedNextTierData = updatedProgress.tiers.find((t) => t.tierNumber === nextTier);
+
+          if (updatedNextTierData && updatedNextTierData.isUnlocked) {
+            setCurrentTier(nextTier);
+            setProfileCompletion(0);
+            setColumnInsights([]);
+            setAnsweredQuestionIds(new Set());
+            questionCache.current.clear();
+            hasFetchedQuestions.current = false;
+            await fetchQuestions(nextTier);
+            await fetchAnswerHistory(nextTier);
+            await fetchJobs();
+            toast.success(`Advanced to Tier ${nextTier}!`);
+          } else {
+            console.warn(`Next tier (${nextTier}) not unlocked yet. Retrying...`);
+            toast.info(`Please wait, processing tier ${newTier} completion...`);
+            await fetchJobs();
+          }
+        } else {
           setCurrentTier(nextTier);
           setProfileCompletion(0);
           setColumnInsights([]);
@@ -524,9 +544,6 @@ export function DynamicJobMatching() {
           await fetchAnswerHistory(nextTier);
           await fetchJobs();
           toast.success(`Advanced to Tier ${nextTier}!`);
-        } else {
-          toast.info(`Next tier (${nextTier}) is not unlocked yet. Continue answering questions in Tier ${newTier}.`);
-          await fetchJobs();
         }
       } else {
         // Stay in current tier, refresh questions if needed
@@ -590,6 +607,7 @@ export function DynamicJobMatching() {
           return filteredJobs;
         });
       } else if (action === "reject") {
+        await jobServices.markJobAsNotInterested(jobId);
         setRejectedJobs((prev) => [...prev, jobId]);
         setMatchedJobs((prev) => {
           const filteredJobs = prev.filter((job) => job.id !== jobId);

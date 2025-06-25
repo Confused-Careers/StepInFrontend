@@ -171,7 +171,6 @@ export default function JobPostForm() {
       const fetchJob = async () => {
         try {
           const response = await companyServices.getJob(jobId);
-          console.log("Fetched job data:", response);
           const jobData = response;
           setJob({
             title: jobData.title || "",
@@ -504,12 +503,12 @@ export default function JobPostForm() {
                                 <SelectValue placeholder="Select pay period" />
                               </SelectTrigger>
                               <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
-                                <SelectItem value="hr">Hourly</SelectItem>
-                                <SelectItem value="dy">Daily</SelectItem>
-                                <SelectItem value="wk">Weekly</SelectItem>
-                                <SelectItem value="bw">Biweekly</SelectItem>
-                                <SelectItem value="mo">Monthly</SelectItem>
-                                <SelectItem value="yr">Annually</SelectItem>
+                                <SelectItem value="hr">/hr</SelectItem>
+                                <SelectItem value="dy">/dy</SelectItem>
+                                <SelectItem value="wk">/wk</SelectItem>
+                                <SelectItem value="bw">/bw</SelectItem>
+                                <SelectItem value="mo">/mo</SelectItem>
+                                <SelectItem value="yr">/yr</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

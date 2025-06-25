@@ -210,4 +210,18 @@ export const jobServices = {
       throw error;
     }
   },
+
+  markJobAsNotInterested: async (jobId: string) => {
+    try {
+      const response = await axios.post(
+        `${SERVER_BASE_URL}/api/v1/jobs/${jobId}/not-interested`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) return;
+      throw error;
+    }
+  },
 };

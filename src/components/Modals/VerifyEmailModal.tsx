@@ -28,19 +28,20 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleOtpChange = (index: number, value: string): void => {
-    // Only allow single digit
-    if (value.length > 1) return;
+    // Only allow numeric characters and single digit
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (numericValue.length > 1) return;
     
     const newOtpDigits = [...otpDigits];
-    newOtpDigits[index] = value;
+    newOtpDigits[index] = numericValue;
     setOtpDigits(newOtpDigits);
     
     // Update the main form data
     const otpCode = newOtpDigits.join("");
     setFormData((prev) => ({ ...prev, otpCode }));
     
-    // Auto-focus next input
-    if (value && index < 5) {
+    // Auto-focus next input only if we have a valid digit
+    if (numericValue && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -51,7 +52,6 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
       inputRefs.current[index - 1]?.focus();
     }
   };
-
 
   const handleResendOtp = async (): Promise<void> => {
     setIsLoading(true);
@@ -107,7 +107,6 @@ const VerifyEmailModal: React.FC<VerifyEmailModalProps> = ({ isOpen, onClose, em
   };
 
   const handleCancel = (): void => {
-    // Reset form data and close modal without form validation
     setFormData({ otpCode: "" });
     setOtpDigits(["", "", "", "", "", ""]);
     setError(null);

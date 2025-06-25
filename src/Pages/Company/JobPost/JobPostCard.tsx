@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface JobApplicationCardProps {
@@ -24,8 +25,8 @@ interface JobApplicationCardProps {
 
 export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationCardProps) {
   const navigate = useNavigate();
+  const [showFullResponsibilities, setShowFullResponsibilities] = useState(false);
 
-  
   const hasValidImage = (imageUrl?: string | null): boolean => {
     return imageUrl !== null && 
            imageUrl !== undefined && 
@@ -44,6 +45,20 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
 
   const handleCardClick = () => {
     onCardClick(job.id);
+  };
+
+  // Format salary with commas, no decimals unless .50
+  const formatSalary = (salary: string) => {
+    if (!salary) return '';
+    // Remove $ and commas for parsing
+    const cleaned = salary.replace(/[$,]/g, '');
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return salary;
+    // Check for .50
+    if (num % 1 === 0.5) {
+      return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `$${Math.round(num).toLocaleString()}`;
   };
 
   return (
@@ -76,7 +91,7 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
         <div className="flex flex-wrap gap-x-1 justify-evenly px-6 mt-2">
           {job.salary && job.salary !== "Negotiable" && job.salary.trim() !== "" && (
           <span className="px-2 py-0.5 rounded-md bg-jobcardsecondary text-[#ffffff] text-xs font-medium">
-            {job.salary}
+            {formatSalary(job.salary)}
           </span>
           )}
           <span className="px-2 py-0.5 rounded-md bg-[#0A84FF] text-[#ffffff] text-xs font-medium">
@@ -103,7 +118,26 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
         </div>
         <div className="rounded-lg px-4 py-2 mb-4 border border-gray-400 border-opacity-20" style={{ backgroundColor: 'rgba(17, 17, 19, 1)' }}>
           <p className="text-xs text-jobcardforeground">
-            <span className="text-xs font-medium text-jobcardtext mb-1">What You'll Do: </span>{job.responsiblities}
+            <span className="text-xs font-medium text-jobcardtext mb-1">What You'll Do: </span>
+            {showFullResponsibilities || !job.responsiblities
+              ? job.responsiblities
+              : (job.responsiblities?.slice(0, 120) + (job.responsiblities.length > 120 ? '...' : ''))}
+            {job.responsiblities && job.responsiblities.length > 120 && !showFullResponsibilities && (
+              <button
+                className="ml-2 text-blue-400 underline text-xs"
+                onClick={() => setShowFullResponsibilities(true)}
+              >
+                Read More
+              </button>
+            )}
+            {showFullResponsibilities && job.responsiblities && job.responsiblities.length > 120 && (
+              <button
+                className="ml-2 text-blue-400 underline text-xs"
+                onClick={() => setShowFullResponsibilities(false)}
+              >
+                Show Less
+              </button>
+            )}
           </p>
         </div>
         <div className="flex items-center justify-around w-full">
