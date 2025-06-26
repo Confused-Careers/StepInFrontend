@@ -32,9 +32,7 @@ export function ResumeUpload({ onUpload, uploaded }: ResumeUploadProps) {
         return;
       }
       setFile(droppedFile);
-      setTimeout(() => {
-        onUpload(droppedFile);
-      }, 1500);
+      onUpload(droppedFile);
     }
   };
 
@@ -46,9 +44,7 @@ export function ResumeUpload({ onUpload, uploaded }: ResumeUploadProps) {
         return;
       }
       setFile(selectedFile);
-      setTimeout(() => {
-        onUpload(selectedFile);
-      }, 1500);
+      onUpload(selectedFile);
     }
   };
 
@@ -108,7 +104,7 @@ export function ResumeUpload({ onUpload, uploaded }: ResumeUploadProps) {
               <div>
                 <p className="font-medium">{uploaded ? "Resume uploaded successfully!" : file?.name}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {uploaded ? "Analyzing your experience and skills..." : "Processing your file..."}
+                  {uploaded ? "Your resume is ready to be processed." : "Selected file ready to upload..."}
                 </p>
               </div>
               {!uploaded && (

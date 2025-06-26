@@ -13,6 +13,7 @@ export enum ApplicationStatus {
 export interface Application {
   id: string;
   job: {
+    matchScore: any;
     company: { companyName: string; logoUrl?: string; industry?: string };
     id: string;
     title: string;
@@ -25,6 +26,34 @@ export interface Application {
     requiredSkills?: string[];
     department?: string;
     description?: string;
+    requirements?: string;
+    responsibilities?: string;
+    experienceLevel?: string;
+    applicationDeadline?: string;
+    category?: {
+      categoryName: string;
+      description?: string | null;
+    };
+    requiredLanguages?: Array<{
+      id: string;
+      languageName: string;
+      languageCode: string;
+      proficiencyLevel: string;
+      isRequired: boolean;
+    }>;
+    requiredCertifications?: Array<{
+      id: string;
+      certificationName: string;
+      isRequired: boolean;
+    }>;
+    requiredEducation?: Array<{
+      id: string;
+      educationLevel: string;
+      fieldOfStudy: string;
+      isRequired: boolean;
+    }>;
+    hasApplied?: boolean;
+    isSaved?: boolean;
   };
   company: {
     companyName: string;
@@ -121,9 +150,45 @@ interface ApiJob {
   salaryMax?: string;
   payPeriod?: string;
   industry?: string;
-  requiredSkills?: string[];
+  requiredSkills?: Array<{
+    id: string;
+    skillName: string;
+    isRequired: boolean;
+    proficiencyLevel: string;
+    yearsOfExperience?: number | null;
+  }>;
   department?: string;
   description?: string;
+  requirements?: string;
+  responsibilities?: string;
+  experienceLevel?: string;
+  applicationDeadline?: string;
+  category?: {
+    id: string;
+    categoryName: string;
+    description?: string | null;
+  };
+  requiredLanguages?: Array<{
+    id: string;
+    languageName: string;
+    languageCode: string;
+    proficiencyLevel: string;
+    isRequired: boolean;
+  }>;
+  requiredCertifications?: Array<{
+    id: string;
+    certificationName: string;
+    isRequired: boolean;
+  }>;
+  requiredEducation?: Array<{
+    id: string;
+    educationLevel: string;
+    fieldOfStudy: string;
+    isRequired: boolean;
+  }>;
+  hasApplied?: boolean;
+  isSaved?: boolean;
+  matchScore?: number;
 }
 
 interface ApiApplication {
@@ -164,7 +229,6 @@ interface ApiJobResponse {
   statusCode: number;
   message: string;
   data: ApiJob;
-  
 }
 
 const applicationServices = {
@@ -204,50 +268,125 @@ const applicationServices = {
       const responseData = response.data.data || response.data;
       const applications = responseData.applications || [];
 
-      return {
-        applications: applications.map((app): Application => {
-          return {
-            id: app?.id ?? '',
-            job: {
-              id: app?.job?.id ?? app?.jobId ?? '',
-              title: app?.job?.title ?? 'Unknown',
-              employmentType: app?.job?.employmentType ?? 'Unknown',
-              location: app?.job?.isRemote ? 'Remote' : app?.job?.location ?? 'Unknown',
-              isRemote: app?.job?.isRemote ?? false,
-              salaryMin: app?.job?.salaryMin ? Number(app.job.salaryMin) : undefined,
-              salaryMax: app?.job?.salaryMax ? Number(app.job.salaryMax) : undefined,
-              payPeriod: app?.job?.payPeriod ?? 'Unknown',
-              requiredSkills: app?.job?.requiredSkills ?? [],
-              department: app?.job?.department ?? undefined,
-              description: app?.job?.description ?? '',
+      // Fetch detailed job information for each application to get matchScore and other fields
+      const enrichedApplications = await Promise.all(
+        applications.map(async (app): Promise<Application> => {
+          try {
+            const jobDetails = await applicationServices.getJobDetails(app?.job?.id ?? app?.jobId ?? '');
+            return {
+              id: app?.id ?? '',
+              job: {
+                id: jobDetails?.id ?? '',
+                title: jobDetails?.title ?? 'Unknown',
+                employmentType: jobDetails?.employmentType ?? 'Unknown',
+                location: jobDetails?.isRemote ? 'Remote' : jobDetails?.location ?? 'Unknown',
+                isRemote: jobDetails?.isRemote ?? false,
+                salaryMin: jobDetails?.salaryMin,
+                salaryMax: jobDetails?.salaryMax,
+                payPeriod: jobDetails?.payPeriod ?? undefined,
+                requiredSkills: jobDetails?.requiredSkills ?? [],
+                department: jobDetails?.department ?? undefined,
+                description: jobDetails?.description ?? '',
+                requirements: jobDetails?.requirements ?? undefined,
+                responsibilities: jobDetails?.responsibilities ?? undefined,
+                experienceLevel: jobDetails?.experienceLevel ?? undefined,
+                applicationDeadline: jobDetails?.applicationDeadline,
+                category: jobDetails?.category,
+                requiredLanguages: jobDetails?.requiredLanguages ?? [],
+                requiredCertifications: jobDetails?.requiredCertifications ?? [],
+                requiredEducation: jobDetails?.requiredEducation ?? [],
+                hasApplied: jobDetails?.hasApplied ?? false,
+                isSaved: jobDetails?.isSaved ?? false,
+                company: {
+                  companyName: jobDetails?.company?.companyName ?? 'Unknown',
+                  logoUrl: jobDetails?.company?.logoUrl ?? undefined,
+                  industry: jobDetails?.company?.industry ?? undefined,
+                },
+                matchScore: undefined
+              },
               company: {
-                companyName: '',
-                logoUrl: undefined
-              }
-            },
-            company: {
-              companyName: app?.job?.company?.companyName ?? 'Unknown',
-              logoUrl: app?.job?.company?.logoUrl ?? undefined,
-              industry: app?.job?.company?.industry ?? undefined,
-            },
-            applicationDate: app?.applicationDate
-              ? new Date(app.applicationDate).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                })
-              : 'Unknown',
-            status: mapStatus(app?.status ?? ApplicationStatus.APPLIED),
-            nextStep: deriveNextStep(app?.status ?? ApplicationStatus.APPLIED, app?.interviewScheduledAt),
-            nextStepDate: app?.interviewScheduledAt
-              ? new Date(app.interviewScheduledAt).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                })
-              : undefined,
-            feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
-            matchScore: undefined,
-          };
-        }),
+                companyName: jobDetails?.company?.companyName ?? 'Unknown',
+                logoUrl: jobDetails?.company?.logoUrl ?? undefined,
+                industry: jobDetails?.company?.industry ?? undefined,
+              },
+              applicationDate: app?.applicationDate
+                ? new Date(app.applicationDate).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : 'Unknown',
+              status: mapStatus(app?.status ?? ApplicationStatus.APPLIED),
+              nextStep: deriveNextStep(app?.status ?? ApplicationStatus.APPLIED, app?.interviewScheduledAt),
+              nextStepDate: app?.interviewScheduledAt
+                ? new Date(app.interviewScheduledAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : undefined,
+              feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
+              matchScore: jobDetails?.matchScore ? Number(jobDetails.matchScore) : undefined,
+            };
+          } catch (error) {
+            console.error(`Error fetching job details for job ${app?.job?.id ?? app?.jobId}:`, error);
+            return {
+              id: app?.id ?? '',
+              job: {
+                id: app?.job?.id ?? app?.jobId ?? '',
+                title: app?.job?.title ?? 'Unknown',
+                employmentType: app?.job?.employmentType ?? 'Unknown',
+                location: app?.job?.isRemote ? 'Remote' : app?.job?.location ?? 'Unknown',
+                isRemote: app?.job?.isRemote ?? false,
+                salaryMin: app?.job?.salaryMin ? Number(app.job.salaryMin) : undefined,
+                salaryMax: app?.job?.salaryMax ? Number(app.job.salaryMax) : undefined,
+                payPeriod: app?.job?.payPeriod ?? undefined,
+                requiredSkills: app?.job?.requiredSkills?.map((skill: any) => skill.skillName) ?? [],
+                department: app?.job?.department ?? undefined,
+                description: app?.job?.description ?? '',
+                requirements: undefined,
+                responsibilities: undefined,
+                experienceLevel: undefined,
+                applicationDeadline: undefined,
+                category: undefined,
+                requiredLanguages: [],
+                requiredCertifications: [],
+                requiredEducation: [],
+                hasApplied: false,
+                isSaved: false,
+                company: {
+                  companyName: app?.job?.company?.companyName ?? 'Unknown',
+                  logoUrl: app?.job?.company?.logoUrl ?? undefined,
+                  industry: app?.job?.company?.industry ?? undefined,
+                },
+                matchScore: undefined
+              },
+              company: {
+                companyName: app?.job?.company?.companyName ?? 'Unknown',
+                logoUrl: app?.job?.company?.logoUrl ?? undefined,
+                industry: app?.job?.company?.industry ?? undefined,
+              },
+              applicationDate: app?.applicationDate
+                ? new Date(app.applicationDate).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : 'Unknown',
+              status: mapStatus(app?.status ?? ApplicationStatus.APPLIED),
+              nextStep: deriveNextStep(app?.status ?? ApplicationStatus.APPLIED, app?.interviewScheduledAt),
+              nextStepDate: app?.interviewScheduledAt
+                ? new Date(app.interviewScheduledAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : undefined,
+              feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
+              matchScore: undefined,
+            };
+          }
+        })
+      );
+
+      return {
+        applications: enrichedApplications,
         pagination: responseData.pagination ?? {
           page: 1,
           limit: 10,
@@ -290,7 +429,6 @@ const applicationServices = {
         }
       );
 
-
       const jobData = response.data.data;
 
       return {
@@ -301,15 +439,37 @@ const applicationServices = {
         isRemote: jobData?.isRemote ?? false,
         salaryMin: jobData?.salaryMin ? Number(jobData.salaryMin) : undefined,
         salaryMax: jobData?.salaryMax ? Number(jobData.salaryMax) : undefined,
-        requiredSkills: jobData?.requiredSkills ?? [],
+        payPeriod: jobData?.payPeriod ?? undefined,
+        requiredSkills: jobData?.requiredSkills?.map((skill: any) => skill.skillName) ?? [],
         department: jobData?.department ?? undefined,
         description: jobData?.description ?? undefined,
+        requirements: jobData?.requirements ?? undefined,
+        responsibilities: jobData?.responsibilities ?? undefined,
+        experienceLevel: jobData?.experienceLevel ?? undefined,
+        applicationDeadline: jobData?.applicationDeadline
+          ? new Date(jobData.applicationDeadline).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })
+          : undefined,
+        category: jobData?.category
+          ? {
+              categoryName: jobData.category.categoryName ?? 'Unknown',
+              description: jobData.category.description ?? undefined,
+            }
+          : undefined,
+        requiredLanguages: jobData?.requiredLanguages ?? [],
+        requiredCertifications: jobData?.requiredCertifications ?? [],
+        requiredEducation: jobData?.requiredEducation ?? [],
+        hasApplied: jobData?.hasApplied ?? false,
+        isSaved: jobData?.isSaved ?? false,
         company: {
           companyName: jobData?.company?.companyName ?? 'Unknown',
           logoUrl: jobData?.company?.logoUrl ?? undefined,
           industry: jobData?.company?.industry ?? undefined,
         },
-        payPeriod: jobData?.payPeriod ?? undefined,
+        matchScore: jobData?.matchScore ? Number(jobData.matchScore) : undefined,
       };
     } catch (error: unknown) {
       console.error('Error fetching job details:', error);
@@ -366,7 +526,7 @@ const applicationServices = {
             isRemote: saved?.job?.isRemote ?? false,
             salaryMin: saved?.job?.salaryMin ? Number(saved.job.salaryMin) : undefined,
             salaryMax: saved?.job?.salaryMax ? Number(saved.job.salaryMax) : undefined,
-            requiredSkills: saved?.job?.requiredSkills ?? [],
+            requiredSkills: saved?.job?.requiredSkills?.map((skill: any) => skill.skillName) ?? [],
             department: saved?.job?.department ?? undefined,
             description: saved?.job?.description ?? '',
           },

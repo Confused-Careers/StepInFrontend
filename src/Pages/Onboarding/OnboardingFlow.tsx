@@ -83,6 +83,7 @@ export function OnboardingFlow() {
         );
         const totalQuestions = questions.length;
         const questionsBefore = totalQuestions % 2 === 0 ? totalQuestions / 2 : Math.ceil(totalQuestions / 2);
+        const isGoogleAuth = !!localStorage.getItem("google_accessToken");
         const newSteps: Step[] = [
           { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
         ];
@@ -93,20 +94,20 @@ export function OnboardingFlow() {
             questionId: q.id,
             questionText: q.questionText,
             options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText, personalityTrait: opt.personalityTrait, behavioralIndicator: opt.behavioralIndicator, insight: opt.insight })),
-            progress: ((index + 1) / (totalQuestions + 3)) * 80,
+            progress: ((index + 1) / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
           });
         });
         newSteps.push({
           id: "register",
           type: "register",
           content: "Let's save your progress – and send your matches straight to you",
-          progress: (questionsBefore / (totalQuestions + 3)) * 80,
+          progress: (questionsBefore / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
         });
         newSteps.push({
           id: "resume",
           type: "resume",
           content: "Now let's connect your experience — we'll use it to show matches that actually fit.",
-          progress: ((questionsBefore + 1) / (totalQuestions + 3)) * 80,
+          progress: ((questionsBefore + 1) / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
         });
         questions.slice(questionsBefore).forEach((q, index) => {
           newSteps.push({
@@ -115,16 +116,23 @@ export function OnboardingFlow() {
             questionId: q.id,
             questionText: q.questionText,
             options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText, personalityTrait: opt.personalityTrait, behavioralIndicator: opt.behavioralIndicator, insight: opt.insight })),
-            progress: ((questionsBefore + 1 + index + 1) / (totalQuestions + 3)) * 80,
+            progress: ((questionsBefore + 1 + index + 1) / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
           });
         });
-        newSteps.push({
-          id: "verify",
-          type: "verify",
-          content: "Verify your email to continue",
-          progress: 90,
-        });
+        if (!isGoogleAuth) {
+          newSteps.push({
+            id: "verify",
+            type: "verify",
+            content: "Verify your email to continue",
+            progress: 90,
+          });
+        }
         setDynamicSteps(newSteps);
+        // Ensure the current step is valid
+        if (currentStep >= newSteps.length) {
+          setCurrentStep(0);
+          localStorage.setItem('onboarding_currentStep', '0');
+        }
       } catch {
         toast.error("Failed to load onboarding questions.");
       }
@@ -182,14 +190,36 @@ export function OnboardingFlow() {
         const isGoogleAuth = !!localStorage.getItem("google_accessToken");
         const registerData = JSON.parse(localStorage.getItem("registerData") || "{}");
         const updatedAnswers = [...onboardingAnswers.filter(a => a.questionId !== questionId), newAnswer];
+        const formData = new FormData();
+        let response;
         if (isGoogleAuth) {
           const googleAccessToken = localStorage.getItem("google_accessToken");
-          await authServices.googleAuth({
-            idToken: googleAccessToken!,
-            onboardingAnswers: updatedAnswers,
+          const googleEmail = localStorage.getItem("google_email") || "";
+          const googleFirstName = localStorage.getItem("google_firstName") || "";
+          const googleLastName = localStorage.getItem("google_lastName") || "";
+          if (!googleAccessToken || !googleEmail) {
+            throw new Error("Google authentication data is missing.");
+          }
+          formData.append("idToken", googleAccessToken);
+          formData.append("email", googleEmail);
+          formData.append("firstName", googleFirstName);
+          formData.append("lastName", googleLastName);
+          updatedAnswers.forEach((answer, index) => {
+            formData.append(`onboardingAnswers[${index}][questionId]`, answer.questionId);
+            formData.append(`onboardingAnswers[${index}][selectedOptionId]`, answer.selectedOptionId);
           });
+          if (resumeFile) {
+            formData.append("resume", resumeFile);
+          } else {
+            throw new Error("Resume file is required");
+          }
+          response = await authServices.googleAuth(formData);
+          localStorage.setItem("accessToken", response.accessToken || "");
+          localStorage.setItem("userType", "individual");
+          // Skip email verification for Google auth and complete onboarding
+          navigate("/dashboard/interactive");
+          handleVerifyComplete();
         } else {
-          const formData = new FormData();
           formData.append("email", registerData.email || "");
           formData.append("password", registerData.password || "");
           formData.append("firstName", registerData.firstName || "");
@@ -204,11 +234,13 @@ export function OnboardingFlow() {
           } else {
             throw new Error("Resume file is required");
           }
-          await authServices.register(formData);
+          response = await authServices.register(formData);
+          localStorage.setItem("accessToken", response.accessToken || "");
+          localStorage.setItem("userType", "individual");
+          setUserEmail(registerData.email || "");
+          setShowVerifyModal(true);
+          setCurrentStep(prev => prev + 1);
         }
-        setUserEmail(registerData.email || localStorage.getItem("google_email") || "");
-        setShowVerifyModal(true);
-        setCurrentStep(prev => prev + 1);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Registration failed.");
         setIsTransitioning(false);
@@ -232,19 +264,18 @@ export function OnboardingFlow() {
   const handleResumeUpload = (file: File) => {
     setResumeFile(file);
     setResumeUploaded(true);
+    setIsTransitioning(true);
+    setShowContent(false);
     setTimeout(() => {
-      setIsTransitioning(true);
-      setShowContent(false);
-      setTimeout(() => {
-        setCurrentStep(prev => prev + 1);
-        setIsTransitioning(false);
-        setShowContent(true);
-      }, 1000);
-    }, 1500);
+      setCurrentStep(prev => prev + 1);
+      setIsTransitioning(false);
+      setShowContent(true);
+    }, 1000);
   };
 
   const handleVerifyComplete = () => {
     setShowContent(false);
+    setShowVerifyModal(false);
     localStorage.removeItem('onboarding_currentStep');
     localStorage.setItem('onboarding_answers', JSON.stringify({}));
     localStorage.setItem('onboarding_onboardingAnswers', JSON.stringify([]));
@@ -252,6 +283,8 @@ export function OnboardingFlow() {
     localStorage.removeItem('registerData');
     localStorage.removeItem('google_accessToken');
     localStorage.removeItem('google_email');
+    localStorage.removeItem('google_firstName');
+    localStorage.removeItem('google_lastName');
     navigate("/individual-login");
   };
 
@@ -381,6 +414,8 @@ export function OnboardingFlow() {
                   localStorage.removeItem('registerData');
                   localStorage.removeItem('google_accessToken');
                   localStorage.removeItem('google_email');
+                  localStorage.removeItem('google_firstName');
+                  localStorage.removeItem('google_lastName');
                   navigate("/");
                 }}
               >

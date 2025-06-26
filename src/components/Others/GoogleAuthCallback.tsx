@@ -5,6 +5,13 @@ import StarryBackground from "@/components/Others/StarryBackground";
 import Logo from "../../assets/StepIn Transparent Logo.png";
 import { toast } from "sonner";
 import authServices from "@/services/authServices";
+import {jwtDecode} from "jwt-decode";
+
+interface GoogleIdTokenPayload {
+  email: string;
+  given_name?: string;
+  family_name?: string;
+}
 
 export function GoogleAuthCallback() {
   const navigate = useNavigate();
@@ -62,10 +69,16 @@ export function GoogleAuthCallback() {
             toast.success("Login successful!", { description: "Welcome back!" });
             navigate("/dashboard/interactive", { replace: true });
           } else {
-            response = await authServices.googleAuth({ idToken, onboardingAnswers });
-            localStorage.setItem("accessToken", response.accessToken || "");
-            localStorage.setItem("userType", "individual");
-            toast.success("Registration successful!", { description: "Welcome to StepIn!" });
+            // Decode the ID token to extract user information
+            const decoded: GoogleIdTokenPayload = jwtDecode(idToken);
+            const email = decoded.email;
+            const firstName = decoded.given_name || "";
+            const lastName = decoded.family_name || "";
+            localStorage.setItem("google_accessToken", idToken);
+            localStorage.setItem("google_email", email);
+            localStorage.setItem("google_firstName", firstName);
+            localStorage.setItem("google_lastName", lastName);
+            localStorage.setItem("onboarding_onboardingAnswers", JSON.stringify(onboardingAnswers));
             const currentStep = parseInt(localStorage.getItem("onboarding_currentStep") || "4", 10);
             localStorage.setItem("onboarding_currentStep", (currentStep + 1).toString());
             navigate("/onboarding", { replace: true });
