@@ -69,7 +69,7 @@ export function OnboardingFlow() {
   const [showContent, setShowContent] = useState<boolean>(true);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const [dynamicSteps, setDynamicSteps] = useState<Step[]>([
     { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
   ]);
