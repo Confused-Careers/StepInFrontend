@@ -1,6 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
 
-// PROTECTED ROUTE
 interface ProtectedRouteProps {
   allowedUserType: 'individual' | 'company';
 }
@@ -28,7 +27,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedUserType 
   return <Outlet />;
 };
 
-// PUBLIC ROUTE
 export const PublicRoute: React.FC = () => {
   const accessToken = localStorage.getItem('accessToken');
   const userType = localStorage.getItem('userType');
@@ -38,7 +36,9 @@ export const PublicRoute: React.FC = () => {
 
   const alwaysPublicPaths = [
     '/individual-forget-password',
-    '/company/forgot-password'
+    '/company/forgot-password',
+    '/onboarding',
+    '/auth/google/callback',
   ];
 
   const isAlwaysPublic = alwaysPublicPaths.some(path => currentPath.startsWith(path));

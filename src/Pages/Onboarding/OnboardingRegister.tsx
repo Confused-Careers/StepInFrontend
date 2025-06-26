@@ -53,11 +53,10 @@ export function OnboardingRegister({ onComplete, onboardingAnswers }: Onboarding
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/google/callback`;
     const scope = "profile email";
-    const state = JSON.stringify({ flow: "register" });
-    const nonce = crypto.randomUUID(); 
+    const state = JSON.stringify({ flow: "register", onboardingAnswers });
+    const nonce = crypto.randomUUID();
     sessionStorage.setItem("google_nonce", nonce);
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=id_token&scope=${scope}&state=${encodeURIComponent(state)}&nonce=${nonce}`;
-    sessionStorage.setItem('onboardingAnswers', JSON.stringify(onboardingAnswers));
     window.location.href = googleAuthUrl;
   };
 

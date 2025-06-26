@@ -24,6 +24,9 @@ interface CompanyLoginData {
 
 interface GoogleAuthData {
   idToken: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
   onboardingAnswers?: Array<{
     questionId: string;
     selectedOptionId: string;
@@ -32,7 +35,6 @@ interface GoogleAuthData {
 
 interface GoogleLoginData {
   idToken: string;
-  
 }
 
 interface VerifyEmailData {
@@ -192,14 +194,15 @@ const authServices = {
     }
   },
 
-  async googleAuth(data: GoogleAuthData): Promise<AuthResponse> {
+  async googleAuth(data: FormData): Promise<AuthResponse> {
     try {
+      console.log('Google Auth Data:', Object.fromEntries(data));
       const response: AxiosResponse<AuthResponse> = await axios.post(
         `${SERVER_BASE_URL}/api/v1/auth/google`,
         data,
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
