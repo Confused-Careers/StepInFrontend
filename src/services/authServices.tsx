@@ -185,8 +185,7 @@ const authServices = {
 
   async googleAuth(data: FormData): Promise<AuthResponse> {
     try {
-      console.log('Google Auth Data:', Object.fromEntries(data));
-      const response: AxiosResponse<AuthResponse> = await axios.post(
+      const response = await axios.post(
         `${SERVER_BASE_URL}/api/v1/auth/google`,
         data,
         {
@@ -195,7 +194,7 @@ const authServices = {
           },
         }
       );
-      return response.data;
+      return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Google Sign-In failed');
@@ -206,8 +205,8 @@ const authServices = {
 
   async googleLogin(data: GoogleLoginData): Promise<AuthResponse> {
     try {
-      const response: AxiosResponse<AuthResponse> = await axios.post(
-        `${SERVER_BASE_URL}/api/v1/auth/google/login`,
+      const response = await axios.post(
+        `${SERVER_BASE_URL}/api/v1/auth/google`,
         data,
         {
           headers: {
@@ -215,7 +214,7 @@ const authServices = {
           },
         }
       );
-      return response.data;
+      return response.data.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Google Login failed');

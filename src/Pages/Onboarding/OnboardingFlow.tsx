@@ -69,7 +69,7 @@ export function OnboardingFlow() {
   const [showContent, setShowContent] = useState<boolean>(true);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [dynamicSteps, setDynamicSteps] = useState<Step[]>([
     { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
   ]);
@@ -83,6 +83,7 @@ export function OnboardingFlow() {
         );
         const totalQuestions = questions.length;
         const questionsBefore = totalQuestions % 2 === 0 ? totalQuestions / 2 : Math.ceil(totalQuestions / 2);
+        const isGoogleAuth = !!localStorage.getItem("google_accessToken");
         const newSteps: Step[] = [
           { id: "intro", type: "intro", content: "Let's start small, No résumés, No buzzwords, Just you — and how you actually work best.", progress: 0 },
         ];
@@ -93,20 +94,20 @@ export function OnboardingFlow() {
             questionId: q.id,
             questionText: q.questionText,
             options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText, personalityTrait: opt.personalityTrait, behavioralIndicator: opt.behavioralIndicator, insight: opt.insight })),
-            progress: ((index + 1) / (totalQuestions + 3)) * 80,
+            progress: ((index + 1) / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
           });
         });
         newSteps.push({
           id: "register",
           type: "register",
           content: "Let's save your progress – and send your matches straight to you",
-          progress: (questionsBefore / (totalQuestions + 3)) * 80,
+          progress: (questionsBefore / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
         });
         newSteps.push({
           id: "resume",
           type: "resume",
           content: "Now let's connect your experience — we'll use it to show matches that actually fit.",
-          progress: ((questionsBefore + 1) / (totalQuestions + 3)) * 80,
+          progress: ((questionsBefore + 1) / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
         });
         questions.slice(questionsBefore).forEach((q, index) => {
           newSteps.push({
@@ -115,15 +116,17 @@ export function OnboardingFlow() {
             questionId: q.id,
             questionText: q.questionText,
             options: q.options.map(opt => ({ id: opt.id, optionText: opt.optionText, personalityTrait: opt.personalityTrait, behavioralIndicator: opt.behavioralIndicator, insight: opt.insight })),
-            progress: ((questionsBefore + 1 + index + 1) / (totalQuestions + 3)) * 80,
+            progress: ((questionsBefore + 1 + index + 1) / (totalQuestions + (isGoogleAuth ? 2 : 3))) * 80,
           });
         });
-        newSteps.push({
-          id: "verify",
-          type: "verify",
-          content: "Verify your email to continue",
-          progress: 90,
-        });
+        if (!isGoogleAuth) {
+          newSteps.push({
+            id: "verify",
+            type: "verify",
+            content: "Verify your email to continue",
+            progress: 90,
+          });
+        }
         setDynamicSteps(newSteps);
         // Ensure the current step is valid
         if (currentStep >= newSteps.length) {
@@ -194,7 +197,10 @@ export function OnboardingFlow() {
           const googleEmail = localStorage.getItem("google_email") || "";
           const googleFirstName = localStorage.getItem("google_firstName") || "";
           const googleLastName = localStorage.getItem("google_lastName") || "";
-          formData.append("idToken", googleAccessToken!);
+          if (!googleAccessToken || !googleEmail) {
+            throw new Error("Google authentication data is missing.");
+          }
+          formData.append("idToken", googleAccessToken);
           formData.append("email", googleEmail);
           formData.append("firstName", googleFirstName);
           formData.append("lastName", googleLastName);
@@ -208,6 +214,11 @@ export function OnboardingFlow() {
             throw new Error("Resume file is required");
           }
           response = await authServices.googleAuth(formData);
+          localStorage.setItem("accessToken", response.accessToken || "");
+          localStorage.setItem("userType", "individual");
+          // Skip email verification for Google auth and complete onboarding
+          navigate("/dashboard/interactive");
+          handleVerifyComplete();
         } else {
           formData.append("email", registerData.email || "");
           formData.append("password", registerData.password || "");
@@ -224,12 +235,12 @@ export function OnboardingFlow() {
             throw new Error("Resume file is required");
           }
           response = await authServices.register(formData);
+          localStorage.setItem("accessToken", response.accessToken || "");
+          localStorage.setItem("userType", "individual");
+          setUserEmail(registerData.email || "");
+          setShowVerifyModal(true);
+          setCurrentStep(prev => prev + 1);
         }
-        localStorage.setItem("accessToken", response.accessToken || "");
-        localStorage.setItem("userType", "individual");
-        setUserEmail(registerData.email || localStorage.getItem("google_email") || "");
-        setShowVerifyModal(true);
-        setCurrentStep(prev => prev + 1);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Registration failed.");
         setIsTransitioning(false);
@@ -264,6 +275,7 @@ export function OnboardingFlow() {
 
   const handleVerifyComplete = () => {
     setShowContent(false);
+    setShowVerifyModal(false);
     localStorage.removeItem('onboarding_currentStep');
     localStorage.setItem('onboarding_answers', JSON.stringify({}));
     localStorage.setItem('onboarding_onboardingAnswers', JSON.stringify([]));
