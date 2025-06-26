@@ -22,17 +22,6 @@ interface CompanyLoginData {
   password: string;
 }
 
-interface GoogleAuthData {
-  idToken: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  onboardingAnswers?: Array<{
-    questionId: string;
-    selectedOptionId: string;
-  }>;
-}
-
 interface GoogleLoginData {
   idToken: string;
 }
