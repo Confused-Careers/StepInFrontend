@@ -45,7 +45,7 @@ export function OnboardingQuestion({
         setIsTransitioning(false);
         setShowInsight(false);
         setSelectedOptionId(null);
-      }, 3000); // Insight display for 3 seconds
+      }, 5000); // Insight display for 3 seconds
     }, 800); // Delay before showing insight
   };
 
