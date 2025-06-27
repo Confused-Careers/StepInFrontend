@@ -108,7 +108,7 @@ export function OnboardingQuestion({
                 key={index}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: index * 3 + 0.4 }}
+                transition={{ duration: 1, delay: index * 2 + 0.4 }}
               >
                 {line}
               </motion.p>
