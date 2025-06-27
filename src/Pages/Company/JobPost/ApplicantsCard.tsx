@@ -180,7 +180,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       setIsAccepted(true);
       toast.success(`Accepted ${applicant.name}`);
     } catch (error) {
-      toast.error("Failed to accept candidate");
+      {/*toast.error("Failed to accept candidate");*/}
       console.error(error);
     } finally {
       setAcceptLoading(false);
@@ -196,7 +196,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       setIsRejected(true);
       toast.success(`Rejected ${applicant.name}`);
     } catch (error) {
-      toast.error("Failed to reject candidate");
+      {/*toast.error("Failed to reject candidate");*/}
       console.error(error);
     } finally {
       setRejectLoading(false);
@@ -212,7 +212,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       setIsNotSuitable(true);
       toast.success(`Marked ${applicant.name} as not suitable`);
     } catch (error) {
-      toast.error("Failed to mark as not suitable");
+      {/*toast.error("Failed to mark as not suitable");*/}
       console.error(error);
     } finally {
       setNotSuitableLoading(false);
@@ -228,7 +228,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       setIsHired(true);
       toast.success(`Hired ${applicant.name}`);
     } catch (error) {
-      toast.error("Failed to hire candidate");
+      {/*toast.error("Failed to hire candidate");*/}
       console.error(error);
     } finally {
       setHireLoading(false);
@@ -244,7 +244,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       setIsInterviewed(true);
       toast.success(`Moved ${applicant.name} to interview stage`);
     } catch (error) {
-      toast.error("Failed to move to interview stage");
+      {/*toast.error("Failed to move to interview stage");*/}
       console.error(error);
     } finally {
       setInterviewLoading(false);

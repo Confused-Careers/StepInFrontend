@@ -22,23 +22,10 @@ export function GoogleAuthCallback() {
     const hashParams = new URLSearchParams(location.hash.replace("#", ""));
     const idToken = hashParams.get("id_token");
     const errorParam = hashParams.get("error");
+    // Removed nonce logic
     const state = hashParams.get("state");
-    const nonce = hashParams.get("nonce");
-    const storedNonce = sessionStorage.getItem("google_nonce");
     let flow = "login";
     let onboardingAnswers: Array<{ questionId: string; selectedOptionId: string }> = [];
-
-    // Validate nonce
-    if (nonce !== storedNonce) {
-      setError("Invalid nonce. Possible security issue.");
-      toast.error("Authentication error: Invalid nonce.");
-      sessionStorage.removeItem("google_nonce");
-      setTimeout(() => {
-        navigate("/login", { replace: true });
-      }, 3000);
-      return;
-    }
-    sessionStorage.removeItem("google_nonce");
 
     // Parse state
     try {
