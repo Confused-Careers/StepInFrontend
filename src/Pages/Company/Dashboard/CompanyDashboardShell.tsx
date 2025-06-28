@@ -28,6 +28,7 @@ export function CompanyDashboardShell({ children }: DashboardShellProps) {
   const navigation = [
     { name: "Job Postings", href: "/company/dashboard/jobposts" },
     { name: "Post a Job", href: "/company/dashboard/job/new" },
+    { name: "Messages", href: "/company/dashboard/company-messages" },
   ];
 
   useEffect(() => {

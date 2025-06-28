@@ -38,6 +38,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const navigation = [
     { name: "Jobs", href: "/dashboard/interactive" },
     { name: "Applications", href: "/dashboard/applications" },
+    { name: "Messages", href: "/dashboard/messages" },
   ];
 
   const isActive = (path: string) => {
