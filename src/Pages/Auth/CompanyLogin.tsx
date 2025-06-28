@@ -58,7 +58,7 @@ const CompanyLogin: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       <StarryBackground />
-      <div className="container max-w-md z-10">
+      <div className="container max-w-[470px] z-10">
         <div className="flex justify-center mb-6 flex-col">
           <div className="flex items-center gap-2 justify-center">
             <img src={Logo} alt="StepIn Logo" className="h-6 w-6" />
@@ -82,7 +82,7 @@ const CompanyLogin: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
             <CardDescription className="text-center">
-              Sign in to continue your job search journey and track your applications
+              Access your dashboard to review applicants, post roles, and manage interviews
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -99,7 +99,9 @@ const IndividualLogin: React.FC = () => {
         <Card className="border-primary/20 bg-background/80 backdrop-blur-md">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-            <CardDescription className="text-center">Access your dashboard to review applicants, post roles, and manage interviews</CardDescription>
+            <CardDescription className="text-center">
+              Sign in to continue your job search journey and track your applications
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Button
