@@ -25,6 +25,7 @@ import { Toaster } from 'sonner';
 import ContactUsPage from './Pages/Contact/ContactUsPage';
 import CompanyMessagesPage from './Pages/Company/Company Messages/CompanyMessagesPage';
 import JobSeekerMessagesPage from './Pages/JobSeekerMessages/JobSeekerMessagesPage';
+import ApplicantDetailsPage from './Pages/Company/JobPost/ApplicantDetailsPage';
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
           <Route path="/company/dashboard/:jobId/applications" element={<CompanyDashboardShell><CompanyApplicationsPage /></CompanyDashboardShell>} />
           <Route path="/company/dashboard/availability" element={<CompanyDashboardShell><AvailabilityPage /></CompanyDashboardShell>} />
           <Route path="/company/dashboard/company-messages" element={<CompanyDashboardShell><CompanyMessagesPage /></CompanyDashboardShell>} />
+          <Route path="/company/applicant-details" element={<CompanyDashboardShell><ApplicantDetailsPage /></CompanyDashboardShell>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster />
