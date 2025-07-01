@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Applicant as ImportedApplicant } from "./ApplicationsPage";
+import { useNavigate, useParams } from "react-router-dom";
 
 export interface Applicant extends ImportedApplicant {
   resumeUrl: string | URL;
@@ -60,6 +61,8 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [isNotSuitable, setIsNotSuitable] = useState(applicant.status === 'not_suitable');
   const [isHired, setIsHired] = useState(applicant.status === 'hired');
   const [isInterviewed, setIsInterviewed] = useState(applicant.status === 'interview');
+  const { jobId } = useParams<{ jobId: string }>();
+  const navigate = useNavigate();
 
   const formatEducation = (education: string) => {
     if (!education || education === "Not specified") return education;
@@ -418,7 +421,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     </div>
                      
                     <div className="flex justify-start mt-4 mb-4">
-                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" onClick={() => window.open(applicant.resumeUrl, "_blank")}>
+                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" onClick={() => navigate(`/company/dashboard/${jobId}/applications/${applicant.id}`)}>
                         View Resume
                       </button>
                     </div>
