@@ -61,8 +61,10 @@ const CompanyLogin: React.FC = () => {
       <div className="container max-w-[470px] z-10">
         <div className="flex justify-center mb-6 flex-col">
           <div className="flex items-center gap-2 justify-center">
-            <img src={Logo} alt="StepIn Logo" className="h-6 w-6" />
-            <span className="text-xl font-bold">StepIn</span>
+            <a href="/" className="flex items-center gap-2">
+              <img src={Logo} alt="StepIn Logo" className="h-6 w-6" />
+              <span className="text-xl font-bold">StepIn</span>
+            </a>
           </div>
           <div className="flex justify-center mt-8 mb-3 gap-24">
             <button className="bg-primary text-white px-4 py-2 hover:bg-primary/90 transition-colors rounded-xl">
