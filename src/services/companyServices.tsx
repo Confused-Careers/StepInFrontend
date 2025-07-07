@@ -16,6 +16,7 @@ interface CompanyProfile {
 }
 
 interface Job {
+  type: string;
   responsibilities: string;
   payPeriod: string;
   totalApplications: any;
@@ -88,6 +89,7 @@ interface CreateJobData {
     fieldOfStudy: string;
     isRequired: boolean;
   }>;
+  type: string; // 'public' | 'private';
 }
 
 interface JobInsights {
@@ -276,6 +278,7 @@ const companyServices = {
           },
         }
       );
+      console.log('Company Jobs Response:', response.data);
       return response.data.data;
     } catch (error: unknown) {
       if (handleAuthError(error)) {
@@ -315,6 +318,7 @@ const companyServices = {
   async updateJob(jobId: string, data: Partial<CreateJobData>): Promise<Job> {
     try {
       const token = localStorage.getItem('accessToken');
+      console.log('Updating job with ID:', jobId, 'and data:', data);
       const response: AxiosResponse<Job> = await axios.put(
         `${SERVER_BASE_URL}/api/v1/company/jobs/${jobId}`,
         data,
