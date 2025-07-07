@@ -28,6 +28,7 @@ export default {
         jobcardforeground: 'hsl(var(--jobcard-foreground))',
         jobcardsecondary: 'hsl(var(--jobcard-secondary))',
         jobcardtext: 'hsl(var(--jobcard-text))',
+        textPrimary: 'hsl(var(--text-primary))',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',

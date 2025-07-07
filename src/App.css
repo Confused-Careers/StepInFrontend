@@ -58,6 +58,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
     --jobcard-foreground: 222.2 47.4% 11.2%;
     --jobcard-secondary: 210 4% 94.1%;
     --jobcard-text: 0 0% 0%;
+    --text-primary: 210 100% 56%;
   }
 
 .bg-jobcardsummary {
@@ -99,6 +100,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
     --jobcard-text: 0 0% 98%;
     --color-jobcardsummary: #0D1117;
     --color-bg-jobcardsummary2: #1A1F2B;
+    --text-primary: 210 100% 56%;
+
   }
 }
 
