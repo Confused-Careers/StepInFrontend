@@ -1,5 +1,6 @@
 import axios from "axios";
 import { SERVER_BASE_URL } from "@/utils/config";
+import { ChatService, CreateChatDto } from "./chatServices";
 
 export function handleAuthError(error: unknown) {
   if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
@@ -21,6 +22,7 @@ export interface ApplicantCardDto {
   resumeUrl: null;
   applicationId: string | null;
   jobSeekerId: string;
+  userId: string;
   firstName: string;
   lastName: string;
   profilePictureUrl: string | null;
@@ -95,6 +97,17 @@ export interface ApplicationWithFeedbackDto {
 }
 
 export const ApplicantsService = {
+  async getApplicantProfileByUserId(userId: string): Promise<ApplicantCardDto | null> {
+    try {
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/job-seeker/profile/${userId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
+    } catch (error) {
+      if (handleAuthError(error)) return null;
+      return null;
+    }
+  },
   async getJobApplicants(request: ListApplicantsRequestDto): Promise<{ data: ApplicantCardDto[] }> {
     try {
       const response = await axios.get(`${SERVER_BASE_URL}/api/v1/company/jobs/${request.jobId}/applicants`, {
@@ -107,13 +120,23 @@ export const ApplicantsService = {
           sortOrder: request.sortOrder,
         },
       });
-      return response.data.data;
+      return { data: response.data.data.data || [] };
     } catch (error) {
       if (handleAuthError(error)) return { data: [] };
       throw error;
     }
   },
-
+  async getCompanyProfile() {
+    try {
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/company/profile`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error('Unauthorized');
+      throw error;
+    }
+  },
   async searchAllApplicants(request: SearchApplicantsRequestDto): Promise<{ data: ApplicantCardDto[] }> {
     try {
       const response = await axios.post(`${SERVER_BASE_URL}/api/v1/company/applicants/search`, request, {
@@ -125,7 +148,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async searchJobApplicants(request: SearchApplicantsRequestDto): Promise<{ data: ApplicantCardDto[]; totalMatches: number }> {
     try {
       const response = await axios.post(`${SERVER_BASE_URL}/api/v1/company/applicants/search`, request, {
@@ -137,7 +159,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async provideFeedback(feedback: ProvideFeedbackDto): Promise<FeedbackResponseDto> {
     try {
       const response = await axios.post(`${SERVER_BASE_URL}/api/v1/company/applications/feedback`, feedback, {
@@ -149,7 +170,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async updateFeedback(applicationId: string, feedback: UpdateFeedbackDto): Promise<FeedbackResponseDto> {
     try {
       const response = await axios.put(
@@ -165,7 +185,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async getApplicationsWithFeedback(jobId?: string): Promise<ApplicationWithFeedbackDto[]> {
     try {
       const response = await axios.get(`${SERVER_BASE_URL}/api/v1/company/applications/feedback`, {
@@ -178,7 +197,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async removeFeedback(applicationId: string): Promise<{ message: string }> {
     try {
       const response = await axios.delete(
@@ -193,7 +211,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async acceptApplication(applicationId: string): Promise<{ message: string; status: string }> {
     try {
       const response = await axios.patch(
@@ -207,7 +224,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async rejectApplication(applicationId: string): Promise<{ message: string; status: string }> {
     try {
       const response = await axios.patch(
@@ -221,7 +237,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async markNotSuitable(applicationId: string): Promise<{ message: string; status: string }> {
     try {
       const response = await axios.patch(
@@ -235,7 +250,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async hireApplicant(applicationId: string): Promise<{ message: string; status: string }> {
     try {
       const response = await axios.patch(
@@ -249,7 +263,6 @@ export const ApplicantsService = {
       throw error;
     }
   },
-
   async moveToInterview(applicationId: string): Promise<{ message: string; status: string }> {
     try {
       const response = await axios.patch(

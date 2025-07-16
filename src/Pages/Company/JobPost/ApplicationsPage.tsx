@@ -13,6 +13,7 @@ import debounce from "lodash/debounce";
 export interface Applicant {
   latestExperience: any;
   id: string;
+  userId: string;
   name: string;
   education: string;
   currentCompany: string;
@@ -119,6 +120,7 @@ export default function CompanyApplicationsPage() {
         const mappedApplicants: Applicant[] = applicantData.map((dto: ApplicantCardDto) => ({
           latestExperience: dto.latestExperience || {},
           id: dto.applicationId || dto.jobSeekerId || "",
+          userId: dto.userId,
           name: `${dto.firstName} ${dto.lastName}`,
           education: dto.latestEducation
             ? `${dto.latestEducation.degreeType} in ${dto.latestEducation.fieldOfStudy}, ${dto.latestEducation.institutionName}`
@@ -156,14 +158,6 @@ export default function CompanyApplicationsPage() {
 
     fetchData();
   }, [jobId]);
-
-  // const handleScheduleSection = () => {
-  //   setOpenSchedule(!openSchedule);
-  // };
-
-  //const handleAddAvailability = () => {
-   // navigate("/company/availability");
-  //};
 
   const filterApplicants = useCallback(
     (query: string, tags: string[], applicants: Applicant[]) => {
@@ -266,22 +260,6 @@ export default function CompanyApplicationsPage() {
             )}
           </div>
         </div>
-        {/** 
-        <div className="relative flex justify-center flex-row max-h-[45px] gap-7">
-          <Button
-            className="text-white rounded-[10px] min-w-[198px] font-bold text-[20px] bg-gradient-to-r from-[#0A84FF] to-[rgb(51,191,255)] py-1 px-1 shadow-[0_0_12px_rgba(10,132,255,0.4)]"
-            onClick={handleScheduleSection}
-          >
-            View Schedule ({schedules.length})
-          </Button>
-          <Button
-            className="bg-[rgba(10,132,255,1)] text-white rounded-[10px] min-w-[167px] text-[18px] font-bold py-1 px-1"
-            onClick={handleAddAvailability}
-          >
-            Add Availability
-          </Button>
-        </div>
-        */}
       </div>
       {openSchedule && (
         <div className="relative w-full flex justify-center flex-col mt-10">
@@ -331,7 +309,6 @@ export default function CompanyApplicationsPage() {
             </Tabs>
           </motion.div>
         </AnimatePresence>
-      </div>
-    </div>
+      </div>    </div>
   );
 }
