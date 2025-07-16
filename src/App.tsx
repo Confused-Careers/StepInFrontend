@@ -19,7 +19,7 @@ import AvailabilityPage from './Pages/Company/JobPost/AvailabilityPage';
 import ForgotPassword from './Pages/Auth/ForgetPassword';
 import IndividualResetPassword from './Pages/Auth/IndividualResetPassword';
 import CompanyProfile from './Pages/Company/ProfilePage/CompanyProfile';
-import JobPostForm from './Pages/Company/JobPost/JobPostForm';
+import JobPostForm from './Pages/Company/JobPost/JobPostForm2';
 import { GoogleAuthCallback } from './components/Others/GoogleAuthCallback';
 import { Toaster } from 'sonner';
 import ContactUsPage from './Pages/Contact/ContactUsPage';
