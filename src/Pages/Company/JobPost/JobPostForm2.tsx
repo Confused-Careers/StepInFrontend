@@ -42,6 +42,7 @@ interface JobFormData {
   }>;
   department: string;
   personalityTraits: string[];
+  type?: string; // Added type for job posting
 }
 
 interface ConfirmationModalProps {
@@ -159,6 +160,7 @@ export default function JobPostForm() {
     requiredEducation: [{ educationLevel: "bachelor", fieldOfStudy: "", isRequired: true }],
     department: "",
     personalityTraits: [],
+    type: "public", // Default job posting type
     
   });
   const [step, setStep] = useState(1);
@@ -199,6 +201,7 @@ export default function JobPostForm() {
             requiredEducation: jobData.requiredEducation || [{ educationLevel: "bachelor", fieldOfStudy: "", isRequired: true }],
             department: jobData.department || "",
             personalityTraits: jobData.personalityTraits || [],
+            type: jobData.type || "public", // Ensure type is set
           });
         } catch (error) {
           console.error("Error fetching job:", error);
@@ -239,25 +242,25 @@ export default function JobPostForm() {
     }
   };
 
-  const handleTraitChange = (trait: string) => {
-    setJob((prev) => {
-      const traits = prev.personalityTraits.includes(trait)
-        ? prev.personalityTraits.filter((t) => t !== trait)
-        : [...prev.personalityTraits, trait].slice(0, 4);
-      return { ...prev, personalityTraits: traits };
-    });
-  };
+  // const handleTraitChange = (trait: string) => {
+  //   setJob((prev) => {
+  //     const traits = prev.personalityTraits.includes(trait)
+  //       ? prev.personalityTraits.filter((t) => t !== trait)
+  //       : [...prev.personalityTraits, trait].slice(0, 4);
+  //     return { ...prev, personalityTraits: traits };
+  //   });
+  // };
 
-  const handleCustomTraitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setJob((prev) => {
-      const traits = prev.personalityTraits.filter((t) => !t.startsWith("custom:"));
-      if (value && !traits.includes(value)) {
-        return { ...prev, personalityTraits: [...traits, `custom:${value}`].slice(0, 4) };
-      }
-      return { ...prev, personalityTraits: traits.slice(0, 4) };
-    });
-  };
+  // const handleCustomTraitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   setJob((prev) => {
+  //     const traits = prev.personalityTraits.filter((t) => !t.startsWith("custom:"));
+  //     if (value && !traits.includes(value)) {
+  //       return { ...prev, personalityTraits: [...traits, `custom:${value}`].slice(0, 4) };
+  //     }
+  //     return { ...prev, personalityTraits: traits.slice(0, 4) };
+  //   });
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,6 +292,7 @@ export default function JobPostForm() {
       requiredEducation: job.requiredEducation.filter((edu) => edu.fieldOfStudy),
       department: job.department,
       personalityTraits: job.personalityTraits,
+      type: job.type, // Include job posting type
     };
 
     try {
@@ -339,8 +343,8 @@ export default function JobPostForm() {
     setShowDeleteModal(false);
   };
 
-  const nextStep = () => setStep(2);
-  const prevStep = () => setStep(1);
+  // const nextStep = () => setStep(2);
+  // const prevStep = () => setStep(1);
 
   return (
     <>
@@ -380,10 +384,12 @@ export default function JobPostForm() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
+                      {/* 
                       <div className="text-left text-textPrimary mb-8 text-[20px]">
                         Step 1 of 2: Define the Role
                       </div>
-                      <form onSubmit={(e) => { e.preventDefault(); nextStep(); }} className="space-y-6">
+                      */}
+                      <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                           <Label htmlFor="title" className="text-white text-[20px] font-[400]">Job Title</Label>
                           <textarea
@@ -475,6 +481,21 @@ export default function JobPostForm() {
                             />
                             <Label htmlFor="isRemote" className="text-white">Fully Remote</Label>
                           </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="jobPostingType" className="text-white text-[20px] font-[400]">Job Posting Type</Label>
+                          <Select
+                            onValueChange={(value) => handleSelectChange("type", value)}
+                            value={job.type}
+                          >
+                            <SelectTrigger className="bg-black border border-white text-white">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-black border border-white text-white">
+                              <SelectItem value="public">Public</SelectItem>
+                              <SelectItem value="private">Private</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <AnimatePresence>
                           {!job.unpaid && (
@@ -607,19 +628,19 @@ export default function JobPostForm() {
                             className="bg-black border border-white text-white"
                           />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-row items-center justify-center mb-12 gap-4 h-[60px]">
                           <Button
                             type="submit"
-                            className="bg-[rgba(10,132,255,1)] hover:opacity-90 text-white font-bold"
+                            className="bg-[rgba(10,132,255,1)] h-[50px] rounded-xl hover:opacity-90 text-white text-[20px] font-[500] w-[200px]"
                             disabled={isLoading}
                           >
-                            Next
+                            {isLoading ? "Saving..." : jobId ? "Update Job" : "Create Job"}
                           </Button>
                           {jobId && (
                             <Button
                               type="button"
                               variant="destructive"
-                              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                              className="bg-red-500 hover:bg-red-600 h-[50px] rounded-xl text-white text-[20px] font-[500] w-[200px]"
                               onClick={handleDeleteClick}
                               disabled={isLoading}
                             >
@@ -631,7 +652,7 @@ export default function JobPostForm() {
                     </motion.div>
                   </CardContent>
                 )}
-                {step === 2 && (
+                {/* {step === 2 && (
                   <CardContent className="w-full max-w-7xl">
                     <motion.div
                       key="step2"
@@ -738,7 +759,7 @@ export default function JobPostForm() {
                       </form>
                     </motion.div>
                   </CardContent>
-                )}
+                )} */}
               </AnimatePresence>
             </Card>
           </motion.div>
