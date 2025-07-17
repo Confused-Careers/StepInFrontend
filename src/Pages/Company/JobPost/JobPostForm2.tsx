@@ -163,7 +163,7 @@ export default function JobPostForm() {
     type: "public", // Default job posting type
     
   });
-  const [step, setStep] = useState(1);
+  const [step] = useState(1);
 
   const titleResize = useAutoResize(job.title);
   const descriptionResize = useAutoResize(job.description);
@@ -292,7 +292,7 @@ export default function JobPostForm() {
       requiredEducation: job.requiredEducation.filter((edu) => edu.fieldOfStudy),
       department: job.department,
       personalityTraits: job.personalityTraits,
-      type: job.type, // Include job posting type
+      type: job.type ?? "public", // Ensure type is always a string
     };
 
     try {

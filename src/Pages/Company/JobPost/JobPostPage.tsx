@@ -28,6 +28,7 @@ interface Application {
   applications: string;
   responsiblities: string;
   payPeriod?: string;
+  type: string;
 }
 
 function ApplicationDetail({ application, onBackClick }: { application: Application | null; onBackClick: () => void }) {
@@ -183,6 +184,7 @@ export function JobsPostPage() {
             skills: job.requirements ? job.requirements.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0) : [],
             applications: job.totalApplications,
             responsiblities: job.requirements || "No responsibilities provided.",
+            type: job.type
           };
         });
 

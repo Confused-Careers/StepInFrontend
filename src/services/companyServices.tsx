@@ -2,6 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { SERVER_BASE_URL } from '@/utils/config';
 
 interface CompanyProfile {
+  userId: any;
   data: CompanyProfile | PromiseLike<CompanyProfile>;
   location: string;
   description: string;
@@ -16,6 +17,7 @@ interface CompanyProfile {
 }
 
 interface Job {
+  personalityTraits: never[];
   type: string;
   responsibilities: string;
   payPeriod: string;

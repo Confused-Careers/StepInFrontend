@@ -152,7 +152,7 @@ export default function JobPostForm() {
     unpaid: false,
     salaryMin: "",
     salaryMax: "",
-    payPeriod: "annually",
+    payPeriod: "/yr",
     applicationDeadline: "",
     requiredSkills: [],
     requiredLanguages: [{ languageId: "", proficiencyLevel: "fluent", isRequired: true }],

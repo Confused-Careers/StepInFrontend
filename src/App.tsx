@@ -60,7 +60,7 @@ function App() {
             <Route path="/company/dashboard/availability" element={<CompanyDashboardShell><AvailabilityPage /></CompanyDashboardShell>} />
             <Route path="/company/dashboard/company-messages" element={<CompanyDashboardShell><CompanyMessagesPage /></CompanyDashboardShell>} />
             <Route path="/company/dashboard/:jobId/applications/:applicantId" element={<CompanyDashboardShell><ApplicantDetailsPage /></CompanyDashboardShell>} />
-            <Route path="/job-posting" element={<JobPostingPage />} />
+            <Route path="/job/:jobId" element={<JobPostingPage />} />
             <Route path="/checkout" element={<Checkout/>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

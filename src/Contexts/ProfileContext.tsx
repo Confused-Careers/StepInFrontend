@@ -53,7 +53,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch profile');
-      toast.error(err.message || 'Failed to fetch profile');
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,11 @@
+import { Link } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface JobApplicationCardProps {
   job: {
+    type: string;
     id: string;
     status: string;
     company: string;
@@ -68,9 +71,23 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
             ) : (
               <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
             )}
-          <div className="flex-1 ml-5 justify-center items-center mr-12 mt-4">
+          <div className="flex-1 ml-5 justify-center items-center mr-4 mt-4">
             <h3 className="font-bold text-[18px] text-jobcardtext flex justify-center">{job.jobTitle}</h3>
             <p className="text-sm text-jobcardforeground flex justify-center">{job.location}</p>
+          </div>
+          <div className="relative mt-2 ml-2 flex items-center gap-2">
+            <button
+              className="flex items-center gap-1 px-2 py-1 rounded text-white text-xs"
+              onClick={e => {
+                e.stopPropagation();
+                const jobUrl = `${window.location.origin}/job/${job.id}`;
+                navigator.clipboard.writeText(jobUrl);
+                toast.success("Job link copied to clipboard!");
+              }}
+              title="Copy job link"
+            >
+              <Link size={16} />
+            </button>
           </div>
         </div>
 
