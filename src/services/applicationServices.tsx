@@ -66,6 +66,8 @@ export interface Application {
   nextStepDate?: string;
   feedback?: string;
   matchScore?: number;
+  jobSeekerUserId?: string;
+  companyUserId?: string;
 }
 
 interface SavedJob {
@@ -196,6 +198,8 @@ interface ApiApplication {
   job?: ApiJob;
   jobId?: string;
   jobSeekerId?: string;
+  jobSeekerUserId?: string;
+  companyUserId?: string;
   applicationDate?: string;
   lastUpdated?: string;
   status?: ApplicationStatus;
@@ -325,6 +329,8 @@ const applicationServices = {
                 : undefined,
               feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
               matchScore: jobDetails?.matchScore ? Number(jobDetails.matchScore) : undefined,
+              jobSeekerUserId: app?.jobSeekerUserId,
+              companyUserId: app?.companyUserId,
             };
           } catch (error) {
             console.error(`Error fetching job details for job ${app?.job?.id ?? app?.jobId}:`, error);
@@ -380,6 +386,8 @@ const applicationServices = {
                 : undefined,
               feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
               matchScore: undefined,
+              jobSeekerUserId: app?.jobSeekerUserId,
+              companyUserId: app?.companyUserId,
             };
           }
         })

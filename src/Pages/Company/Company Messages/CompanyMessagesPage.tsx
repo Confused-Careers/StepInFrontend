@@ -7,7 +7,7 @@ import companyServices from '../../../services/companyServices';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Paperclip, Search, Calendar } from 'lucide-react';
+import { Send, Paperclip } from 'lucide-react';
 import { WEBSOCKET_BASE_URL } from '@/utils/config';
 import { useLocation } from 'react-router-dom';
 
@@ -436,7 +436,7 @@ export default function CompanyMessagesPage() {
     const details = jobSeekerId ? applicantDetails[jobSeekerId] : null;
     const searchLower = searchQuery.toLowerCase();
     const applicantName = details ? `${details.firstName} ${details.lastName}`.toLowerCase() : '';
-    const position = details?.appliedJobs?.[0]?.title?.toLowerCase() || '';
+    const position = details?.appliedJobs?.find((job) => job.title === selectedPositions[chat.id])?.title?.toLowerCase() || '';
     const company = details?.currentCompany?.toLowerCase() || '';
     return applicantName.includes(searchLower) || position.includes(searchLower) || company.includes(searchLower);
   });
@@ -473,7 +473,6 @@ export default function CompanyMessagesPage() {
       <div className="max-w-5xl mx-auto flex gap-6">
         <aside className="w-100 bg-gradient-to-b from-[#10131a] via-[#181c23] to-[#0a0e1a] rounded-xl border border-[#232a3a] flex flex-col p-4 shadow-2xl shadow-blue-900/30">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               type="text"
               placeholder="Search conversations..."
@@ -520,19 +519,23 @@ export default function CompanyMessagesPage() {
                     {(() => {
                       const jobSeekerId = chat.jobSeeker?.userId || chat.jobSeeker?.id;
                       const details = jobSeekerId ? applicantDetails[jobSeekerId] : null;
+                      const activePosition = selectedPositions[chat.id] || details?.appliedJobs?.[0]?.title || 'No position';
                       return (
                         <>
                           <div className="font-semibold text-white text-base truncate drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
                             {details ? `${details.firstName} ${details.lastName}` : 'Unknown'}
                           </div>
                           <div className="text-gray-400 text-xs truncate max-w-[160px]">
-                            {details?.appliedJobs?.[0]?.title || 'No position'}
+                            {activePosition}
                           </div>
                         </>
                       );
                     })()}
                   </div>
                   <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                      {chat.updatedAt ? formatTime(chat.updatedAt) : ''}
+                    </span>
                     {chat.unreadCount > 0 && (
                       <span className="w-2 h-2 bg-blue-500 rounded-full block" />
                     )}
@@ -660,7 +663,6 @@ export default function CompanyMessagesPage() {
                     className="flex items-center gap-2 px-2 py-1 rounded bg-gradient-to-r from-blue-900 to-blue-700 text-white font-semibold text-sm shadow border border-blue-600 hover:brightness-110 transition"
                     onClick={() => setShowScheduleForm(true)}
                   >
-                    <Calendar className="w-4 h-4" />
                     Schedule Interview
                   </Button>
                 </div>
@@ -722,7 +724,7 @@ export default function CompanyMessagesPage() {
                 )}
               </div>
 
-              <div className="border-t border-[#232a3a] px-8 py-6 flex items-center gap-3 bg-gradient-to-r from-[#181c23] via-[#232a3a] to-[#10131a] rounded-b-xl shadow-inner">
+              <div className="border-t border-[#232a3a] px-8 py-6 flex items-center gap-3 bg-gradient-to-r from-[#181c23] via-[#232a3a] to-[#10131a] rounded-b-xl shadow-down">
                 <button
                   className="text-blue-400 hover:text-blue-300 flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#232a3a] to-[#181c23] border border-blue-700 shadow focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                   onClick={() => fileInputRef.current?.click()}
@@ -772,52 +774,61 @@ export default function CompanyMessagesPage() {
         </section>
 
         {showScheduleForm && selectedChat && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-gradient-to-br from-[#181c23] via-[#232a3a] to-[#10131a] p-6 rounded-xl border border-[#232a3a] shadow-2xl shadow-blue-900/30 w-full max-w-md">
-              <h2 className="text-xl font-bold text-white mb-4">Schedule Interview</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400">Date and Time</label>
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className="relative bg-gradient-to-br from-[#0a0e1a] via-[#181c23] to-[#10131a] p-8 rounded-2xl border border-blue-900/50 shadow-2xl shadow-blue-900/40 w-full max-w-md transform transition-all duration-300 scale-100 hover:scale-102">
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                onClick={() => setShowScheduleForm(false)}
+                aria-label="Close schedule form"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-2xl font-bold text-white mb-6">Schedule Interview</h2>
+              <div className="space-y-6">
+                <div className="relative">
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Date and Time</label>
                   <Input
                     type="datetime-local"
                     value={scheduleData.scheduledAt}
                     onChange={(e) => setScheduleData({ ...scheduleData, scheduledAt: e.target.value })}
-                    className="w-full bg-gradient-to-r from-[#191e2a] via-[#232a3a] to-[#181c23] text-white border border-[#232a3a] focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                    className="w-full bg-gradient-to-r from-[#191e2a] to-[#232a3a] text-white border border-blue-700/50 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition-all duration-200 placeholder-gray-500"
+                    placeholder="Select date and time"
                   />
                 </div>
-                <div>
-                  <label className="text-sm text-gray-400">Meeting Link</label>
+                <div className="relative">
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Meeting Link</label>
                   <Input
                     type="url"
                     value={scheduleData.meetingLink}
                     onChange={(e) => setScheduleData({ ...scheduleData, meetingLink: e.target.value })}
                     placeholder="https://meet.example.com/abc"
-                    className="w-full bg-gradient-to-r from-[#191e2a] via-[#232a3a] to-[#181c23] text-white border border-[#232a3a] focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                    className="w-full bg-gradient-to-r from-[#191e2a] to-[#232a3a] text-white border border-blue-700/50 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition-all duration-200 placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400">Notes (Optional)</label>
-                  <Input
-                    type="text"
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">Notes (Optional)</label>
+                  <textarea
                     value={scheduleData.notes}
                     onChange={(e) => setScheduleData({ ...scheduleData, notes: e.target.value })}
                     placeholder="Enter any additional notes"
-                    className="w-full bg-gradient-to-r from-[#191e2a] via-[#232a3a] to-[#181c23] text-white border border-[#232a3a] focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                    className="w-full bg-gradient-to-r from-[#191e2a] to-[#232a3a] text-white border border-blue-700/50 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition-all duration-200 placeholder-gray-500 resize-none h-24"
                   />
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3">
                   <Button
-                    className="text-blue-400 border border-blue-400 hover:bg-blue-400 hover:text-white px-2 py-1 rounded text-sm font-semibold shadow"
+                    className="px-4 py-2 bg-transparent text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-400/10 hover:text-blue-300 transition-all duration-200 font-semibold text-sm shadow-sm"
                     onClick={() => setShowScheduleForm(false)}
                   >
                     Cancel
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-2 py-1 rounded text-sm font-semibold shadow border border-blue-600 hover:brightness-110 transition"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-lg hover:from-blue-600 hover:to-blue-400 transition-all duration-200 font-semibold text-sm shadow-md border border-blue-600"
                     onClick={handleScheduleInterview}
                     disabled={!scheduleData.scheduledAt || !scheduleData.meetingLink}
                   >
-                    Schedule
+                    Schedule Interview
                   </Button>
                 </div>
               </div>
