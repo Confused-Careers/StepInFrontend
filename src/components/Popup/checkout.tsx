@@ -3,7 +3,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Calendar, CircleCheckBig, DollarSign, Clock, LockKeyhole, LockOpen, User, X } from "lucide-react";
 
-const stripePromise = loadStripe('pk_test_51Or1yFSIhFMykOAdbnb30ziuWvVCUQNkfFeEVwV0OcfiM2Prdc81Wl5vpbwE87UzbNs3BaI3CLf1jERmAtEzf0zz00lx2HcPeI');
+const stripePromise = loadStripe('');
 const elementOptions = {
   style: {
     base: { fontSize: '14px', color: '#ffffff', backgroundColor: '#1a2232', '::placeholder': { color: '#9ca3af' } },
