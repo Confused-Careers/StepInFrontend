@@ -26,11 +26,11 @@ interface QuestionResponseDto {
   questionText: string;
   questionType: string;
   insightCategory?: string;
-  options: QuestionOptionResponseDto[];
+  options?: QuestionOptionResponseDto[]; // Optional for text and scale questions
 }
 
 interface QuestionTierResponseDto {
-  isUnlocked: QuestionTierResponseDto | undefined;
+  isUnlocked: boolean;
   tierNumber: number;
   questionsRequiredToComplete: number;
   questionsAnsweredInTier: number;
@@ -61,9 +61,10 @@ interface AnswerResponseDto {
   question: QuestionResponseDto;
   id: string;
   questionId: string;
-  selectedOptionId: string;
+  selectedOptionId?: string;
+  answerText?: string;
   tierWhenAnswered: number;
-  selectedOption: QuestionOptionResponseDto;
+  selectedOption?: QuestionOptionResponseDto;
 }
 
 interface OnboardingQuestionsResponseDto {
@@ -108,15 +109,16 @@ const getQuestionsForTier = async (tierNumber: number): Promise<GetQuestionsResp
   }
 };
 
-const submitAnswer = async (answer: { questionId: string; selectedOptionId: string }): Promise<AnswerResponseDto> => {
+const submitAnswer = async (answer: { questionId: string; selectedOptionId?: string; answerText?: string }): Promise<AnswerResponseDto> => {
   try {
+    console.log('Submitting answer:', answer);
     const response = await axios.post(`${SERVER_BASE_URL}/api/v1/questions/answer`, answer, {
       headers: getAuthHeaders(),
     });
     return response.data.data;
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
-      console.error('Failed to submit answer:', error.response.data);
+      console.error('Failed to submit answer:', (error as { response: { data: unknown } }).response.data);
     } else if (error instanceof Error) {
       console.error('Failed to submit answer:', error.message);
     } else {
@@ -157,7 +159,7 @@ const getOnboardingQuestions = async (): Promise<OnboardingQuestionsResponseDto>
     return response.data;
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
-      console.error('Failed to fetch onboarding questions:', error.response.data);
+      console.error('Failed to fetch onboarding questions:', (error as { response: { data: unknown } }).response.data);
     } else if (error instanceof Error) {
       console.error('Failed to fetch onboarding questions:', error.message);
     } else {
@@ -184,8 +186,10 @@ export type {
   OnboardingQuestionsResponseDto,
 };
 
-const categoryIcons: Record<"preferences" | "personality" | "goals", JSX.Element> = {
+const categoryIcons: Record<"preferences" | "personality" | "goals" | "work_life_balance" | "career_path", JSX.Element> = {
   preferences: <Star className="h-4 w-4 text-primary" />,
   personality: <Zap className="h-4 w-4 text-primary" />,
   goals: <Briefcase className="h-4 w-4 text-primary" />,
+  work_life_balance: <Star className="h-4 w-4 text-primary" />,
+  career_path: <Briefcase className="h-4 w-4 text-primary" />,
 };

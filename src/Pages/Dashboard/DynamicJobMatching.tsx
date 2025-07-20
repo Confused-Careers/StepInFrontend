@@ -316,7 +316,7 @@ export function DynamicJobMatching() {
       const newInsights: Insight[] = [];
 
       history.forEach((answer) => {
-        if (!answer.questionId || !answer.selectedOption) {
+        if (!answer.questionId) {
           console.warn(`Invalid answer data for tier ${answer.tierWhenAnswered}:`, answer);
           return;
         }
@@ -331,7 +331,7 @@ export function DynamicJobMatching() {
         const insight: Insight = {
           id: answer.questionId,
           questionText: question.questionText,
-          text: answer.selectedOption?.insight || "No insight available",
+          text: answer.selectedOption?.insight || answer.answerText || "No insight available",
           category: question.insightCategory || "preferences",
           tier: answer.tierWhenAnswered,
         };
@@ -361,11 +361,12 @@ export function DynamicJobMatching() {
         console.error("Invalid tiers data in progress");
         setProfileCompletion(0);
         setCurrentTier(1);
-        if (!hasFetchedQuestions.current) {
-          await fetchQuestions(1);
-          await fetchAnswerHistory(1);
-          hasFetchedQuestions.current = true;
-        }
+        setColumnInsights([]);
+        setAnsweredQuestionIds(new Set());
+        questionCache.current.clear();
+        hasFetchedQuestions.current = false;
+        await fetchQuestions(1);
+        await fetchAnswerHistory(1);
         await fetchJobs();
         return;
       }
@@ -375,8 +376,13 @@ export function DynamicJobMatching() {
         console.error(`No data found for tier ${tier}`);
         toast.error("Error fetching tier data. Reverting to tier 1.");
         setCurrentTier(1);
+        setColumnInsights([]);
+        setAnsweredQuestionIds(new Set());
+        questionCache.current.clear();
+        hasFetchedQuestions.current = false;
         await fetchQuestions(1);
         await fetchAnswerHistory(1);
+        await fetchJobs();
         return;
       }
 
@@ -396,11 +402,13 @@ export function DynamicJobMatching() {
       console.error("Failed to fetch progress:", error);
       setProfileCompletion(0);
       setCurrentTier(1);
-      if (!hasFetchedQuestions.current) {
-        await fetchQuestions(1);
-        await fetchAnswerHistory(1);
-        hasFetchedQuestions.current = true;
-      }
+      setColumnInsights([]);
+      setAnsweredQuestionIds(new Set());
+      questionCache.current.clear();
+      hasFetchedQuestions.current = false;
+      await fetchQuestions(1);
+      await fetchAnswerHistory(1);
+      await fetchJobs();
       toast.error("Failed to fetch progress. Defaulting to tier 1.");
     } finally {
       setIsLoading(false);
@@ -415,26 +423,40 @@ export function DynamicJobMatching() {
     initialize();
   }, []);
 
-  const handleAnswer = async (questionId: string, optionId: string, optionText: string, columnIndex: number) => {
+  const handleAnswer = async (
+    questionId: string,
+    optionId: string | null,
+    optionText: string | null,
+    columnIndex: number,
+    questionType: string
+  ) => {
     try {
       if (!isValidUUID(questionId)) throw new Error(`Invalid questionId UUID: ${questionId}`);
-      if (!isValidUUID(optionId)) throw new Error(`Invalid optionId UUID: ${optionId}`);
+
+      const question = availableQuestions.find((q) => q.id === questionId);
+      if (!question) throw new Error(`Question ${questionId} not found`);
+
+      const isTextQuestion = !question.options || question.options.length === 0;
+
+      // Prepare payload based on whether options are present
+      const payload: { questionId: string; selectedOptionId?: string; answerText?: string } = { questionId };
+      if (isTextQuestion) {
+        if (!optionText) throw new Error(`Answer text is required for text questions`);
+        payload.answerText = optionText;
+      } else {
+        if (!optionId || !isValidUUID(optionId)) throw new Error(`Invalid optionId UUID: ${optionId}`);
+        payload.selectedOptionId = optionId;
+      }
 
       // Submit answer
-      const payload = { questionId, selectedOptionId: optionId };
       await submitAnswer(payload);
 
       // Update answered question IDs
       setAnsweredQuestionIds((prev) => new Set(prev).add(questionId));
-      const question = availableQuestions.find((q) => q.id === questionId);
-      if (!question) {
-        console.warn(`Question ${questionId} not found`);
-        return;
-      }
 
       // Fetch latest answer history to get insight
       const latestAnswer = (await getAnswerHistory(currentTier)).find((a) => a.questionId === questionId);
-      const insightText = latestAnswer?.selectedOption?.insight || "No insight available";
+      const insightText = latestAnswer?.selectedOption?.insight || latestAnswer?.answerText || optionText || "No insight available";
 
       const insight: Insight = {
         id: questionId,
@@ -464,96 +486,95 @@ export function DynamicJobMatching() {
         setCurrentMobileQuestionIndex((prev) => prev + 1);
       }
 
-      // Fetch updated progress
-      const progress = await getUserProgress();
-      const newTier = progress.currentTier || 1;
-      setQuestionAnswered(progress.questionsAnsweredInCurrentTier || 0);
+      // Fetch updated progress with retry mechanism
+      const maxRetries = 5;
+      let retries = 0;
 
-      if (!progress.tiers || !Array.isArray(progress.tiers)) {
-        console.error("Invalid tiers data in progress");
-        setProfileCompletion(0);
-        setCurrentTier(1);
-        if (!hasFetchedQuestions.current) {
+      while (retries < maxRetries) {
+        const progress = await getUserProgress();
+        const newTier = progress.currentTier || 1;
+        setQuestionAnswered(progress.questionsAnsweredInCurrentTier || 0);
+
+        if (!progress.tiers || !Array.isArray(progress.tiers)) {
+          console.error("Invalid tiers data in progress");
+          setProfileCompletion(0);
+          setCurrentTier(1);
+          setColumnInsights([]);
+          setAnsweredQuestionIds(new Set());
+          questionCache.current.clear();
+          hasFetchedQuestions.current = false;
           await fetchQuestions(1);
           await fetchAnswerHistory(1);
-          hasFetchedQuestions.current = true;
+          await fetchJobs();
+          toast.error("Invalid progress data. Reverted to Tier 1.");
+          return;
         }
-        await fetchJobs();
-        toast.error("Invalid progress data. Reverted to Tier 1.");
-        return;
-      }
 
-      const currentTierData = progress.tiers.find((t) => t.tierNumber === newTier);
-      if (!currentTierData) {
-        console.error(`No data found for tier ${newTier}`);
-        toast.error(`Error fetching data for Tier ${newTier}. Reverting to Tier 1.`);
-        setCurrentTier(1);
-        await fetchQuestions(1);
-        await fetchAnswerHistory(1);
-        hasFetchedQuestions.current = true;
-        await fetchJobs();
-        return;
-      }
+        const currentTierData = progress.tiers.find((t) => t.tierNumber === newTier);
+        if (!currentTierData) {
+          console.error(`No data found for tier ${newTier}`);
+          toast.error(`Error fetching data for Tier ${newTier}. Reverting to Tier 1.`);
+          setCurrentTier(1);
+          setColumnInsights([]);
+          setAnsweredQuestionIds(new Set());
+          questionCache.current.clear();
+          hasFetchedQuestions.current = false;
+          await fetchQuestions(1);
+          await fetchAnswerHistory(1);
+          await fetchJobs();
+          return;
+        }
 
-      // Calculate tier completion
-      const tierCompletion =
-        currentTierData.questionsRequiredToComplete > 0
-          ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
-          : 0;
-      setProfileCompletion(tierCompletion);
+        // Calculate tier completion
+        const tierCompletion =
+          currentTierData.questionsRequiredToComplete > 0
+            ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
+            : 0;
+        setProfileCompletion(tierCompletion);
 
-      // Check if current tier is completed
-      if (
-        currentTierData.questionsAnsweredInTier >= currentTierData.questionsRequiredToComplete &&
-        newTier < 5
-      ) {
-        const nextTier = newTier + 1;
-        const nextTierData = progress.tiers.find((t) => t.tierNumber === nextTier);
+        // Check if current tier is completed
+        if (
+          currentTierData.questionsAnsweredInTier >= currentTierData.questionsRequiredToComplete &&
+          newTier < 5
+        ) {
+          const nextTier = newTier + 1;
+          const nextTierData = progress.tiers.find((t) => t.tierNumber === nextTier);
 
-        // Force tier update if backend hasn't updated currentTier yet
-        if (!nextTierData || !nextTierData.isUnlocked) {
-          // Retry fetching progress after a short delay to account for backend processing
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const updatedProgress = await getUserProgress();
-          const updatedNextTierData = updatedProgress.tiers.find((t) => t.tierNumber === nextTier);
-
-          if (updatedNextTierData && updatedNextTierData.isUnlocked) {
-            setCurrentTier(nextTier);
-            setProfileCompletion(0);
-            setColumnInsights([]);
-            setAnsweredQuestionIds(new Set());
-            questionCache.current.clear();
-            hasFetchedQuestions.current = false;
-            await fetchQuestions(nextTier);
-            await fetchAnswerHistory(nextTier);
-            await fetchJobs();
-            toast.success(`Advanced to Tier ${nextTier}!`);
-          } else {
-            console.warn(`Next tier (${nextTier}) not unlocked yet. Retrying...`);
-            toast.info(`Please wait, processing tier ${newTier} completion...`);
-            await fetchJobs();
+          if (!nextTierData || !nextTierData.isUnlocked) {
+            retries++;
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
+            continue;
           }
-        } else {
+
+          // Move to next tier
           setCurrentTier(nextTier);
           setProfileCompletion(0);
           setColumnInsights([]);
           setAnsweredQuestionIds(new Set());
+          setCurrentMobileQuestionIndex(0);
           questionCache.current.clear();
           hasFetchedQuestions.current = false;
           await fetchQuestions(nextTier);
           await fetchAnswerHistory(nextTier);
           await fetchJobs();
           toast.success(`Advanced to Tier ${nextTier}!`);
+          return;
+        } else {
+          // Stay in current tier, refresh questions if needed
+          if (!hasFetchedQuestions.current || !questionCache.current.has(newTier)) {
+            await fetchQuestions(newTier);
+            await fetchAnswerHistory(newTier);
+            hasFetchedQuestions.current = true;
+          }
+          await fetchJobs();
+          return;
         }
-      } else {
-        // Stay in current tier, refresh questions if needed
-        if (!hasFetchedQuestions.current || !questionCache.current.has(newTier)) {
-          await fetchQuestions(newTier);
-          await fetchAnswerHistory(newTier);
-          hasFetchedQuestions.current = true;
-        }
-        await fetchJobs();
       }
+
+      // If retries are exhausted
+      console.warn(`Max retries reached. Tier progression not confirmed.`);
+      toast.info(`Please wait, processing tier ${currentTier} completion...`);
+      await fetchJobs();
     } catch (error: any) {
       console.error("Failed to submit answer:", {
         message: error.message,
@@ -562,6 +583,7 @@ export function DynamicJobMatching() {
         optionId,
         optionText,
         columnIndex,
+        questionType,
       });
       toast.error(error.response?.data?.message || "Failed to submit answer. Please try again.");
     }
@@ -674,7 +696,7 @@ export function DynamicJobMatching() {
                     <QuestionBox
                       question={currentQuestion}
                       onAnswer={(optionId, optionText) =>
-                        handleAnswer(currentQuestion.id, optionId, optionText, 0)
+                        handleAnswer(currentQuestion.id, optionId, optionText, 0, currentQuestion.questionType)
                       }
                     />
                   </motion.div>
@@ -717,7 +739,7 @@ export function DynamicJobMatching() {
                         <QuestionBox
                           question={columnQuestions[columnIndex]!}
                           onAnswer={(optionId, optionText) =>
-                            handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex)
+                            handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex, columnQuestions[columnIndex]!.questionType)
                           }
                         />
                       </motion.div>
