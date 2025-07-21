@@ -142,8 +142,9 @@ function QuestionBox({
                   </motion.div>
                 )}
                 {isTextQuestion && (
-                  <div className="space-y-4">
-                    <textarea
+                    <div className="space-y-4">
+                    <input
+                      type="text"
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
                       placeholder="Enter your response..."
@@ -156,7 +157,7 @@ function QuestionBox({
                     >
                       Submit
                     </Button>
-                  </div>
+                    </div>
                 )}
               </motion.div>
             ) : (
