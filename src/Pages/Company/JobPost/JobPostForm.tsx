@@ -42,6 +42,7 @@ interface JobFormData {
     isRequired: boolean;
   }>;
   department: string;
+  type: string; // 'public' | 'private'; // Cumpolsory field for job type
 }
 
 interface ConfirmationModalProps {
@@ -151,13 +152,14 @@ export default function JobPostForm() {
     unpaid: false,
     salaryMin: "",
     salaryMax: "",
-    payPeriod: "annually",
+    payPeriod: "/yr",
     applicationDeadline: "",
     requiredSkills: [],
     requiredLanguages: [{ languageId: "", proficiencyLevel: "fluent", isRequired: true }],
     requiredCertifications: [{ certificationId: "", isRequired: false, minimumYears: undefined }],
     requiredEducation: [{ educationLevel: "bachelor", fieldOfStudy: "", isRequired: true }],
     department: "",
+    type: "", 
   });
 
   const titleResize = useAutoResize(job.title);
@@ -195,6 +197,7 @@ export default function JobPostForm() {
             })) || [{ certificationId: "", isRequired: false, minimumYears: undefined }],
             requiredEducation: jobData.requiredEducation || [{ educationLevel: "bachelor", fieldOfStudy: "", isRequired: true }],
             department: jobData.department || "",
+            type: jobData.type, 
           });
         } catch (error) {
           console.error("Error fetching job:", error);
@@ -264,6 +267,7 @@ export default function JobPostForm() {
         })),
       requiredEducation: job.requiredEducation.filter((edu) => edu.fieldOfStudy),
       department: job.department,
+      type: job.type, // 'public' | 'private'
     };
 
     try {
@@ -419,6 +423,21 @@ export default function JobPostForm() {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="jobPostingType" className="text-white">Job Posting Type</Label>
+                    <Select
+                      onValueChange={(value) => handleSelectChange("type", value)}
+                      value={job.type}
+                    >
+                      <SelectTrigger className="bg-black border border-[rgba(209,209,214,0.2)] text-white">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="private">Private</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="experienceLevel" className="text-white">Experience Level</Label>
                     <Select
                       onValueChange={(value) => handleSelectChange("experienceLevel", value)}
@@ -504,10 +523,6 @@ export default function JobPostForm() {
                               </SelectTrigger>
                               <SelectContent className="bg-black text-white border-[rgba(209,209,214,0.2)]">
                                 <SelectItem value="hr">/hr</SelectItem>
-                                <SelectItem value="dy">/dy</SelectItem>
-                                <SelectItem value="wk">/wk</SelectItem>
-                                <SelectItem value="bw">/bw</SelectItem>
-                                <SelectItem value="mo">/mo</SelectItem>
                                 <SelectItem value="yr">/yr</SelectItem>
                               </SelectContent>
                             </Select>

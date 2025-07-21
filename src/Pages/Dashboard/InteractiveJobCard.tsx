@@ -307,9 +307,9 @@ const JobCard = ({
                       <div className="p-1 sm:p-2 rounded-lg w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0" />
                     )}
                   </div>
-                  <div className="flex-1 text-center mt-2 mr-3">
+                  <div className="flex-1 text-center mt-2 mb-1">
                     <h3 className="font-bold text-xl text-jobcardtext flex justify-center">{title}</h3>
-                    <p className="text-sm text-jobcardforeground flex justify-center">
+                    <p className="text-sm text-jobcardforeground flex justify-center mr-2">
                       {company} • {location}
                     </p>
                   </div>
@@ -328,13 +328,37 @@ const JobCard = ({
                   <span className="bg-primary text-white text-xs rounded-md px-2 py-1">{Math.round(matchPercentage)}% Match</span>
                 </div>
                 <div className="bg-jobcardsecondary1 rounded-lg p-3 mb-4 border border-gray-400 border-opacity-20">
-                  <p className="text-sm text-jobcardtext">{description}</p>
+                  <p className="text-sm text-jobcardtext">
+                    {readMoreJobDesc ? description : description?.split(" ").slice(0, 15).join(" ") + "..."}
+                    {description && description.split(" ").length > 15 && (
+                      <button
+                        className="text-primary text-sm mt-0 underline italic ml-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReadMoreJobDesc(!readMoreJobDesc);
+                        }}
+                      >
+                        {readMoreJobDesc ? "Read Less" : "Read More"}
+                      </button>
+                    )}
+                  </p>
                 </div>
                 <div className="bg-jobcardsecondary1 rounded-lg p-3 mb-4 border border-gray-400 border-opacity-20">
-                  <p className="text-xs text-jobcardforeground">
+                    <p className="text-xs text-jobcardforeground">
                     <span className="text-xs font-medium text-jobcardtext mb-1">What You'll Do: </span>
-                    {responsibilities}
-                  </p>
+                    {readMoreResp ? responsibilities : responsibilities?.split(" ").slice(0, 15).join(" ") + "..."}
+                    {responsibilities && responsibilities.split(" ").length > 15 && (
+                      <button
+                      className="text-primary text-xs mt-0 underline italic ml-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReadMoreResp(!readMoreResp);
+                      }}
+                      >
+                      {readMoreResp ? "Read Less" : "Read More"}
+                      </button>
+                    )}
+                    </p>
                 </div>
                 <div className="flex flex-col justify-between gap-3 [@media(min-width:1248px)]:flex-row" onClick={(e) => e.stopPropagation()} px-3>
                   <Button

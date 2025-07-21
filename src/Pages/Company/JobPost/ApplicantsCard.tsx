@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Applicant as ImportedApplicant } from "./ApplicationsPage";
+import { useNavigate, useParams } from "react-router-dom";
+import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
+import { ChatService, CreateChatDto } from "../../../services/chatServices";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import companyServices from "../../../services/companyServices";
 
 export interface Applicant extends ImportedApplicant {
   resumeUrl: string | URL;
   imageUrl?: string | null;
-  status: string; // Added status property
+  status: string;
 }
-import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
-import { toast } from "sonner";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 
 interface ApplicantsCardProps {
   applicant: Applicant;
@@ -48,10 +51,8 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [feedback, setFeedback] = useState<string>("");
   const [existingFeedback, setExistingFeedback] = useState<string | null>(null);
   const [applicationId] = useState(applicant.id);
-  // Track accepted status locally, initialize from applicant.status
   const [isAccepted, setIsAccepted] = useState(applicant.status === 'accepted');
   const [acceptLoading, setAcceptLoading] = useState(false);
-  // Add loading and state for new actions
   const [rejectLoading, setRejectLoading] = useState(false);
   const [notSuitableLoading, setNotSuitableLoading] = useState(false);
   const [hireLoading, setHireLoading] = useState(false);
@@ -60,11 +61,13 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [isNotSuitable, setIsNotSuitable] = useState(applicant.status === 'not_suitable');
   const [isHired, setIsHired] = useState(applicant.status === 'hired');
   const [isInterviewed, setIsInterviewed] = useState(applicant.status === 'interview');
+  const [messageLoading, setMessageLoading] = useState(false);
+  const { jobId } = useParams<{ jobId: string }>();
+  const navigate = useNavigate();
 
   const formatEducation = (education: string) => {
     if (!education || education === "Not specified") return education;
     
-    // Common degree type mappings
     const degreeTypeMap: Record<string, string> = {
       'bachelor': "Bachelor's",
       'bachelors': "Bachelor's",
@@ -80,24 +83,21 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       'highschool': "High School"
     };
 
-    // Split the education string into parts
     const parts = education.split(' in ');
     if (parts.length >= 2) {
       const degreeType = parts[0].toLowerCase().trim();
       const rest = parts.slice(1).join(' in ');
       
-      // Format the degree type
       const formattedDegreeType = degreeTypeMap[degreeType] || 
         degreeType.charAt(0).toUpperCase() + degreeType.slice(1);
       
       return `${formattedDegreeType} in ${rest}`;
     }
     
-    // If no "in" found, just capitalize the first letter
     return education.charAt(0).toUpperCase() + education.slice(1);
   };
 
-    const hasValidImage = (imageUrl?: string | null): boolean => {
+  const hasValidImage = (imageUrl?: string | null): boolean => {
     return imageUrl !== null && 
            imageUrl !== undefined && 
            imageUrl.trim() !== "" && 
@@ -108,7 +108,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     const fetchFeedback = async () => {
       try {
         const response = await ApplicantsService.getApplicationsWithFeedback();
-        const feedbacks = Array.isArray(response) ? response: [];
+        const feedbacks = Array.isArray(response) ? response : [];
         const applicantFeedback = feedbacks.find((f: ApplicationWithFeedbackDto) => f.applicationId === applicationId);
         if (applicantFeedback) {
           setExistingFeedback(applicantFeedback.feedback);
@@ -139,7 +139,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     setShowFeedbackModal(false);
     setFeedback(existingFeedback || "");
   };
-
 
   const handleSubmitFeedback = async () => {
     try {
@@ -187,7 +186,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     }
   };
 
-  // Handler for reject
   const handleReject = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setRejectLoading(true);
@@ -203,7 +201,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     }
   };
 
-  // Handler for not suitable
   const handleNotSuitable = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setNotSuitableLoading(true);
@@ -219,7 +216,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     }
   };
 
-  // Handler for hire
   const handleHire = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setHireLoading(true);
@@ -235,7 +231,6 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     }
   };
 
-  // Handler for move to interview
   const handleMoveToInterview = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setInterviewLoading(true);
@@ -248,6 +243,32 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       console.error(error);
     } finally {
       setInterviewLoading(false);
+    }
+  };
+
+  const handleMessage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMessageLoading(true);
+    try {
+      const profile = await companyServices.getProfile();
+      const companyId = profile.userId;
+      if (!companyId) {
+        toast.error("Company profile not found");
+        return;
+      }
+      const jobSeekerId = applicant.userId;
+      let chat = await ChatService.getChatByParticipants({ jobSeekerId, companyId });
+      if (!chat) {
+        const createChatDto: CreateChatDto = { jobSeekerId, companyId };
+        // createChat returns ChatResponse, but we need Chat type for navigation, so just proceed to navigate regardless
+        await ChatService.createChat(createChatDto);
+      }
+      navigate(`/company/dashboard/company-messages`);
+    } catch (error) {
+      toast.error("Failed to initiate chat");
+      console.error("Error initiating chat:", error);
+    } finally {
+      setMessageLoading(false);
     }
   };
 
@@ -416,13 +437,21 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     <div className="bg-[rgba(10,132,255,0.05)] rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
                       <p className="text-[13px] text-white m-3">{aiSummary}</p>
                     </div>
-                     
-                    <div className="flex justify-start mt-4 mb-4">
-                      <button className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" onClick={() => window.open(applicant.resumeUrl, "_blank")}>
+                    <div className="flex justify-start mt-4 mb-4 gap-2">
+                      <button 
+                        className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" 
+                        onClick={() => navigate(`/company/dashboard/${jobId}/applications/${applicant.id}`)}
+                      >
                         View Resume
                       </button>
+                      <button 
+                        className={`bg-[rgba(59,130,246,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px] ${messageLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        onClick={handleMessage}
+                        disabled={messageLoading}
+                      >
+                        {messageLoading ? 'Loading...' : 'Message'}
+                      </button>
                     </div>
-
                   </div>
                 </motion.div>
                 <motion.div variants={contentVariants} custom={0.3} initial="hidden" animate="visible">

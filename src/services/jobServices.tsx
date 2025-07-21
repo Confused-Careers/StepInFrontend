@@ -79,9 +79,7 @@ export const jobServices = {
 
   getJobById: async (jobId: string) => {
     try {
-      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs/${jobId}`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await axios.get(`${SERVER_BASE_URL}/api/v1/jobs/${jobId}`);
       return response.data;
     } catch (error) {
       if (handleAuthError(error)) return;
