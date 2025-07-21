@@ -17,20 +17,6 @@ const containerVariants = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 120, damping: 15, mass: 0.8 },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    transition: { duration: 0.3, ease: "easeInOut" },
-  },
-};
-
 const categoryIcons: Record<string, JSX.Element> = {
   preferences: <Star className="h-4 w-4 text-primary" />,
   personality: <Zap className="h-4 w-4 text-primary" />,
@@ -115,7 +101,23 @@ function QuestionBox({
                             ? "col-span-2 flex justify-center"
                             : ""
                         }
-                        variants={itemVariants}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ 
+                          opacity: 1, 
+                          y: 0,
+                          transition: { 
+                            type: "spring", 
+                            stiffness: 120, 
+                            damping: 15, 
+                            mass: 0.8,
+                            delay: index * 0.1 
+                          }
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          y: -20,
+                          transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+                        }}
                       >
                         <motion.button
                           className={`w-full h-20 flex items-center justify-center rounded-md transition-all duration-200 text-center text-sm ${
