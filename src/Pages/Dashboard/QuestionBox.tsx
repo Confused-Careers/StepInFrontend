@@ -2,7 +2,6 @@ import { JSX, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Zap, Briefcase } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 interface QuestionResponseDto {
@@ -28,7 +27,7 @@ const itemVariants = {
   exit: {
     opacity: 0,
     y: -20,
-    transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: 0.3, ease: "easeInOut" },
   },
 };
 
@@ -40,7 +39,15 @@ const categoryIcons: Record<string, JSX.Element> = {
   career_path: <Briefcase className="h-4 w-4 text-primary" />,
 };
 
-function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; onAnswer: (optionId: string | null, optionText: string | null, questionType: string) => void }) {
+function QuestionBox({
+  question,
+  onAnswer,
+  columnIndex,
+}: {
+  question: QuestionResponseDto;
+  onAnswer: (optionId: string | null, optionText: string | null, columnIndex: number, questionType: string) => void;
+  columnIndex: number;
+}) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [textAnswer, setTextAnswer] = useState<string>("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -51,7 +58,10 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
   const handleOptionSelect = (optionId: string, optionText: string) => {
     setSelectedAnswer(optionId);
     setIsSubmitted(true);
-    setTimeout(() => onAnswer(optionId, optionText, question.questionType), 600);
+    setTimeout(() => {
+      onAnswer(optionId, optionText, columnIndex, question.questionType);
+      setIsSubmitted(false); // Reset to allow re-rendering if reused
+    }, 600);
   };
 
   const handleTextSubmit = () => {
@@ -61,7 +71,10 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
     }
     setError(null);
     setIsSubmitted(true);
-    setTimeout(() => onAnswer(null, textAnswer, question.questionType), 600);
+    setTimeout(() => {
+      onAnswer(null, textAnswer, columnIndex, question.questionType);
+      setIsSubmitted(false); // Reset to allow re-rendering if reused
+    }, 600);
   };
 
   return (
@@ -76,21 +89,32 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
           <AnimatePresence mode="wait">
             {!isSubmitted ? (
               <motion.div
-                key="question"
+                key={`question-${question.id}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
                 transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               >
                 <div className="flex items-center justify-center mb-4">
-                  <h3 className="text-[16px] font-medium text-center text-gray-900 dark:text-white">{question.questionText}</h3>
+                  <h3 className="text-[16px] font-medium text-center text-gray-900 dark:text-white">
+                    {question.questionText}
+                  </h3>
                 </div>
                 {!isTextQuestion && question.options && (
-                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 gap-2">
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-2 gap-2"
+                  >
                     {question.options.map((option, index) => (
                       <motion.div
                         key={option.id}
-                        className={question.options!.length % 2 === 1 && index === question.options!.length - 1 ? "col-span-2 flex justify-center" : ""}
+                        className={
+                          question.options!.length % 2 === 1 && index === question.options!.length - 1
+                            ? "col-span-2 flex justify-center"
+                            : ""
+                        }
                         variants={itemVariants}
                       >
                         <motion.button
@@ -98,7 +122,9 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                             selectedAnswer === option.id
                               ? "bg-blue-500 hover:bg-blue-600 text-white"
                               : "border-2 border-blue-500 text-blue-500 dark:text-white bg-transparent hover:bg-blue-100 hover:bg-opacity-15 dark:hover:bg-gray-900"
-                          } ${question.options!.length % 2 === 1 && index === question.options!.length - 1 ? "w-1/2" : ""}`}
+                          } ${
+                            question.options!.length % 2 === 1 && index === question.options!.length - 1 ? "w-1/2" : ""
+                          }`}
                           onClick={() => handleOptionSelect(option.id, option.optionText)}
                           style={{
                             boxShadow: selectedAnswer === option.id ? "none" : "0 2px 4px rgba(10, 132, 255, 0.2)",
@@ -117,8 +143,7 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                 )}
                 {isTextQuestion && (
                   <div className="space-y-4">
-                    <Input
-                      as="textarea"
+                    <textarea
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
                       placeholder="Enter your response..."
@@ -136,9 +161,10 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
               </motion.div>
             ) : (
               <motion.div
-                key="insight"
+                key={`insight-${question.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1], delay: 0.2 }}
               >
                 <div className="flex items-center gap-3 bg-white dark:bg-[#202536]">

@@ -160,7 +160,7 @@ export function JobsPostPage() {
             const maxNum = Number(job.salaryMax);
             const min = Number.isInteger(minNum) ? minNum.toString() : minNum.toFixed(2).replace(/\.00$/, "");
             const max = Number.isInteger(maxNum) ? maxNum.toString() : maxNum.toFixed(2).replace(/\.00$/, "");
-            const period = job.payPeriod || "Yearly";
+            const period = job.payPeriod === "yearly" ? "yr" : job.payPeriod === "hourly" ? "hr" : job.payPeriod
             salary = `$${min} - $${max}/${period}`;
           }
           return {

@@ -75,20 +75,24 @@ export function JobPostCard({ job, onActionClick, onCardClick }: JobApplicationC
             <h3 className="font-bold text-[18px] text-jobcardtext flex justify-center">{job.jobTitle}</h3>
             <p className="text-sm text-jobcardforeground flex justify-center">{job.location}</p>
           </div>
-          <div className="relative mt-2 ml-2 flex items-center gap-2">
-            <button
-              className="flex items-center gap-1 px-2 py-1 rounded text-white text-xs"
-              onClick={e => {
-                e.stopPropagation();
-                const jobUrl = `${window.location.origin}/job/${job.id}`;
-                navigator.clipboard.writeText(jobUrl);
-                toast.success("Job link copied to clipboard!");
-              }}
-              title="Copy job link"
-            >
-              <Link size={16} />
-            </button>
-          </div>
+          {
+            job.type ==='public' && (
+            <div className="relative mt-2 ml-2 flex items-center gap-2">
+              <button
+                className="flex items-center gap-1 px-2 py-1 rounded text-white text-xs"
+                onClick={e => {
+                  e.stopPropagation();
+                  const jobUrl = `${window.location.origin}/job/${job.id}`;
+                  navigator.clipboard.writeText(jobUrl);
+                  toast.success("Job link copied to clipboard!");
+                }}
+                title="Copy job link"
+              >
+                <Link size={16} />
+              </button>
+            </div>
+            )
+          }
         </div>
 
         <div className="flex flex-wrap gap-x-1 justify-evenly px-6 mt-2">

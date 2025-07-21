@@ -1,6 +1,5 @@
 import axios from "axios";
 import { SERVER_BASE_URL } from "@/utils/config";
-import { ChatService, CreateChatDto } from "./chatServices";
 
 export function handleAuthError(error: unknown) {
   if (axios.isAxiosError(error) && error.response && error.response.status === 401) {

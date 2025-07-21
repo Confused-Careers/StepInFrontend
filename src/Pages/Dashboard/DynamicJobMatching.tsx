@@ -113,7 +113,7 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     salaryRange: jobDetails.salaryMin && jobDetails.salaryMax
       ? `$${jobDetails.salaryMin} - $${jobDetails.salaryMax}/${jobDetails.payPeriod || "mo"}`
       : "Unpaid",
-    matchPercentage: jobDetails.matchScore !== undefined ? Math.round(Number(jobDetails.matchScore)) || 0 : 0,
+    matchPercentage: job.matchScore ? Number(job.matchScore) : 0,
     description: jobDetails.description,
     responsibilities: jobDetails.responsibilities || "",
     jobType: readableEmploymentType,
@@ -189,11 +189,22 @@ export function DynamicJobMatching() {
   const jobsRef = useRef<HTMLDivElement>(null);
   const questionCache = useRef<Map<number, GetQuestionsResponseDto>>(new Map());
   const hasFetchedQuestions = useRef<boolean>(false);
-  const [questionAnswered, setQuestionAnswered] = useState<number>(0);
+  const [questionsAnsweredInCurrentTier, setQuestionsAnsweredInCurrentTier] = useState<number>(0);
+  const [questionsRequiredToComplete, setQuestionsRequiredToComplete] = useState<number>(0);
+  const isProgressFetching = useRef<boolean>(false);
+  const lastAnswerTimestamp = useRef<number>(0);
 
   const isValidUUID = (str: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
+  };
+
+  // Exponential backoff with jitter for retries
+  const sleepWithJitter = (attempt: number, baseDelay: number = 1000): Promise<void> => {
+    const maxJitter = 100;
+    const delay = Math.min(baseDelay * Math.pow(2, attempt), 8000); // Cap at 8 seconds
+    const jitter = Math.random() * maxJitter;
+    return new Promise((resolve) => setTimeout(resolve, delay + jitter));
   };
 
   const distributeQuestions = (questions: QuestionResponseDto[]) => {
@@ -348,19 +359,20 @@ export function DynamicJobMatching() {
     }
   };
 
-  const fetchProgress = async () => {
-    if (isLoading) return;
+  const fetchProgress = async (): Promise<UserProgressResponseDto | null> => {
+    if (isProgressFetching.current) return null;
+    isProgressFetching.current = true;
     setIsLoading(true);
     try {
       const progress: UserProgressResponseDto = await getUserProgress();
       const tier = progress.currentTier || 1;
-      setCurrentTier(tier);
-      setQuestionAnswered(progress.questionsAnsweredInCurrentTier || 0);
 
       if (!progress.tiers || !Array.isArray(progress.tiers)) {
         console.error("Invalid tiers data in progress");
         setProfileCompletion(0);
         setCurrentTier(1);
+        setQuestionsAnsweredInCurrentTier(0);
+        setQuestionsRequiredToComplete(0);
         setColumnInsights([]);
         setAnsweredQuestionIds(new Set());
         questionCache.current.clear();
@@ -368,14 +380,17 @@ export function DynamicJobMatching() {
         await fetchQuestions(1);
         await fetchAnswerHistory(1);
         await fetchJobs();
-        return;
+        toast.error("Invalid progress data. Reverted to Tier 1.");
+        return null;
       }
 
       const currentTierData = progress.tiers.find((t) => t.tierNumber === tier);
       if (!currentTierData) {
         console.error(`No data found for tier ${tier}`);
-        toast.error("Error fetching tier data. Reverting to tier 1.");
+        toast.error(`Error fetching data for Tier ${tier}. Reverting to Tier 1.`);
         setCurrentTier(1);
+        setQuestionsAnsweredInCurrentTier(0);
+        setQuestionsRequiredToComplete(0);
         setColumnInsights([]);
         setAnsweredQuestionIds(new Set());
         questionCache.current.clear();
@@ -383,13 +398,16 @@ export function DynamicJobMatching() {
         await fetchQuestions(1);
         await fetchAnswerHistory(1);
         await fetchJobs();
-        return;
+        return null;
       }
 
       const tierCompletion =
         currentTierData.questionsRequiredToComplete > 0
           ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
           : 0;
+      setCurrentTier(tier);
+      setQuestionsAnsweredInCurrentTier(currentTierData.questionsAnsweredInTier || 0);
+      setQuestionsRequiredToComplete(currentTierData.questionsRequiredToComplete || 0);
       setProfileCompletion(tierCompletion);
 
       if (!hasFetchedQuestions.current || !questionCache.current.has(tier)) {
@@ -398,20 +416,14 @@ export function DynamicJobMatching() {
         hasFetchedQuestions.current = true;
       }
       await fetchJobs();
+      return progress;
     } catch (error) {
       console.error("Failed to fetch progress:", error);
-      setProfileCompletion(0);
-      setCurrentTier(1);
-      setColumnInsights([]);
-      setAnsweredQuestionIds(new Set());
-      questionCache.current.clear();
-      hasFetchedQuestions.current = false;
-      await fetchQuestions(1);
-      await fetchAnswerHistory(1);
-      await fetchJobs();
-      toast.error("Failed to fetch progress. Defaulting to tier 1.");
+      toast.error("Failed to fetch progress. Please try again.");
+      return null;
     } finally {
       setIsLoading(false);
+      isProgressFetching.current = false;
     }
   };
 
@@ -450,9 +462,13 @@ export function DynamicJobMatching() {
 
       // Submit answer
       await submitAnswer(payload);
+      lastAnswerTimestamp.current = Date.now();
 
       // Update answered question IDs
       setAnsweredQuestionIds((prev) => new Set(prev).add(questionId));
+
+      // Increment local question count
+      setQuestionsAnsweredInCurrentTier((prev) => prev + 1);
 
       // Fetch latest answer history to get insight
       const latestAnswer = (await getAnswerHistory(currentTier)).find((a) => a.questionId === questionId);
@@ -466,66 +482,61 @@ export function DynamicJobMatching() {
         tier: currentTier,
       };
 
+      // Update insights immediately
       setColumnInsights((prev) => [...prev, insight]);
 
-      // Update questions display
-      setColumnQuestions((prev) => {
-        const newQuestions = [...prev];
-        const nextQuestionIndex = availableQuestions.findIndex((q) => q.id === questionId) + 1;
-        if (nextQuestionIndex < availableQuestions.length) {
-          newQuestions[columnIndex] = availableQuestions[nextQuestionIndex];
-          setAvailableQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== questionId));
-        } else {
-          newQuestions[columnIndex] = null;
-          setAvailableQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== questionId));
-        }
-        return newQuestions;
-      });
+      // Delay question update to allow animation to complete
+      setTimeout(() => {
+        setColumnQuestions((prev) => {
+          const newQuestions = [...prev];
+          const nextQuestionIndex = availableQuestions.findIndex((q) => q.id === questionId) + 1;
+          if (nextQuestionIndex < availableQuestions.length) {
+            newQuestions[columnIndex] = availableQuestions[nextQuestionIndex];
+            setAvailableQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== questionId));
+          } else {
+            newQuestions[columnIndex] = null;
+            setAvailableQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== questionId));
+          }
+          return newQuestions;
+        });
 
-      if (window.innerWidth < 640) {
-        setCurrentMobileQuestionIndex((prev) => prev + 1);
+        if (window.innerWidth < 640) {
+          setCurrentMobileQuestionIndex((prev) => prev + 1);
+        }
+      }, 600); // Match QuestionBox animation duration
+
+      // Check if tier is potentially complete based on local count
+      const estimatedQuestionsAnswered = questionsAnsweredInCurrentTier + 1;
+      if (estimatedQuestionsAnswered >= questionsRequiredToComplete && currentTier < 5) {
+        toast.info(`Processing tier ${currentTier} completion...`);
       }
 
       // Fetch updated progress with retry mechanism
-      const maxRetries = 5;
+      const maxRetries = 8;
+      const maxRetryDuration = 30000; // 30 seconds
       let retries = 0;
+      const startTime = Date.now();
 
-      while (retries < maxRetries) {
-        const progress = await getUserProgress();
-        const newTier = progress.currentTier || 1;
-        setQuestionAnswered(progress.questionsAnsweredInCurrentTier || 0);
-
-        if (!progress.tiers || !Array.isArray(progress.tiers)) {
-          console.error("Invalid tiers data in progress");
-          setProfileCompletion(0);
-          setCurrentTier(1);
-          setColumnInsights([]);
-          setAnsweredQuestionIds(new Set());
-          questionCache.current.clear();
-          hasFetchedQuestions.current = false;
-          await fetchQuestions(1);
-          await fetchAnswerHistory(1);
-          await fetchJobs();
-          toast.error("Invalid progress data. Reverted to Tier 1.");
-          return;
+      while (retries < maxRetries && Date.now() - startTime < maxRetryDuration) {
+        const progress = await fetchProgress();
+        if (!progress) {
+          retries++;
+          await sleepWithJitter(retries);
+          continue;
         }
 
+        const newTier = progress.currentTier || 1;
         const currentTierData = progress.tiers.find((t) => t.tierNumber === newTier);
         if (!currentTierData) {
           console.error(`No data found for tier ${newTier}`);
-          toast.error(`Error fetching data for Tier ${newTier}. Reverting to Tier 1.`);
-          setCurrentTier(1);
-          setColumnInsights([]);
-          setAnsweredQuestionIds(new Set());
-          questionCache.current.clear();
-          hasFetchedQuestions.current = false;
-          await fetchQuestions(1);
-          await fetchAnswerHistory(1);
-          await fetchJobs();
-          return;
+          retries++;
+          await sleepWithJitter(retries);
+          continue;
         }
 
-        // Calculate tier completion
+        // Update local counts
+        setQuestionsAnsweredInCurrentTier(currentTierData.questionsAnsweredInTier || 0);
+        setQuestionsRequiredToComplete(currentTierData.questionsRequiredToComplete || 0);
         const tierCompletion =
           currentTierData.questionsRequiredToComplete > 0
             ? (currentTierData.questionsAnsweredInTier / currentTierData.questionsRequiredToComplete) * 100
@@ -542,12 +553,14 @@ export function DynamicJobMatching() {
 
           if (!nextTierData || !nextTierData.isUnlocked) {
             retries++;
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
+            await sleepWithJitter(retries);
             continue;
           }
 
           // Move to next tier
           setCurrentTier(nextTier);
+          setQuestionsAnsweredInCurrentTier(0);
+          setQuestionsRequiredToComplete(nextTierData.questionsRequiredToComplete || 0);
           setProfileCompletion(0);
           setColumnInsights([]);
           setAnsweredQuestionIds(new Set());
@@ -572,8 +585,11 @@ export function DynamicJobMatching() {
       }
 
       // If retries are exhausted
-      console.warn(`Max retries reached. Tier progression not confirmed.`);
-      toast.info(`Please wait, processing tier ${currentTier} completion...`);
+      console.warn(`Max retries or duration reached for tier ${currentTier} progression.`);
+      toast.warning(`Unable to confirm tier progression. Staying on Tier ${currentTier}.`);
+      // Attempt to refresh current tier data
+      await fetchQuestions(currentTier);
+      await fetchAnswerHistory(currentTier);
       await fetchJobs();
     } catch (error: any) {
       console.error("Failed to submit answer:", {
@@ -586,6 +602,10 @@ export function DynamicJobMatching() {
         questionType,
       });
       toast.error(error.response?.data?.message || "Failed to submit answer. Please try again.");
+      // Attempt to recover by fetching current tier data
+      await fetchQuestions(currentTier);
+      await fetchAnswerHistory(currentTier);
+      await fetchJobs();
     }
   };
 
@@ -673,7 +693,9 @@ export function DynamicJobMatching() {
             className="text-xl font-semibold mb-6 flex items-center justify-between"
           >
             <p className="text-xl font-semibold mb-6 flex items-center">Answer Questions</p>
-            <p className="text-xl font-semibold mb-6 flex items-center text-[#6B7280] mr-4">{questionAnswered}</p>
+            <p className="text-xl font-semibold mb-6 flex items-center text-[#6B7280] mr-4">
+              {questionsAnsweredInCurrentTier}/{questionsRequiredToComplete}
+            </p>
           </motion.h2>
           <motion.div
             variants={containerVariants}
@@ -687,7 +709,7 @@ export function DynamicJobMatching() {
                 if (!currentQuestion || answeredQuestionIds.has(currentQuestion.id)) return null;
                 return (
                   <motion.div
-                    key={currentQuestion.id}
+                    key={`question-${currentQuestion.id}`}
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
@@ -695,9 +717,10 @@ export function DynamicJobMatching() {
                   >
                     <QuestionBox
                       question={currentQuestion}
-                      onAnswer={(optionId, optionText) =>
-                        handleAnswer(currentQuestion.id, optionId, optionText, 0, currentQuestion.questionType)
+                      onAnswer={(optionId, optionText, _unused, questionType) =>
+                        handleAnswer(currentQuestion.id, optionId, optionText, 0, questionType)
                       }
+                      columnIndex={0}
                     />
                   </motion.div>
                 );
@@ -730,7 +753,7 @@ export function DynamicJobMatching() {
                   <AnimatePresence mode="sync">
                     {columnQuestions[columnIndex] && !answeredQuestionIds.has(columnQuestions[columnIndex]!.id) && (
                       <motion.div
-                        key={columnQuestions[columnIndex]!.id}
+                        key={`question-${columnQuestions[columnIndex]!.id}`}
                         variants={itemVariants}
                         initial="hidden"
                         animate="visible"
@@ -738,9 +761,10 @@ export function DynamicJobMatching() {
                       >
                         <QuestionBox
                           question={columnQuestions[columnIndex]!}
-                          onAnswer={(optionId, optionText) =>
-                            handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex, columnQuestions[columnIndex]!.questionType)
+                          onAnswer={(optionId, optionText, columnIndex, questionType) =>
+                            handleAnswer(columnQuestions[columnIndex]!.id, optionId, optionText, columnIndex, questionType)
                           }
+                          columnIndex={columnIndex}
                         />
                       </motion.div>
                     )}

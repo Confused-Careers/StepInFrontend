@@ -21,9 +21,9 @@ interface Job {
   responsibilities: string;
   employmentType: string;
   experienceLevel: string;
-  salaryMin: string;
-  salaryMax: string;
-  payPeriod: string;
+  salaryMin?: string;
+  salaryMax?: string;
+  payPeriod?: string;
   salaryCurrency: string;
   location: string;
   isRemote: boolean;
@@ -91,15 +91,7 @@ export function JobPostingPage() {
   }
 
   if (!job) {
-    return (
-      <div className="bg-[#0a0a0a] text-white min-h-screen mt-16">
-        <div className="min-h-screen bg-[#0a0a0a] text-white">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <p>Job not found</p>
-          </div>
-        </div>
-      </div>
-    );
+    navigate("/404");
   }
 
   return (
@@ -114,21 +106,21 @@ export function JobPostingPage() {
           >
             <div className="lg:col-span-2 space-y-8">
               <div className="text-center">
-                <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
-                <p className="text-xl text-gray-400">{job.company.companyName} · {job.location}</p>
+                <h1 className="text-3xl font-bold mb-2">{job?.title}</h1>
+                <p className="text-xl text-gray-400">{job?.company.companyName} · {job?.location}</p>
               </div>
 
               <div className="rounded-lg p-6 bg-gradient-to-r from-[#050B1A] to-[#0F172A] border border-[#2A2F40]">
                 <h2 className="text-xl font-semibold mb-4">Why this role</h2>
                 <div className="space-y-3 text-gray-300">
-                  <p>· {job.description}</p>
+                  <p>· {job?.description}</p>
                 </div>
               </div>
 
               <div className="rounded-lg p-6 bg-gradient-to-r from-[#050B1A] to-[#0F172A] border border-[#2A2F40]">
                 <h2 className="text-xl font-semibold mb-4">Responsibilities</h2>
                 <div className="space-y-3 text-gray-300">
-                  <p>· {job.responsibilities}</p>
+                  <p>· {job?.responsibilities}</p>
                   <p className="text-blue-400 cursor-pointer hover:underline">see more</p>
                 </div>
               </div>
@@ -136,7 +128,7 @@ export function JobPostingPage() {
               <div className="rounded-lg p-6 bg-gradient-to-r from-[#050B1A] to-[#0F172A] border border-[#2A2F40]">
                 <h2 className="text-xl font-semibold mb-4">Qualifications</h2>
                 <div className="space-y-3 text-gray-300">
-                  <p>· {job.requirements}</p>
+                  <p>· {job?.requirements}</p>
                   <p className="text-blue-400 cursor-pointer hover:underline">see more</p>
                 </div>
               </div>
@@ -157,14 +149,14 @@ export function JobPostingPage() {
                 }}
               >
                 <div className="flex justify-center mb-12">
-                  {hasValidImage(job.company.logoUrl) ? (
+                  {hasValidImage(job?.company.logoUrl) ? (
                     <div className="p-1 sm:p-2 rounded-lg w-20 h-20 flex items-center justify-center flex-shrink-0">
                       <img 
-                        src={job.company.logoUrl ?? undefined}
+                        src={job?.company.logoUrl ?? undefined}
                         width={96} 
                         height={96} 
                         className="object-contain rounded-md w-full h-full" 
-                        alt={`${job.company.logoUrl ?? ""}'s photo`}
+                        alt={`${job?.company.logoUrl ?? ""}'s photo`}
                       />
                     </div>
                   ) : (
@@ -181,32 +173,36 @@ export function JobPostingPage() {
                 </button>
 
                 <div className="flex flex-col gap-10">
-                  <div className="flex justify-center">
+                    <div className="flex justify-center">
                     <div 
-                      className="rounded-lg h-[31px] px-4 py-2 text-white bg-gradient-to-r from-[rgba(26,52,78,0.5)] to-[#03284D] flex items-center justify-center"
+                      className="rounded-lg h-[31px] px-4 py-2 text-white bg-gradient-to-r from-[rgba(26,52,78,0.5)] to-[#03284D] flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis"
                       style={{
-                        width: '168px',
-                        height: '31px',
-                        fontWeight: 600,
-                        fontSize: '20px',
-                        lineHeight: '100%',
-                        textAlign: 'center'
+                      width: 'full',
+                      maxWidth: '100%',
+                      height: '31px',
+                      fontWeight: 600,
+                      fontSize: '20px',
+                      lineHeight: '100%',
+                      textAlign: 'center'
                       }}
                     >
-                      ${parseFloat(job.salaryMin).toLocaleString()} - ${parseFloat(job.salaryMax).toLocaleString()} /{job.payPeriod}
+                      {
+                      job?.salaryMin && job?.salaryMax
+                      ? `$${parseFloat(String(job?.salaryMin)).toLocaleString()} - $${parseFloat(String(job?.salaryMax)).toLocaleString()}${job?.payPeriod === "yearly" ? " /yr" : job?.payPeriod === "hourly" ? " /hr" : job?.payPeriod ? ` /${job.payPeriod}` : ""}`
+                      : "Unpaid"}
                     </div>
-                  </div>
+                    </div>
 
                   <div className="space-y-8 px-4">
                     <div className="flex items-center gap-3 font-medium text-xl leading-none">
                       <MapPin className="w-5 h-5 text-blue-400" />
-                      <span>{job.location}{job.isRemote ? " (Remote)" : ""}</span>
+                      <span>{job?.location}{job?.isRemote ? " (Remote)" : ""}</span>
                     </div>
 
                     <div className="flex items-center gap-3 font-medium text-xl whitespace-nowrap leading-none">
                       <Clock className="w-5 h-5 text-blue-400" />
                       <span>
-                        {job.applicationDeadline
+                        {job?.applicationDeadline
                           ? `Apply by ${new Date(job.applicationDeadline).toLocaleDateString()}`
                           : "Rolling Applications"}
                       </span>
