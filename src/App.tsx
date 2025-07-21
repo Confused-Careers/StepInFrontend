@@ -1,7 +1,6 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './Contexts/ThemeContext';
-import { ProfileProvider } from './Contexts/ProfileContext';
 import LandingPage from './Pages/Landing/Landing';
 import { OnboardingFlow } from './Pages/Onboarding/OnboardingFlow';
 import IndividualLogin from './Pages/Auth/IndividualLogin';
@@ -33,7 +32,6 @@ import { JobPostingPage } from './Pages/Company/JobPost/PublicJobPost';
 
 function App() {
   return (
-    <ProfileProvider>
       <ThemeProvider>
         <Router>
           <Routes>
@@ -67,7 +65,6 @@ function App() {
           <Toaster />
         </Router>
       </ThemeProvider>
-    </ProfileProvider>
   );
 }
 

@@ -192,7 +192,7 @@ const JobSeekerMessagesPage: React.FC = () => {
             senderName:
               String(msg.senderId) === String(jobSeekerUserId)
                 ? 'You'
-                : msg.senderName || msg.sender?.email || 'Unknown',
+                : msg.senderName || (msg as any)?.sender?.email || 'Unknown',
           }));
           const mergedMessages = [...prev];
           normalizedMessages.forEach((newMsg) => {
@@ -224,7 +224,7 @@ const JobSeekerMessagesPage: React.FC = () => {
 
   const handleSelectChat = async (chat: ExtendedChat) => {
     setSelectedChat(chat);
-    setSelectedPosition(chat.selectedPosition);
+    setSelectedPosition(chat.selectedPosition ?? null);
     setError(null);
     try {
       if (!jobSeekerUserId) {
@@ -291,7 +291,7 @@ const JobSeekerMessagesPage: React.FC = () => {
         chatId: selectedChat.id,
         senderId: jobSeekerUserId,
         content,
-        file,
+        file: file ?? undefined,
       });
       console.log('[DEBUG] ChatService.sendMessage response:', response);
 
@@ -574,12 +574,12 @@ const JobSeekerMessagesPage: React.FC = () => {
                   <div className="flex flex-col gap-6">
                     {messages.map((message) => {
                       const isOptimistic = message.id?.startsWith('optimistic-');
-                      const senderId = isOptimistic ? message.senderId : message.sender?.id || message.senderId;
+                      const senderId = isOptimistic ? message.senderId : message.senderId || message.senderId;
                       console.log('[DEBUG] Message sender check:', { messageId: message.id, senderId, jobSeekerUserId, isSentByJobSeeker: String(senderId) === String(jobSeekerUserId) });
                       const isSentByJobSeeker = jobSeekerUserId && String(senderId) === String(jobSeekerUserId);
                       const senderName = isSentByJobSeeker
                         ? 'You'
-                        : message.senderName || message.sender?.email || 'Unknown';
+                        : message.senderName || message.senderId || 'Unknown';
                       return (
                         <div key={message.id} className={`flex ${isSentByJobSeeker ? 'justify-end' : 'justify-start'}`}>
                           <div className="flex flex-col items-end max-w-[70%]">
