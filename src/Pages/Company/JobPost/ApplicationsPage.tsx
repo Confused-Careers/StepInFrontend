@@ -5,10 +5,11 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ApplicantsCard } from "./ApplicantsCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ApplicantsService, ApplicantCardDto, ListApplicantsRequestDto } from "../../../services/applicantServices";
+import { ApplicantsService, ApplicantCardDto, ListApplicantsRequestDto, SearchApplicantsRequestDto } from "../../../services/applicantServices";
 import debounce from "lodash/debounce";
+import { Sparkles, Loader2 } from "lucide-react";
 
 export interface Applicant {
   latestExperience: any;
@@ -25,6 +26,12 @@ export interface Applicant {
   resumeUrl: string | URL;
   imageUrl?: string | null;
   status: string;
+  // AI search specific fields
+  relevanceScore?: number;
+  matchingHighlights?: string[];
+  skillsScore?: number;
+  cultureScore?: number;
+  hasCultureData?: boolean;
 }
 
 interface Tag {
@@ -87,6 +94,7 @@ const mockSchedules: Schedule[] = [
 ];
 
 export default function CompanyApplicationsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [openSchedule, ] = useState<boolean>(false);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
@@ -96,6 +104,7 @@ export default function CompanyApplicationsPage() {
   const [schedules, setSchedules] = useState<Schedule[]>(mockSchedules);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const { jobId } = useParams<{ jobId: string }>();
 
   useEffect(() => {
@@ -125,8 +134,8 @@ export default function CompanyApplicationsPage() {
           education: dto.latestEducation
             ? `${dto.latestEducation.degreeType} in ${dto.latestEducation.fieldOfStudy}, ${dto.latestEducation.institutionName}`
             : "Not specified",
-          currentCompany: dto.latestExperience?.companyName || "Not specified",
-          currentPosition: dto.currentPosition || "Not specified",
+          currentCompany: dto.currentCompany || dto.latestExperience?.companyName || "Not specified",
+          currentPosition: dto.currentPosition || dto.latestExperience?.positionTitle || "Not specified",
           strength: dto.strengths || [],
           weakness: dto.weaknesses || [],
           match: dto.matchPercentage ? Math.round(dto.matchPercentage).toString() : "0",
@@ -134,6 +143,11 @@ export default function CompanyApplicationsPage() {
           imageUrl: dto.profilePictureUrl || null,
           resumeUrl: dto.resumeUrl ?? "",
           status: dto.applicationStatus || "Pending",
+          relevanceScore: dto.relevanceScore,
+          matchingHighlights: dto.matchingHighlights,
+          skillsScore: dto.skillsScore,
+          cultureScore: dto.cultureScore,
+          hasCultureData: dto.hasCultureData,
         }));
         setApplicants(mappedApplicants);
         setAllApplicants(mappedApplicants);
@@ -158,6 +172,80 @@ export default function CompanyApplicationsPage() {
 
     fetchData();
   }, [jobId]);
+
+  const searchApplicants = useCallback(
+    async (query: string, tags: string[]) => {
+      if (!query && tags.length === 0) {
+        // If no search query or tags, show all applicants
+        setApplicants(allApplicants);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const searchRequest: SearchApplicantsRequestDto = {
+          query,
+          jobId,
+          limit: 50,
+          filters: {
+            skills: tags.length > 0 ? tags : undefined,
+          },
+        };
+
+        const response = await ApplicantsService.searchJobApplicants(searchRequest);
+        
+        // Map the search results to the Applicant interface
+        const mappedApplicants: Applicant[] = response.data.map((dto: ApplicantCardDto) => ({
+          latestExperience: dto.latestExperience || {},
+          id: dto.applicationId || dto.jobSeekerId || "",
+          userId: dto.userId,
+          name: `${dto.firstName} ${dto.lastName}`,
+          education: dto.latestEducation
+            ? `${dto.latestEducation.degreeType} in ${dto.latestEducation.fieldOfStudy}, ${dto.latestEducation.institutionName}`
+            : "Not specified",
+          currentCompany: dto.currentCompany || dto.latestExperience?.companyName || "Not specified",
+          currentPosition: dto.currentPosition || dto.latestExperience?.positionTitle || "Not specified",
+          strength: dto.strengths || [],
+          weakness: dto.weaknesses || [],
+          match: dto.matchPercentage ? Math.round(dto.matchPercentage).toString() : "0",
+          location: dto.location || "Not specified",
+          imageUrl: dto.profilePictureUrl || null,
+          resumeUrl: dto.resumeUrl ?? "",
+          status: dto.applicationStatus || "Pending",
+          relevanceScore: dto.relevanceScore,
+          matchingHighlights: dto.matchingHighlights,
+          skillsScore: dto.skillsScore,
+          cultureScore: dto.cultureScore,
+          hasCultureData: dto.hasCultureData,
+        }));
+
+        setApplicants(mappedApplicants);
+        
+        if (mappedApplicants.length === 0) {
+          toast.info("No matching candidates found. Try adjusting your search query.");
+        }
+      } catch (error: any) {
+        console.error("Error searching applicants:", error);
+        
+        // Check if it's a timeout error
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+          toast.info("AI search is taking longer than expected. Please wait...", {
+            duration: 5000,
+          });
+          // Don't fall back to client-side filtering for timeout errors
+        } else {
+          toast.error("Failed to search applicants. Falling back to basic search.");
+          // Fallback to client-side filtering only for other errors
+          const filtered = filterApplicants(query, tags, allApplicants);
+          setApplicants(filtered);
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [jobId, allApplicants]
+  );
 
   const filterApplicants = useCallback(
     (query: string, tags: string[], applicants: Applicant[]) => {
@@ -185,10 +273,9 @@ export default function CompanyApplicationsPage() {
 
   const debouncedSearch = useCallback(
     debounce((query: string, tags: string[]) => {
-      const filtered = filterApplicants(query, tags, allApplicants);
-      setApplicants(filtered);
+      searchApplicants(query, tags);
     }, 300),
-    [allApplicants, filterApplicants]
+    [searchApplicants]
   );
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,14 +312,62 @@ export default function CompanyApplicationsPage() {
       </div>
       <div className="relative w-full flex justify-center flex-row mt-16 gap-7">
         <div className="relative w-full flex justify-center flex-col">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center gap-2 flex-col">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className={`h-5 w-5 text-[rgba(10,132,255,1)] ${isSearching ? 'animate-pulse' : ''}`} />
+              <span className="text-sm text-gray-400">
+                {isSearching ? 'AI is analyzing candidates...' : 'AI-Powered Search'}
+              </span>
+            </div>
             <Input
               type="search"
-              placeholder="Search candidates..."
-              className="rounded-full h-[45px] border border-[rgba(209,209,214,1)] text-white bg-[rgba(26,31,43,1)]"
+              placeholder="Try: 'experienced developer with React skills' or 'marketing manager with leadership experience'"
+              className="rounded-full h-[45px] border border-[rgba(209,209,214,1)] text-white bg-[rgba(26,31,43,1)] w-full max-w-2xl"
               value={searchQuery}
               onChange={handleSearchInputChange}
+              disabled={isSearching}
             />
+            <div className="flex gap-2 mt-2">
+              <span className="text-xs text-gray-500">Examples:</span>
+              <button
+                className={`text-xs transition-colors ${isSearching ? 'text-gray-500 cursor-not-allowed' : 'text-[rgba(10,132,255,0.8)] hover:text-[rgba(10,132,255,1)]'}`}
+                onClick={() => {
+                  if (!isSearching) {
+                    setSearchQuery("frontend developer with 3+ years experience");
+                    debouncedSearch("frontend developer with 3+ years experience", selectedTags);
+                  }
+                }}
+                disabled={isSearching}
+              >
+                "frontend developer with 3+ years"
+              </button>
+              <span className="text-xs text-gray-500">•</span>
+              <button
+                className={`text-xs transition-colors ${isSearching ? 'text-gray-500 cursor-not-allowed' : 'text-[rgba(10,132,255,0.8)] hover:text-[rgba(10,132,255,1)]'}`}
+                onClick={() => {
+                  if (!isSearching) {
+                    setSearchQuery("data scientist with machine learning background");
+                    debouncedSearch("data scientist with machine learning background", selectedTags);
+                  }
+                }}
+                disabled={isSearching}
+              >
+                "data scientist with ML"
+              </button>
+              <span className="text-xs text-gray-500">•</span>
+              <button
+                className={`text-xs transition-colors ${isSearching ? 'text-gray-500 cursor-not-allowed' : 'text-[rgba(10,132,255,0.8)] hover:text-[rgba(10,132,255,1)]'}`}
+                onClick={() => {
+                  if (!isSearching) {
+                    setSearchQuery("team leader who has managed remote teams");
+                    debouncedSearch("team leader who has managed remote teams", selectedTags);
+                  }
+                }}
+                disabled={isSearching}
+              >
+                "team leader with remote experience"
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap flex-row items-center gap-2 mt-6 mr-4 justify-center">
             {tags.map((tag) => (
@@ -298,13 +433,24 @@ export default function CompanyApplicationsPage() {
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsContent value={activeTab}>
-                <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-11 gap-y-11 [@media(max-width:1024px)]:grid-cols-2">
-                  {applicants.length > 0 ? (
-                    applicants.map((app) => <ApplicantsCard key={app.id} applicant={app} />)
-                  ) : (
-                    <div className="text-white text-center col-span-3">No candidates found.</div>
-                  )}
-                </div>
+                {isSearching && searchQuery && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 text-[rgba(10,132,255,1)] animate-spin mb-4" />
+                    <p className="text-white text-lg font-medium mb-2">AI is searching for candidates...</p>
+                    <p className="text-gray-400 text-sm">This may take up to 30 seconds for complex queries</p>
+                  </div>
+                )}
+                {!isSearching && (
+                  <div className="grid [@media(max-width:412px)]:grid-cols-1 grid-cols-3 gap-x-11 gap-y-11 [@media(max-width:1024px)]:grid-cols-2">
+                    {applicants.length > 0 ? (
+                      applicants.map((app) => <ApplicantsCard key={app.id} applicant={app} />)
+                    ) : (
+                      <div className="text-white text-center col-span-3">
+                        {searchQuery ? 'No matching candidates found. Try a different search query.' : 'No candidates found.'}
+                      </div>
+                    )}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </motion.div>

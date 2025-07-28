@@ -206,6 +206,7 @@ interface ApiApplication {
   interviewScheduledAt?: string;
   notes?: string;
   coverLetter?: string;
+  matchScore?: number;
 }
 
 interface ApiSavedJob {
@@ -306,7 +307,7 @@ const applicationServices = {
                   logoUrl: jobDetails?.company?.logoUrl ?? undefined,
                   industry: jobDetails?.company?.industry ?? undefined,
                 },
-                matchScore: undefined
+                matchScore: app?.matchScore ?? jobDetails?.matchScore ?? undefined
               },
               company: {
                 companyName: jobDetails?.company?.companyName ?? 'Unknown',
@@ -328,7 +329,7 @@ const applicationServices = {
                   })
                 : undefined,
               feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
-              matchScore: jobDetails?.matchScore ? Number(jobDetails.matchScore) : undefined,
+              matchScore: app?.matchScore ?? (jobDetails?.matchScore ? Number(jobDetails.matchScore) : undefined),
               jobSeekerUserId: app?.jobSeekerUserId,
               companyUserId: app?.companyUserId,
             };
@@ -363,7 +364,7 @@ const applicationServices = {
                   logoUrl: app?.job?.company?.logoUrl ?? undefined,
                   industry: app?.job?.company?.industry ?? undefined,
                 },
-                matchScore: undefined
+                matchScore: app?.matchScore
               },
               company: {
                 companyName: app?.job?.company?.companyName ?? 'Unknown',
@@ -385,7 +386,7 @@ const applicationServices = {
                   })
                 : undefined,
               feedback: app?.notes ?? app?.coverLetter ?? 'No feedback provided',
-              matchScore: undefined,
+              matchScore: app?.matchScore,
               jobSeekerUserId: app?.jobSeekerUserId,
               companyUserId: app?.companyUserId,
             };

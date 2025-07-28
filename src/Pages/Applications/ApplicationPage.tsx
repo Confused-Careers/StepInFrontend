@@ -8,6 +8,8 @@ import applicationServices from "@/services/applicationServices";
 import { toast } from "sonner";
 import InteractiveJobCard from "../Dashboard/InteractiveJobCard";
 import { jobServices } from "@/services/jobServices";
+import { ProfileCompletionModal } from "@/components/Modals/ProfileCompletionModal";
+import axios from "axios";
 
 enum ApplicationStatus {
   APPLIED = 'applied',
@@ -248,6 +250,15 @@ export default function ApplicationsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSavedJobs, setIsLoadingSavedJobs] = useState(false);
   const hasFetched = useRef(false);
+  const [profileCompletionModal, setProfileCompletionModal] = useState<{
+    isOpen: boolean;
+    completionPercentage: number;
+    missingRequirements: string[];
+  }>({
+    isOpen: false,
+    completionPercentage: 0,
+    missingRequirements: []
+  });
 
   // Define status priority for sorting
   const statusPriority: Record<string, number> = {
@@ -334,6 +345,20 @@ export default function ApplicationsPage() {
       setSavedJobs(savedJobsWithExplanations);
     } catch (error: unknown) {
       console.error('Fetch saved jobs error:', error);
+      
+      // Handle 403 profile completion error
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        const details = error.response.data?.details?.data;
+        if (details && details.completionPercentage !== undefined) {
+          setProfileCompletionModal({
+            isOpen: true,
+            completionPercentage: details.completionPercentage,
+            missingRequirements: details.missingRequirements || []
+          });
+          return;
+        }
+      }
+      
       toast.error("Failed to load saved jobs");
     } finally {
       setIsLoadingSavedJobs(false);
@@ -366,6 +391,14 @@ export default function ApplicationsPage() {
     return [...applications].sort((a, b) => {
       const priorityA = statusPriority[a.status] || 999;
       const priorityB = statusPriority[b.status] || 999;
+      
+      // If status priority is the same, sort by match score (higher scores first)
+      if (priorityA === priorityB) {
+        const scoreA = a.matchScore || 0;
+        const scoreB = b.matchScore || 0;
+        return scoreB - scoreA;
+      }
+      
       return priorityA - priorityB;
     });
   };
@@ -518,6 +551,13 @@ export default function ApplicationsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      <ProfileCompletionModal
+        isOpen={profileCompletionModal.isOpen}
+        onClose={() => setProfileCompletionModal({ ...profileCompletionModal, isOpen: false })}
+        completionPercentage={profileCompletionModal.completionPercentage}
+        missingRequirements={profileCompletionModal.missingRequirements}
+      />
     </div>
   );
 }

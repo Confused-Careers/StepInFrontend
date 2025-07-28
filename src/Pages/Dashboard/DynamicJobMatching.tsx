@@ -9,6 +9,8 @@ import QuestionBox from "./QuestionBox";
 import { jobServices } from "../../services/jobServices";
 import { formatDistanceToNow } from "date-fns";
 import JobCard, { JobCardProps } from "./InteractiveJobCard";
+import { ProfileCompletionModal } from "@/components/Modals/ProfileCompletionModal";
+import axios from "axios";
 import {
   getUserProgress,
   getQuestionsForTier,
@@ -30,8 +32,13 @@ interface Insight {
 
 interface BackendJob {
   id: string;
+  jobId?: string; // Some APIs return jobId instead of id
   title: string;
-  company: string;
+  company: string | {
+    id: string;
+    name: string;
+    logo?: string | null;
+  };
   companyDescription?: string;
   location: string;
   logoUrl?: string;
@@ -40,12 +47,19 @@ interface BackendJob {
     categoryName: string;
   };
   employmentType: string;
+  experienceLevel?: string;
+  isRemote?: boolean;
   salaryMin?: number;
   salaryMax?: number;
-  matchScore?: string;
-  description: string;
-  responsibilities: string;
-  createdAt: string;
+  salaryRange?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  matchScore?: number; // Changed from string to number to match API response
+  description?: string;
+  responsibilities?: string;
+  createdAt?: string;
   payPeriod?: string;
   matchExplanation?: {
     explanation?: string;
@@ -53,6 +67,7 @@ interface BackendJob {
     skillsScore?: number;
     cultureScore?: number;
   };
+  explanation?: string; // Top-level explanation from API
   isSaved?: boolean;
   hasApplied?: boolean;
 }
@@ -69,18 +84,20 @@ const itemVariants: Variants = {
 };
 
 const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
+  // Use jobId if available, otherwise fall back to id
+  const jobIdentifier = job.jobId || job.id;
   let jobDetails;
-  let matchExplanation = job.matchExplanation?.explanation || "Your skills and preferences align with this role.";
+  let matchExplanation = job.explanation || job.matchExplanation?.explanation || "Your skills and preferences align with this role.";
 
   try {
     const [jobResponse, explanationResponse] = await Promise.all([
-      jobServices.getJobById(job.id),
-      jobServices.getMatchExplanation(job.id),
+      jobServices.getJobById(jobIdentifier),
+      jobServices.getMatchExplanation(jobIdentifier),
     ]);
     jobDetails = jobResponse.data;
     matchExplanation = explanationResponse.explanation || matchExplanation;
   } catch (error) {
-    console.error(`Failed to fetch details for job ${job.id}:`, error);
+    console.error(`Failed to fetch details for job ${jobIdentifier}:`, error);
     jobDetails = job;
   }
 
@@ -91,42 +108,47 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     contract: "Contract",
   };
 
+  // Handle salary from either format
   let salary = "Unpaid";
-  if (jobDetails.salaryMin && jobDetails.salaryMax) {
+  if (job.salaryRange) {
+    salary = `$${job.salaryRange.min.toLocaleString()} - $${job.salaryRange.max.toLocaleString()}/${job.salaryRange.currency}`;
+  } else if (jobDetails.salaryMin && jobDetails.salaryMax) {
     const min = parseFloat(String(jobDetails.salaryMin));
     const max = parseFloat(String(jobDetails.salaryMax));
     const period = jobDetails.payPeriod || "mo";
-    salary = `$${min} - $${max}/${period}`;
+    salary = `$${min.toLocaleString()} - $${max.toLocaleString()}/${period}`;
   }
 
   const readableEmploymentType =
-    employmentTypeMap[jobDetails.employmentType?.toLowerCase()] || jobDetails.employmentType;
+    employmentTypeMap[jobDetails.employmentType?.toLowerCase()] || jobDetails.employmentType || job.employmentType;
+
+  // Handle company object that can be either string or object
+  const companyName = typeof job.company === 'object' ? job.company.name : (jobDetails.company?.companyName || job.company);
+  const companyLogo = typeof job.company === 'object' ? job.company.logo : (jobDetails.company?.logoUrl || jobDetails.logoUrl);
 
   return {
-    id: jobDetails.id,
-    logo: jobDetails.company?.logoUrl || "  ",
-    title: jobDetails.title,
-    company: jobDetails.company?.companyName || job.company,
-    location: jobDetails.location,
-    tags: [jobDetails.company.industry || "General", readableEmploymentType],
+    id: jobIdentifier,
+    logo: companyLogo || "  ",
+    title: jobDetails.title || job.title,
+    company: companyName,
+    location: jobDetails.location || job.location,
+    tags: [jobDetails.company?.industry || "General", readableEmploymentType],
     salary,
-    salaryRange: jobDetails.salaryMin && jobDetails.salaryMax
-      ? `$${jobDetails.salaryMin} - $${jobDetails.salaryMax}/${jobDetails.payPeriod || "mo"}`
-      : "Unpaid",
-    matchPercentage: jobDetails.matchScore !== undefined ? Math.round(Number(jobDetails.matchScore)) || 0 : 0,
-    description: jobDetails.description,
-    responsibilities: jobDetails.responsibilities || "",
+    salaryRange: salary,
+    matchPercentage: job.matchScore || (jobDetails.matchScore !== undefined ? Math.round(Number(jobDetails.matchScore)) : 0),
+    description: jobDetails.description || job.description || "",
+    responsibilities: jobDetails.responsibilities || job.responsibilities || "",
     jobType: readableEmploymentType,
-    postedDate: `Posted ${formatDistanceToNow(new Date(jobDetails.createdAt), { addSuffix: true })}`,
+    postedDate: jobDetails.createdAt ? `Posted ${formatDistanceToNow(new Date(jobDetails.createdAt), { addSuffix: true })}` : "Recently posted",
     whyYouFit: matchExplanation,
     aiSummary: "This job matches your profile based on your skills and preferences.",
-    fullJobDescription: jobDetails.description,
-    fullResponsibilities: jobDetails.responsibilities || "",
-    companyDescription: job.companyDescription || "No company description available.",
-    isTargetedRecommendation: jobDetails.matchScore !== undefined ? Number(jobDetails.matchScore) > 40 : undefined,
+    fullJobDescription: jobDetails.description || job.description || "",
+    fullResponsibilities: jobDetails.responsibilities || job.responsibilities || "",
+    companyDescription: job.companyDescription || jobDetails.company?.description || "No company description available.",
+    isTargetedRecommendation: job.matchScore ? job.matchScore > 40 : undefined,
     applyButtonText: "Apply",
-    isSaved: jobDetails.isSaved ?? false,
-    isApplied: jobDetails.hasApplied ?? false,
+    isSaved: jobDetails.isSaved ?? job.isSaved ?? false,
+    isApplied: jobDetails.hasApplied ?? job.hasApplied ?? false,
   };
 };
 
@@ -190,6 +212,15 @@ export function DynamicJobMatching() {
   const questionCache = useRef<Map<number, GetQuestionsResponseDto>>(new Map());
   const hasFetchedQuestions = useRef<boolean>(false);
   const [questionAnswered, setQuestionAnswered] = useState<number>(0);
+  const [profileCompletionModal, setProfileCompletionModal] = useState<{
+    isOpen: boolean;
+    completionPercentage: number;
+    missingRequirements: string[];
+  }>({
+    isOpen: false,
+    completionPercentage: 0,
+    missingRequirements: []
+  });
 
   const isValidUUID = (str: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -230,6 +261,21 @@ export function DynamicJobMatching() {
       }
     } catch (error) {
       console.error("Error fetching jobs:", error);
+      
+      // Handle 403 profile completion error
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        const details = error.response.data?.details?.data;
+        if (details && details.completionPercentage !== undefined) {
+          setProfileCompletionModal({
+            isOpen: true,
+            completionPercentage: details.completionPercentage,
+            missingRequirements: details.missingRequirements || []
+          });
+          setMatchedJobs([]);
+          return;
+        }
+      }
+      
       setMatchedJobs([]);
       toast.error("Failed to fetch jobs");
     }
@@ -245,6 +291,20 @@ export function DynamicJobMatching() {
       }
     } catch (error) {
       console.error("Failed to fetch saved jobs:", error);
+      
+      // Handle 403 profile completion error
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        const details = error.response.data?.details?.data;
+        if (details && details.completionPercentage !== undefined) {
+          setProfileCompletionModal({
+            isOpen: true,
+            completionPercentage: details.completionPercentage,
+            missingRequirements: details.missingRequirements || []
+          });
+          return;
+        }
+      }
+      
       setSavedJobs([]);
     }
   };
@@ -838,6 +898,14 @@ export function DynamicJobMatching() {
           </Tabs>
         </div>
       </div>
+      
+      <ProfileCompletionModal
+        isOpen={profileCompletionModal.isOpen}
+        onClose={() => setProfileCompletionModal({ ...profileCompletionModal, isOpen: false })}
+        completionPercentage={profileCompletionModal.completionPercentage}
+        missingRequirements={profileCompletionModal.missingRequirements}
+        fetchDetails={true}
+      />
     </ErrorBoundary>
   );
 }

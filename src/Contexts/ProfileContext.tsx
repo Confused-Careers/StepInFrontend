@@ -28,6 +28,9 @@ export interface JobSeekerProfile {
   currentTier: number;
   questionsAnsweredInCurrentTier: number;
   totalQuestionsAnswered: number;
+  personalityTraits?: string[];
+  workPreferences?: string[];
+  idealEnvironment?: string;
 }
 
 interface ProfileContextType {

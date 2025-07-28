@@ -1,6 +1,5 @@
 import axios from "axios";
 import { SERVER_BASE_URL } from "@/utils/config";
-import { ChatService, CreateChatDto } from "./chatServices";
 
 export function handleAuthError(error: unknown) {
   if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
@@ -19,8 +18,8 @@ export const getAuthHeaders = () => {
 };
 
 export interface ApplicantCardDto {
-  resumeUrl: null;
-  applicationId: string | null;
+  resumeUrl: string | null;
+  applicationId: string;
   jobSeekerId: string;
   userId: string;
   firstName: string;
@@ -29,21 +28,27 @@ export interface ApplicantCardDto {
   currentPosition: string | null;
   currentCompany: string | null;
   location: string | null;
-  applicationDate: string | null;
-  applicationStatus: string | null;
+  applicationDate: string;
+  applicationStatus: 'applied' | 'in_progress' | 'interview' | 'accepted' | 'rejected' | 'withdrawn' | 'hired' | 'not_interested' | 'not_suitable';
   matchPercentage: number;
   relevanceScore?: number;
   matchingHighlights?: string[];
+  skillsScore?: number;
+  cultureScore?: number;
+  hasCultureData?: boolean;
   latestEducation: {
     degreeType: string;
     fieldOfStudy: string;
     institutionName: string;
-    graduationYear: number | null;
+    graduationYear?: number | null;
+    endDate?: Date | null;
   } | null;
   latestExperience: {
     positionTitle: string;
     companyName: string;
-    duration: string | null;
+    duration?: string | null;
+    startDate?: Date;
+    endDate?: Date | null;
     isCurrent: boolean;
   } | null;
   strengths: string[];
@@ -71,6 +76,12 @@ export interface SearchApplicantsRequestDto {
   };
 }
 
+export interface SearchApplicantsResponseDto {
+  data: ApplicantCardDto[];
+  totalMatches: number;
+  searchQuery: string;
+}
+
 export interface ProvideFeedbackDto {
   applicationId: string;
   feedback: string;
@@ -94,6 +105,15 @@ export interface ApplicationWithFeedbackDto {
   feedback: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StrengthsWeaknessesDto {
+  jobSeekerId: string;
+  jobId: string;
+  strengths: string[];
+  weaknesses: string[];
+  generatedAt: Date;
+  cached: boolean;
 }
 
 export const ApplicantsService = {
@@ -148,14 +168,20 @@ export const ApplicantsService = {
       throw error;
     }
   },
-  async searchJobApplicants(request: SearchApplicantsRequestDto): Promise<{ data: ApplicantCardDto[]; totalMatches: number }> {
+  async searchJobApplicants(request: SearchApplicantsRequestDto): Promise<SearchApplicantsResponseDto> {
     try {
       const response = await axios.post(`${SERVER_BASE_URL}/api/v1/company/applicants/search`, request, {
         headers: getAuthHeaders(),
+        timeout: 30000, // 30 seconds timeout for AI processing
       });
-      return { data: response.data.data, totalMatches: response.data.totalMatches };
+      // The backend returns the data nested in response.data.data
+      return {
+        data: response.data.data?.data || [],
+        totalMatches: response.data.data?.totalMatches || 0,
+        searchQuery: response.data.data?.searchQuery || request.query
+      };
     } catch (error) {
-      if (handleAuthError(error)) return { data: [], totalMatches: 0 };
+      if (handleAuthError(error)) return { data: [], totalMatches: 0, searchQuery: request.query };
       throw error;
     }
   },
@@ -271,6 +297,51 @@ export const ApplicantsService = {
         { headers: getAuthHeaders() }
       );
       return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
+  },
+  
+  async getApplicantResume(applicationId: string): Promise<any> {
+    try {
+      const response = await axios.get(
+        `${SERVER_BASE_URL}/api/v1/company/applications/${applicationId}/resume`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
+  },
+  
+  async getApplicantInsights(jobSeekerId: string, forceRegenerate: boolean = false): Promise<any> {
+    try {
+      const response = await axios.get(
+        `${SERVER_BASE_URL}/api/v1/company/applicants/${jobSeekerId}/insights`,
+        { 
+          headers: getAuthHeaders(),
+          params: { forceRegenerate }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
+  },
+
+  async getApplicantStrengthsWeaknesses(jobId: string, applicantId: string): Promise<StrengthsWeaknessesDto> {
+    try {
+      const response = await axios.get(
+        `${SERVER_BASE_URL}/api/v1/company/jobs/${jobId}/applicants/${applicantId}/strengths-weaknesses`,
+        { 
+          headers: getAuthHeaders(),
+          timeout: 30000, // 30 seconds timeout for AI processing
+        }
+      );
+      return response.data.data;
     } catch (error) {
       if (handleAuthError(error)) throw new Error("Unauthorized");
       throw error;

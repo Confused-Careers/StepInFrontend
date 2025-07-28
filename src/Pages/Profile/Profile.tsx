@@ -45,6 +45,7 @@ import {
 import type { JobSeekerProfile } from "@/Contexts/ProfileContext";
 import { ResumeUploadModal } from '@/components/Modals/ResumeUploadModal';
 import { ProfilePictureUploadModal } from '@/components/Modals/ProfilePictureUploadModal';
+import { PersonalityInsights } from './Sections/PersonalityInsights';
 
 interface ContactData {
   location: string;
@@ -816,6 +817,16 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
+          
+          {/* AI-Generated Insights */}
+          {profile && (
+            <PersonalityInsights
+              personalityTraits={profile.personalityTraits || []}
+              workPreferences={profile.workPreferences || []}
+              idealEnvironment={profile.idealEnvironment || ""}
+            />
+          )}
+          
           <Tabs defaultValue="experience" className="space-y-6">
             <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
               <TabsTrigger value="experience">Experience</TabsTrigger>

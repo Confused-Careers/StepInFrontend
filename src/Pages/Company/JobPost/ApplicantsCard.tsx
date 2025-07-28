@@ -2,17 +2,24 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Applicant as ImportedApplicant } from "./ApplicationsPage";
 import { useNavigate, useParams } from "react-router-dom";
-import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto } from "../../../services/applicantServices";
+import { ApplicantsService, ProvideFeedbackDto, UpdateFeedbackDto, ApplicationWithFeedbackDto, StrengthsWeaknessesDto } from "../../../services/applicantServices";
 import { ChatService, CreateChatDto } from "../../../services/chatServices";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import companyServices from "../../../services/companyServices";
+import { Sparkles, Loader2 } from "lucide-react";
 
 export interface Applicant extends ImportedApplicant {
   resumeUrl: string | URL;
   imageUrl?: string | null;
   status: string;
+  // AI search specific fields
+  relevanceScore?: number;
+  matchingHighlights?: string[];
+  skillsScore?: number;
+  cultureScore?: number;
+  hasCultureData?: boolean;
 }
 
 interface ApplicantsCardProps {
@@ -62,6 +69,9 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
   const [isHired, setIsHired] = useState(applicant.status === 'hired');
   const [isInterviewed, setIsInterviewed] = useState(applicant.status === 'interview');
   const [messageLoading, setMessageLoading] = useState(false);
+  const [aiStrengthsWeaknesses, setAiStrengthsWeaknesses] = useState<StrengthsWeaknessesDto | null>(null);
+  const [aiDataLoading, setAiDataLoading] = useState(false);
+  const [aiDataError, setAiDataError] = useState<string | null>(null);
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
 
@@ -122,8 +132,23 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     fetchFeedback();
   }, [applicationId]);
 
-  const handleOpenPopup = () => {
+  const handleOpenPopup = async () => {
     setShowPopup(true);
+    
+    // Fetch AI strengths/weaknesses when popup opens
+    if (!aiStrengthsWeaknesses && jobId && !aiDataLoading) {
+      setAiDataLoading(true);
+      setAiDataError(null);
+      try {
+        const data = await ApplicantsService.getApplicantStrengthsWeaknesses(jobId, applicant.id);
+        setAiStrengthsWeaknesses(data);
+      } catch (error) {
+        console.error("Failed to fetch AI strengths/weaknesses:", error);
+        setAiDataError("Failed to load AI insights. Using default data.");
+      } finally {
+        setAiDataLoading(false);
+      }
+    }
   };
 
   const handleClosePopup = () => {
@@ -271,9 +296,11 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
     }
   };
 
-  const whyYouFit = `${applicant.name} is a strong fit due to their skills in ${applicant.strength[0]?.toLowerCase() || "relevant areas"} and experience as a ${applicant.currentPosition} at ${applicant.currentCompany}.`;
+  const whyYouFit = applicant.matchingHighlights && applicant.matchingHighlights.length > 0
+    ? applicant.matchingHighlights.join(" ")
+    : `${applicant.name} is a strong fit due to their skills in ${applicant.strength[0]?.toLowerCase() || "relevant areas"} and experience as a ${applicant.currentPosition} at ${applicant.currentCompany}.`;
   const aiSummary = `Based on analysis, ${applicant.name} excels in ${applicant.strength[1]?.toLowerCase() || "key areas"}, but may need support in ${applicant.weakness[0]?.toLowerCase() || "certain areas"}.`;
-  const fullJobDescription = `As a ${applicant.currentPosition}, ${applicant.name} has demonstrated ${applicant.strength.join(", ").toLowerCase()}. Their role at ${applicant.currentCompany} involved key responsibilities that align with this position.`;
+  const fullJobDescription = `As a ${applicant.currentPosition}, ${applicant.name} has demonstrated ${applicant.strength.join(", ").toLowerCase() || "various skills"}. Their role at ${applicant.currentCompany} involved key responsibilities that align with this position.`;
 
   return (
     <>
@@ -307,6 +334,31 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   <p className="px-1 py-0.5 rounded-md bg-[#0A84FF] text-white text-xs font-medium flex items-center justify-center">
                     {applicant.match}% Match
                   </p>
+                  {applicant.relevanceScore && applicant.relevanceScore > 0.5 && (
+                    <>
+                      <span className="text-[rgba(209,209,214,1)] text-sm [@media(min-width:1248px)]:block hidden">•</span>
+                      <span className="text-xs text-[#0A84FF] flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        AI Match
+                      </span>
+                    </>
+                  )}
+                  {applicant.skillsScore && (
+                    <>
+                      <span className="text-[rgba(209,209,214,1)] text-sm [@media(min-width:1248px)]:block hidden">•</span>
+                      <span className="text-xs text-[rgba(209,209,214,0.8)]">
+                        Skills: {applicant.skillsScore}%
+                      </span>
+                    </>
+                  )}
+                  {applicant.cultureScore && (
+                    <>
+                      <span className="text-[rgba(209,209,214,1)] text-sm [@media(min-width:1248px)]:block hidden">•</span>
+                      <span className="text-xs text-[rgba(209,209,214,0.8)]">
+                        Culture: {applicant.cultureScore}%
+                      </span>
+                    </>
+                  )}
                 </div>
             </div>
           </div>
@@ -316,10 +368,32 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
             <p className="text-[rgba(212, 212, 216, 1)] text-sm font-[500]">{applicant.currentPosition} @ {applicant.currentCompany}</p>
           </div>
 
+          {applicant.matchingHighlights && applicant.matchingHighlights.length > 0 && (
+            <div className="rounded-lg px-3 py-2 border border-[rgba(10,132,255,0.3)] bg-[rgba(10,132,255,0.05)]">
+              <p className="text-xs text-[rgba(10,132,255,1)] font-medium mb-1 flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                AI Match Insights
+              </p>
+              <div className="text-xs text-[rgba(209,209,214,0.9)] space-y-1">
+                {applicant.matchingHighlights.slice(0, 3).map((highlight, idx) => (
+                  <p key={idx} className="line-clamp-2">{highlight}</p>
+                ))}
+                {applicant.matchingHighlights.length > 3 && (
+                  <p className="text-[rgba(10,132,255,0.8)] text-xs">+{applicant.matchingHighlights.length - 3} more insights...</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div
-            className="rounded-lg px-3 pb-2 text-center border border-[rgba(42,42,42,1)]"
+            className="rounded-lg px-3 pb-2 text-center border border-[rgba(42,42,42,1)] relative"
             style={{ background: "linear-gradient(90deg, rgba(10, 132, 255, 0.18) 0%, rgba(59, 59, 139, 0.25) 100%)" }}
           >
+            {aiStrengthsWeaknesses && (
+              <div className="absolute top-2 right-2">
+                <Sparkles className="h-3 w-3 text-[#0A84FF]" />
+              </div>
+            )}
             <div className="text-[rgba(209,209,214,1)] text-sm font-normal">
               {applicant.strength.map((item, index) => (
                 <span key={index} className="block mt-2 font-[500]">{item}</span>
@@ -426,7 +500,18 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                   <div className="px-6 pb-4">
                     <h3 className="font-bold text-[18px] text-white mb-0 ml-3">Why <span className="text-[rgba(10,132,255,1)]">{applicant.name}</span> Fits</h3>
                     <div className="bg-[rgba(10,132,255,0.05)] rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
-                      <p className="text-[13px] text-white m-3">{whyYouFit}</p>
+                      {applicant.matchingHighlights && applicant.matchingHighlights.length > 0 ? (
+                        <ul className="text-[13px] text-white m-3 space-y-2">
+                          {applicant.matchingHighlights.map((highlight, idx) => (
+                            <li key={idx} className="flex items-start">
+                              <span className="text-[rgba(10,132,255,1)] mr-2">•</span>
+                              <span>{highlight}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-[13px] text-white m-3">{whyYouFit}</p>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -439,7 +524,13 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     <div className="flex justify-start mt-4 mb-4 gap-2">
                       <button 
                         className="bg-[rgba(10,132,255,1)] text-white font-bold text-lg leading-[140%] text-center rounded-lg w-[270px] h-[35px]" 
-                        onClick={() => navigate(`/company/dashboard/${jobId}/applications/${applicant.id}`)}
+                        onClick={() => navigate(`/company/dashboard/${jobId}/applications/${applicant.id}`, {
+                          state: {
+                            matchPercentage: applicant.match ? parseInt(applicant.match) : undefined,
+                            skillsScore: applicant.skillsScore,
+                            cultureScore: applicant.cultureScore
+                          }
+                        })}
                       >
                         View Resume
                       </button>
@@ -470,8 +561,63 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
                     </div>
                   </div>
                 </motion.div>
+                <motion.div variants={contentVariants} custom={0.5} initial="hidden" animate="visible">
+                  <div className="px-6 pb-6">
+                    <h3 className="font-bold text-[18px] text-white mb-3 ml-3 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-[#0A84FF]" />
+                      AI-Generated Insights
+                    </h3>
+                    {aiDataLoading ? (
+                      <div className="bg-[rgba(26,31,43,1)] rounded-lg p-4 border border-[rgba(255,255,255,0.03)] flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-[#0A84FF] mr-2" />
+                        <span className="text-sm text-[rgba(209,209,214,0.8)]">Analyzing candidate profile...</span>
+                      </div>
+                    ) : aiDataError ? (
+                      <div className="bg-[rgba(26,31,43,1)] rounded-lg p-3 border border-[rgba(255,255,255,0.03)]">
+                        <p className="text-sm text-[rgba(209,209,214,0.8)] m-1">{aiDataError}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold text-[15px] text-[#0A84FF] mb-2 ml-1">Strengths</h4>
+                          <div
+                            className="rounded-lg px-3 pb-2 pt-1 border border-[rgba(42,42,42,1)]"
+                            style={{ background: "linear-gradient(90deg, rgba(10, 132, 255, 0.18) 0%, rgba(59, 59, 139, 0.25) 100%)" }}
+                          >
+                            <div className="text-[rgba(209,209,214,1)] text-sm font-normal">
+                              {(aiStrengthsWeaknesses?.strengths || applicant.strength).map((item, index) => (
+                                <span key={index} className="block mt-2 font-[500]">{item}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-[15px] text-[#FF4444] mb-2 ml-1">Areas for Development</h4>
+                          <div
+                            className="rounded-lg px-3 pb-2 pt-1 border border-[rgba(42,42,42,1)]"
+                            style={{ background: "linear-gradient(90deg, rgba(209, 27, 30, 0.2) 0%, rgba(190, 114, 118, 0.2) 100%)" }}
+                          >
+                            <div className="text-[rgba(209,209,214,1)] text-sm font-normal">
+                              {(aiStrengthsWeaknesses?.weaknesses || applicant.weakness).map((item, index) => (
+                                <span key={index} className="block mt-2 font-[500]">{item}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        {aiStrengthsWeaknesses && (
+                          <div className="text-xs text-[rgba(209,209,214,0.6)] text-right">
+                            {aiStrengthsWeaknesses.cached ? 
+                              <span>Cached • Generated at {new Date(aiStrengthsWeaknesses.generatedAt).toLocaleString()}</span> : 
+                              <span>Fresh analysis • Generated just now</span>
+                            }
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
                 {existingFeedback && (
-                  <motion.div variants={contentVariants} custom={0.5} initial="hidden" animate="visible">
+                  <motion.div variants={contentVariants} custom={0.55} initial="hidden" animate="visible">
                     <div className="px-6 pb-6">
                       <h3 className="font-bold text-[18px] text-white mb-0 ml-3">Feedback</h3>
                       <div className="bg-[rgba(26,31,43,1)] rounded-lg p-3 border border-[rgba(255,255,255,0.03)]">

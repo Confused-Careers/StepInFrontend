@@ -145,6 +145,63 @@ interface Application {
   createdAt: string;
 }
 
+interface SearchApplicantsRequest {
+  query: string;
+  jobId?: string;
+  limit?: number;
+  filters?: {
+    experienceYears?: {
+      min?: number;
+      max?: number;
+    };
+    location?: string;
+    skills?: string[];
+    education?: string[];
+  };
+}
+
+interface ApplicantSearchResult {
+  applicationId: string;
+  jobSeekerId: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  profilePictureUrl: string | null;
+  resumeUrl: string | null;
+  currentPosition: string | null;
+  currentCompany: string | null;
+  location: string | null;
+  applicationDate: Date | null;
+  applicationStatus: string | null;
+  matchPercentage: number;
+  relevanceScore: number;
+  matchingHighlights: string[];
+  latestEducation: {
+    degreeType: string;
+    fieldOfStudy: string;
+    institutionName: string;
+    endDate: Date | null;
+  } | null;
+  latestExperience: {
+    positionTitle: string;
+    companyName: string;
+    startDate: Date;
+    endDate: Date | null;
+    isCurrent: boolean;
+  } | null;
+  strengths: string[];
+  weaknesses: string[];
+  skillsScore?: number;
+  cultureScore?: number;
+  hasCultureData?: boolean;
+}
+
+interface SearchApplicantsResponse {
+  data: ApplicantSearchResult[];
+  totalMatches: number;
+  searchQuery: string;
+}
+
 interface UploadResponse {
   logoUrl: string;
   message: string;
@@ -156,6 +213,15 @@ interface DeleteResponse {
 
 interface ErrorResponse {
   message: string;
+}
+
+interface ApplicantStrengthsWeaknessesResponse {
+  jobSeekerId: string;
+  jobId: string;
+  strengths: string[];
+  weaknesses: string[];
+  generatedAt: Date;
+  cached: boolean;
 }
 
 export function handleAuthError(error: unknown) {
@@ -409,6 +475,55 @@ const companyServices = {
         throw error.response.data as ErrorResponse;
       }
       throw { message: 'Failed to fetch job applications' } as ErrorResponse;
+    }
+  },
+
+  async searchApplicants(searchParams: SearchApplicantsRequest): Promise<SearchApplicantsResponse> {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response: AxiosResponse<SearchApplicantsResponse> = await axios.post(
+        `${SERVER_BASE_URL}/api/v1/company/applicants/search`,
+        searchParams,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      if (handleAuthError(error)) {
+        return Promise.reject('Unauthorized access, redirecting to login');
+      }
+      if (axios.isAxiosError(error) && error.response) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw { message: 'Failed to search applicants' } as ErrorResponse;
+    }
+  },
+
+  async getApplicantStrengthsWeaknesses(jobId: string, applicantId: string): Promise<ApplicantStrengthsWeaknessesResponse> {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response: AxiosResponse<{ data: ApplicantStrengthsWeaknessesResponse }> = await axios.get(
+        `${SERVER_BASE_URL}/api/v1/company/jobs/${jobId}/applicants/${applicantId}/strengths-weaknesses`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data.data;
+    } catch (error: unknown) {
+      if (handleAuthError(error)) {
+        return Promise.reject('Unauthorized access, redirecting to login');
+      }
+      if (axios.isAxiosError(error) && error.response) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw { message: 'Failed to fetch applicant strengths and weaknesses' } as ErrorResponse;
     }
   },
 };

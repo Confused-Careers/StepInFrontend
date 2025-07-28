@@ -1,107 +1,108 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, MapPin, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ApplicantsService } from '@/services/applicantServices';
 
 const ApplicantDetailsPage: React.FC = () => {
-  const strengths = [
-    "Values mission-driven culture; aligns with brand's sustainability push",
-    'Makes others feel heard and included',
-    'Enjoys feedback and iteration',
-    'Sees the big picture and adjusts expectations',
-    'Above-average situational awareness & safety orientation -> reduces onsite incidents',
+  const { jobId, applicantId } = useParams<{ jobId: string; applicantId: string }>();
+  const routeLocation = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [applicantData, setApplicantData] = useState<any>(null);
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumMessage, setPremiumMessage] = useState<string>('');
+  
+  // Get match scores from navigation state
+  const matchScores = routeLocation.state as {
+    matchPercentage?: number;
+    skillsScore?: number;
+    cultureScore?: number;
+  } | null;
+
+  useEffect(() => {
+    fetchApplicantData();
+  }, [applicantId]);
+
+  const fetchApplicantData = async () => {
+    if (!applicantId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch applicant insights using the new endpoint
+      const insightsResponse = await ApplicantsService.getApplicantInsights(applicantId);
+      
+      if (insightsResponse.data) {
+        setApplicantData(insightsResponse.data);
+        setIsPremium(insightsResponse.data.isPremiumContent || false);
+        setPremiumMessage(insightsResponse.data.premiumMessage || '');
+      }
+    } catch (err: any) {
+      console.error('Error fetching applicant data:', err);
+      setError(err.message || 'Failed to load applicant details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (error || !applicantData) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-white text-lg">{error || 'Failed to load applicant details'}</p>
+          <Link to={`/company/dashboard/${jobId}/applications`} className="text-blue-500 hover:underline mt-4 inline-block">
+            Back to Applicants
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract data from API response
+  const {
+    firstName,
+    lastName,
+    location,
+    profilePictureUrl,
+    currentRole,
+    currentCompany,
+    personalityInsight,
+    strengths: apiStrengths,
+    considerations: apiConsiderations,
+    technicalStrengths: apiTechnicalStrengths,
+    pastRoles: apiPastRoles,
+    education: apiEducation,
+    certifications: apiCertifications,
+  } = applicantData;
+
+  // Use API data or fallback to empty arrays
+  const strengths = apiStrengths || [
   ];
 
-  const considerations = [
-    "May avoid confrontation when it's needed",
-    'Overcommits to last-minute requests',
-    'Low tolerance for ambiguous priorities; may need clearer sprint goals',
-    'May need extra push to share unfinished work',
-    "Lower tolerance for rapid pivots; startup's roadmap changes could cause stress",
+  const considerations = apiConsiderations || [
   ];
 
-  const technicalStrengths = [
-    {
-      title: 'Front-End Development',
-      description: 'Built a responsive, mobile-first dashboard for a real estate analytics platform using React and Tailwind, improving load speed by 40% and reducing user drop-off during onboarding.',
-    },
-    {
-      title: 'Cloud Platforms',
-      description: 'Architected and deployed a multi-tier web application on AWS (ECS, RDS, S3, CloudFront), automating infrastructure with Terraform and cutting monthly hosting costs by 35% while improving uptime to 99.9%.',
-    },
-    {
-      title: 'AI/ML Integration',
-      description: 'Integrated a machine learning model into a Flask web app to personalize product recommendations, increasing user engagement by 22% and reducing bounce rate across key pages.',
-    },
+  const technicalStrengths = apiTechnicalStrengths || [
   ];
 
-  const pastRoles = [
-    {
-      title: 'Senior Product Manager',
-      company: 'SpaceX • Starbase, TX',
-      date: '2022 - Present',
-      description: 'You cut Falcon 9 turnaround 28% by launching a digital-twin dashboard, saving ~18 engineer-hours per rocket.',
-      skills: ['LabVIEW', 'SQL', 'Finite-Element Analysis'],
-    },
-    {
-      title: 'Product Manager',
-      company: 'Lockheed Martin • Denver, CO',
-      date: '2021 - 2022',
-      description: 'You launched a digital-twin upkeep suite that formats vehicle maintenance downtime by ~18 hr per jet—adopted by two squadron commanders within 90 days.',
-      skills: ['Excel Macros', 'Python', 'Financial Modeling'],
-    },
-    {
-      title: 'Flight Staff Engineer',
-      company: 'NASA • Washington, DC',
-      date: '2019 - 2021',
-      description: 'You built an on-board fault-free AI that slashed ISS anomaly triage from 5 min to 2 sec and averted loss of Attitude Control after the 2022 coolant leak drill.',
-      skills: ['Thermal Analysis', 'Additive Manufacturing'],
-    },
+  const pastRoles = apiPastRoles || [
   ];
 
-  const education = [
-    {
-      degree: 'M.S. in Mathematics',
-      institution: 'UNIVERSITY OF PRINCETON',
-      details: 'Harold W. Dodds Fellowship\nResearch on Quantum Field Theory',
-      date: '2014 - 2016',
-      gpa: '4.46 GPA'
-    },
-    {
-      degree: 'M.S. in Electrical Engineering',
-      institution: 'UNIVERSITY OF VIRGINIA',
-      details: '3.95 GPA\nPresident Scholar\nPresident of Data Science Club',
-      date: '2010 - 2014',
-      gpa: '3.95 GPA'
-    },
-    {
-        degree: 'High School Diploma',
-        institution: 'DALLAS JESUIT HIGH SCHOOL',
-        details: 'Robotics Team Captain\nWrestling Team Captain',
-        date: '2010',
-        gpa: '4.46 GPA'
-    },
+  const education = apiEducation || [
   ];
 
-  const certifications = [
-    {
-      name: 'Excel Expert',
-      organization: 'MICROSOFT',
-      description: 'Learned to create functions and formulas within Microsoft Excel. Passed assessment.',
-      date: '2016',
-    },
-    {
-      name: 'Texas Real Estate License',
-      organization: 'TEXAS REAL ESTATE COMMISSION',
-      description: 'Equip to operate as a Texas real estate agent in the state of Texas.',
-      date: '2023 - 2025',
-    },
-    {
-      name: 'LangGraph',
-      organization: 'LANGCHAIN ACADEMY',
-      description: 'Learned to build multi-agent AI systems allowing for multi-step reasoning workflows in Python.',
-      date: '2025',
-    },
+  const certifications = apiCertifications || [
   ];
 
   const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
@@ -114,7 +115,7 @@ const ApplicantDetailsPage: React.FC = () => {
     <div className="relative overflow-hidden bg-black text-white min-h-screen font-sans">
       
       <div className="relative z-10 container mx-auto p-4 md:p-8">
-        <Link to="/company/job-posts" className="flex items-center text-slate-400 hover:text-white mb-8 transition-colors">
+        <Link to={`/company/dashboard/${jobId}/applications`} className="flex items-center text-slate-400 hover:text-white mb-8 transition-colors">
           <ArrowLeft size={16} className="mr-2" />
           Back to Candidates
         </Link>
@@ -122,27 +123,50 @@ const ApplicantDetailsPage: React.FC = () => {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 bg-slate-900/30 backdrop-blur-xl border border-slate-800/80 p-6 rounded-2xl">
           <div className="flex items-center mb-6 md:mb-0">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 border-2 border-slate-600 mr-6 flex-shrink-0 shadow-lg overflow-hidden">
-              <img 
-                src="https://picsum.photos/seed/JimJones/200/200" 
-                alt="Jim Jones"
-                className="w-full h-full object-cover"
-              />
+              {profilePictureUrl ? (
+                <img 
+                  src={profilePictureUrl} 
+                  alt={`${firstName} ${lastName}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-slate-400">
+                  {firstName?.[0]}{lastName?.[0]}
+                </div>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-4">
-                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Jim Jones</h1>
+                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">{firstName} {lastName}</h1>
                 <Button className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-semibold py-1 px-4 rounded-lg shadow-md hover:shadow-blue-500/40 transition-all duration-300 transform hover:scale-105">
                     AI Agent
                 </Button>
               </div>
+              {(currentRole || currentCompany) && (
+                <p className="text-slate-300 mt-2">
+                  {currentRole} {currentRole && currentCompany && 'at'} {currentCompany}
+                </p>
+              )}
               <p className="text-slate-400 flex items-center mt-1">
                 <MapPin size={16} className="mr-2" />
-                Dallas, TX
+                {location || 'Location not specified'}
               </p>
               <div className="flex items-center space-x-2 mt-4">
-                <span className="px-2 py-1 rounded-md bg-green-500 text-white text-xs font-medium">86% Match</span>
-                <span className="px-2 py-1 rounded-md bg-purple-500 text-white text-xs font-medium">79% Cultural</span>
-                <span className="px-2 py-1 rounded-md bg-blue-500 text-white text-xs font-medium">92% Technical</span>
+                {matchScores?.matchPercentage !== undefined && (
+                  <span className="px-2 py-1 rounded-md bg-green-500 text-white text-xs font-medium">
+                    {Math.round(matchScores.matchPercentage)}% Match
+                  </span>
+                )}
+                {matchScores?.cultureScore !== undefined && (
+                  <span className="px-2 py-1 rounded-md bg-purple-500 text-white text-xs font-medium">
+                    {Math.round(matchScores.cultureScore)}% Cultural
+                  </span>
+                )}
+                {matchScores?.skillsScore !== undefined && (
+                  <span className="px-2 py-1 rounded-md bg-blue-500 text-white text-xs font-medium">
+                    {Math.round(matchScores.skillsScore)}% Technical
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -162,11 +186,24 @@ const ApplicantDetailsPage: React.FC = () => {
         </header>
         
         <div className="space-y-16">
+            {!isPremium && premiumMessage && (
+              <div className="mb-8 p-6 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl">
+                <p className="text-amber-200 text-center text-lg font-medium">
+                  {premiumMessage}
+                </p>
+                <div className="text-center mt-4">
+                  <Link to="/company/pricing" className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all">
+                    Upgrade to Premium
+                  </Link>
+                </div>
+              </div>
+            )}
+            
             <section>
-                <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-500">What It Feels Like to Work With Jim</h2>
+                <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-500">What It Feels Like to Work With {firstName}</h2>
                 <div className="border border-blue-400/30 rounded-xl p-8 bg-gradient-to-br from-blue-600/20 via-transparent to-transparent backdrop-blur-md shadow-lg shadow-blue-500/10">
                     <p className="text-slate-300 leading-relaxed text-lg">
-                    Jim is the kind of teammate who gets things moving when others are stuck. He brings clarity to chaos and quietly takes ownership without being asked. You'll notice he listens before speaking, but when he does, it's sharp, well-timed, and usually moves the team forward. He's the person others go to when the pressure is high, not because he's loud, but because he's steady. Jim cares about getting it right, not getting credit, and that makes him trusted fast.
+                    {personalityInsight || `${firstName} is a dedicated professional who brings valuable skills and experience to the team.`}
                     </p>
                 </div>
             </section>
@@ -176,7 +213,7 @@ const ApplicantDetailsPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
                         <div className="space-y-4">
-                            {strengths.map((item, index) => (
+                            {strengths.map((item: string, index: number) => (
                                 <div key={index} className="bg-gradient-to-br from-green-600/20 to-slate-900/10 border border-green-500/30 text-green-200 p-4 rounded-xl shadow-lg hover:shadow-green-500/20 hover:border-green-400/50 transition-all">
                                     {item}
                                 </div>
@@ -185,7 +222,7 @@ const ApplicantDetailsPage: React.FC = () => {
                     </div>
                     <div>
                         <div className="space-y-4">
-                            {considerations.map((item, index) => (
+                            {considerations.map((item: string, index: number) => (
                                 <div key={index} className="bg-gradient-to-br from-red-600/20 to-slate-900/10 border border-red-500/30 text-red-200 p-4 rounded-xl shadow-lg hover:shadow-red-500/20 hover:border-red-400/50 transition-all">
                                     {item}
                                 </div>
@@ -198,7 +235,7 @@ const ApplicantDetailsPage: React.FC = () => {
             <section>
             <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-500">Top Technical Strengths</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {technicalStrengths.map((skill, index) => (
+                {technicalStrengths.map((skill: any, index: number) => (
                 <Card key={index}>
                     <h3 className="text-xl font-bold mb-3 text-white">{skill.title}</h3>
                     <p className="text-slate-400">{skill.description}</p>
@@ -210,7 +247,7 @@ const ApplicantDetailsPage: React.FC = () => {
             <section>
             <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-500">Past Roles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {pastRoles.map((role, index) => (
+                {pastRoles.map((role: any, index: number) => (
                 <Card key={index}>
                     <div className="flex justify-between items-start mb-2">
                         <div>
@@ -221,7 +258,7 @@ const ApplicantDetailsPage: React.FC = () => {
                     </div>
                     <p className="text-slate-300 my-4">{role.description}</p>
                     <div className="flex flex-wrap gap-2">
-                    {role.skills.map((skill, i) => (
+                    {role.skills.map((skill: string, i: number) => (
                         <span key={i} className="bg-slate-800 text-slate-300 text-xs font-medium px-3 py-1 rounded-full">{skill}</span>
                     ))}
                     </div>
@@ -233,7 +270,7 @@ const ApplicantDetailsPage: React.FC = () => {
             <section>
             <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-500">Education</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {education.map((edu, index) => (
+                {education.map((edu: any, index: number) => (
                 <Card key={index}>
                     <div className="flex justify-between items-start">
                         <div>
@@ -253,7 +290,7 @@ const ApplicantDetailsPage: React.FC = () => {
             <section>
             <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-500">Certifications</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {certifications.map((cert, index) => (
+                {certifications.map((cert: any, index: number) => (
                 <Card key={index}>
                     <h3 className="text-xl font-bold text-white">{cert.name}</h3>
                     <p className="text-slate-400 mb-2">{cert.organization}</p>
