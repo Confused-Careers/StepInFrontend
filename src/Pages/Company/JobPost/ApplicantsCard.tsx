@@ -285,7 +285,7 @@ export function ApplicantsCard({ applicant }: ApplicantsCardProps) {
       let chat = await ChatService.getChatByParticipants({ jobSeekerId, companyId });
       if (!chat) {
         const createChatDto: CreateChatDto = { jobSeekerId, companyId };
-        chat = await ChatService.createChat(createChatDto);
+        await ChatService.createChat(createChatDto);
       }
       navigate(`/company/dashboard/company-messages`);
     } catch (error) {

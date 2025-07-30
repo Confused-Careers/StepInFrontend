@@ -2,7 +2,6 @@ import { JSX, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Zap, Briefcase } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 interface QuestionResponseDto {
@@ -24,11 +23,6 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     transition: { type: "spring" as const, stiffness: 120, damping: 15, mass: 0.8 },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
   },
 };
 
@@ -117,12 +111,11 @@ function QuestionBox({ question, onAnswer }: { question: QuestionResponseDto; on
                 )}
                 {isTextQuestion && (
                   <div className="space-y-4">
-                    <Input
-                      as="textarea"
+                    <textarea
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
                       placeholder="Enter your response..."
-                      className="w-full h-10 p-2 border-2 border-blue-500 rounded-md"
+                      className="w-full h-20 p-2 border-2 border-blue-500 rounded-md resize-none"
                     />
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                     <Button

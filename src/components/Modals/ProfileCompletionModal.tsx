@@ -24,7 +24,7 @@ export function ProfileCompletionModal({
 }: ProfileCompletionModalProps) {
   const navigate = useNavigate();
   const [profileDetails, setProfileDetails] = useState<ProfileCompletionDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && fetchDetails) {

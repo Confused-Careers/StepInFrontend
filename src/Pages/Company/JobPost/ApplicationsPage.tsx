@@ -5,7 +5,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ApplicantsCard } from "./ApplicantsCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ApplicantsService, ApplicantCardDto, ListApplicantsRequestDto, SearchApplicantsRequestDto } from "../../../services/applicantServices";
 import debounce from "lodash/debounce";
@@ -94,7 +94,6 @@ const mockSchedules: Schedule[] = [
 ];
 
 export default function CompanyApplicationsPage() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [openSchedule, ] = useState<boolean>(false);
   const [applicants, setApplicants] = useState<Applicant[]>([]);

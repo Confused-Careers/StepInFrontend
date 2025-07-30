@@ -242,7 +242,7 @@ export default function CompanyMessagesPage() {
             senderName:
               String(msg.senderId) === String(companyProfile?.userId)
                 ? companyProfile?.companyName || 'You'
-                : msg.senderName || msg.sender?.email || 'Unknown',
+                : msg.senderName || 'Unknown',
           }));
           // Deduplicate by merging with existing messages
           const mergedMessages = [...prev];
@@ -320,7 +320,7 @@ export default function CompanyMessagesPage() {
         chatId,
         senderId: companyId,
         content,
-        file,
+        file: file || undefined,
       });
       console.log('[DEBUG] ChatService.sendMessage response:', response);
 
@@ -678,12 +678,11 @@ export default function CompanyMessagesPage() {
                 ) : (
                   <div className="flex flex-col gap-6">
                     {messages.map((message) => {
-                      const isOptimistic = message.id?.startsWith('optimistic-');
-                      const senderId = isOptimistic ? message.senderId : message.sender?.id || message.senderId;
+                      const senderId = message.senderId;
                       const isSentByCompany = companyProfile?.userId && String(senderId) === String(companyProfile.userId);
                       const senderName = isSentByCompany
                         ? companyProfile?.companyName || 'You'
-                        : message.senderName || message.sender?.email || 'Unknown';
+                        : message.senderName || 'Unknown';
                       return (
                         <div key={message.id} className={`flex ${isSentByCompany ? 'justify-end' : 'justify-start'}`}>
                           <div className="flex flex-col items-end max-w-[70%]">
