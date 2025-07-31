@@ -116,6 +116,14 @@ export interface StrengthsWeaknessesDto {
   cached: boolean;
 }
 
+export interface WhyFitsDto {
+  jobSeekerId: string;
+  jobId: string;
+  whyFits: string[];
+  generatedAt: Date;
+  cached: boolean;
+}
+
 export const ApplicantsService = {
   async getApplicantProfileByUserId(userId: string): Promise<ApplicantCardDto | null> {
     try {
@@ -336,6 +344,21 @@ export const ApplicantsService = {
     try {
       const response = await axios.get(
         `${SERVER_BASE_URL}/api/v1/company/jobs/${jobId}/applicants/${applicantId}/strengths-weaknesses`,
+        { 
+          headers: getAuthHeaders(),
+          timeout: 30000, // 30 seconds timeout for AI processing
+        }
+      );
+      return response.data.data;
+    } catch (error) {
+      if (handleAuthError(error)) throw new Error("Unauthorized");
+      throw error;
+    }
+  },
+  async getApplicantWhyFits(jobId: string, applicantId: string): Promise<WhyFitsDto> {
+    try {
+      const response = await axios.get(
+        `${SERVER_BASE_URL}/api/v1/company/jobs/${jobId}/applicants/${applicantId}/why-fits`,
         { 
           headers: getAuthHeaders(),
           timeout: 30000, // 30 seconds timeout for AI processing

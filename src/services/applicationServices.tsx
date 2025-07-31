@@ -61,7 +61,7 @@ export interface Application {
     industry?: string;
   };
   applicationDate: string;
-  status: ApplicationStatus | 'first-round' | 'under-review' | 'offer';
+  status: ApplicationStatus | 'first-round' | 'under-review' | 'offer' | 'accepted' | 'not_suitable';
   nextStep?: string;
   nextStepDate?: string;
   feedback?: string;
@@ -202,7 +202,7 @@ interface ApiApplication {
   companyUserId?: string;
   applicationDate?: string;
   lastUpdated?: string;
-  status?: ApplicationStatus;
+  status?: ApplicationStatus | 'first-round' | 'under-review' | 'offer' | 'accepted' | 'not_suitable';
   interviewScheduledAt?: string;
   notes?: string;
   coverLetter?: string;
@@ -320,7 +320,7 @@ const applicationServices = {
                     day: 'numeric',
                   })
                 : 'Unknown',
-              status: mapStatus(app?.status ?? ApplicationStatus.APPLIED),
+              status: app?.status ?? ApplicationStatus.APPLIED,
               nextStep: deriveNextStep(app?.status ?? ApplicationStatus.APPLIED, app?.interviewScheduledAt),
               nextStepDate: app?.interviewScheduledAt
                 ? new Date(app.interviewScheduledAt).toLocaleDateString('en-US', {
@@ -377,7 +377,7 @@ const applicationServices = {
                     day: 'numeric',
                   })
                 : 'Unknown',
-              status: mapStatus(app?.status ?? ApplicationStatus.APPLIED),
+              status: app?.status ?? ApplicationStatus.APPLIED,
               nextStep: deriveNextStep(app?.status ?? ApplicationStatus.APPLIED, app?.interviewScheduledAt),
               nextStepDate: app?.interviewScheduledAt
                 ? new Date(app.interviewScheduledAt).toLocaleDateString('en-US', {
@@ -617,26 +617,7 @@ const applicationServices = {
   },
 };
 
-function mapStatus(status: ApplicationStatus): ApplicationStatus | 'first-round' | 'under-review' | 'offer' {
-  switch (status) {
-    case ApplicationStatus.APPLIED:
-      return ApplicationStatus.APPLIED;
-    case ApplicationStatus.IN_PROGRESS:
-      return 'under-review';
-    case ApplicationStatus.INTERVIEW:
-      return ApplicationStatus.INTERVIEW;
-    case ApplicationStatus.REJECTED:
-      return ApplicationStatus.REJECTED;
-    case ApplicationStatus.WITHDRAWN:
-      return ApplicationStatus.REJECTED;
-    case ApplicationStatus.HIRED:
-      return 'offer';
-    default:
-      return ApplicationStatus.APPLIED;
-  }
-}
-
-function deriveNextStep(status: ApplicationStatus, interviewScheduledAt?: string): string | undefined {
+function deriveNextStep(status: ApplicationStatus | 'first-round' | 'under-review' | 'offer' | 'accepted' | 'not_suitable', interviewScheduledAt?: string): string | undefined {
   switch (status) {
     case ApplicationStatus.APPLIED:
       return 'Application Review';

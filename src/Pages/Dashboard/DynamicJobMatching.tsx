@@ -87,15 +87,10 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
   // Use jobId if available, otherwise fall back to id
   const jobIdentifier = job.jobId || job.id;
   let jobDetails;
-  let matchExplanation = job.explanation || job.matchExplanation?.explanation || "Your skills and preferences align with this role.";
 
   try {
-    const [jobResponse, explanationResponse] = await Promise.all([
-      jobServices.getJobById(jobIdentifier),
-      jobServices.getMatchExplanation(jobIdentifier),
-    ]);
+    const jobResponse = await jobServices.getJobById(jobIdentifier);
     jobDetails = jobResponse.data;
-    matchExplanation = explanationResponse.explanation || matchExplanation;
   } catch (error) {
     console.error(`Failed to fetch details for job ${jobIdentifier}:`, error);
     jobDetails = job;
@@ -140,7 +135,7 @@ const mapJobToJobCardProps = async (job: BackendJob): Promise<JobCardProps> => {
     responsibilities: jobDetails.responsibilities || job.responsibilities || "",
     jobType: readableEmploymentType,
     postedDate: jobDetails.createdAt ? `Posted ${formatDistanceToNow(new Date(jobDetails.createdAt), { addSuffix: true })}` : "Recently posted",
-    whyYouFit: matchExplanation,
+    whyYouFit: "", // Will be loaded on card click
     aiSummary: "This job matches your profile based on your skills and preferences.",
     fullJobDescription: jobDetails.description || job.description || "",
     fullResponsibilities: jobDetails.responsibilities || job.responsibilities || "",
