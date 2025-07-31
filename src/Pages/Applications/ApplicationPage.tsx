@@ -41,7 +41,7 @@ interface Application {
     industry?: string;
   };
   applicationDate: string;
-  status: ApplicationStatus | 'first-round' | 'under-review' | 'offer';
+  status: ApplicationStatus | 'first-round' | 'under-review' | 'offer' | 'accepted' | 'not_suitable';
   nextStep?: string;
   nextStepDate?: string;
   feedback?: string;
@@ -73,7 +73,9 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
     "offer": "Offer Received",
     "applied": "Applied",
     "first-round": "First Round",
-    "under-review": "Under Review"
+    "under-review": "Under Review",
+    "accepted": "Accepted",
+    "not_suitable": "Not Suitable"
   };
 
   const statusColors = {
@@ -82,7 +84,9 @@ function ApplicationDetail({ application, onBackClick }: { application: Applicat
     "offer": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
     "applied": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
     "first-round": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
-    "under-review": "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+    "under-review": "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+    "accepted": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+    "not_suitable": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
   };
 
   return (
@@ -263,14 +267,16 @@ export default function ApplicationsPage() {
   // Define status priority for sorting
   const statusPriority: Record<string, number> = {
     offer: 1,
-    interview: 2,
-    "first-round": 3,
-    "under-review": 4,
-    applied: 5,
-    in_progress: 6,
-    hired: 7,
-    rejected: 8,
-    withdrawn: 9,
+    accepted: 2,
+    interview: 3,
+    "first-round": 4,
+    "under-review": 5,
+    applied: 6,
+    in_progress: 7,
+    hired: 8,
+    rejected: 9,
+    not_suitable: 10,
+    withdrawn: 11,
   };
 
   useEffect(() => {

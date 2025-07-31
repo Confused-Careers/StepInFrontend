@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ApplicantsService, ApplicantCardDto, ListApplicantsRequestDto, SearchApplicantsRequestDto } from "../../../services/applicantServices";
-import debounce from "lodash/debounce";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Search } from "lucide-react";
 
 export interface Applicant {
   latestExperience: any;
   id: string;
+  jobSeekerId: string;
   userId: string;
   name: string;
   education: string;
@@ -127,7 +127,8 @@ export default function CompanyApplicationsPage() {
         const applicantData = Array.isArray(response.data) ? response.data : [];
         const mappedApplicants: Applicant[] = applicantData.map((dto: ApplicantCardDto) => ({
           latestExperience: dto.latestExperience || {},
-          id: dto.applicationId || dto.jobSeekerId || "",
+          id: dto.applicationId || "",
+          jobSeekerId: dto.jobSeekerId || "",
           userId: dto.userId,
           name: `${dto.firstName} ${dto.lastName}`,
           education: dto.latestEducation
@@ -197,7 +198,8 @@ export default function CompanyApplicationsPage() {
         // Map the search results to the Applicant interface
         const mappedApplicants: Applicant[] = response.data.map((dto: ApplicantCardDto) => ({
           latestExperience: dto.latestExperience || {},
-          id: dto.applicationId || dto.jobSeekerId || "",
+          id: dto.applicationId || "",
+          jobSeekerId: dto.jobSeekerId || "",
           userId: dto.userId,
           name: `${dto.firstName} ${dto.lastName}`,
           education: dto.latestEducation
@@ -270,17 +272,20 @@ export default function CompanyApplicationsPage() {
     []
   );
 
-  const debouncedSearch = useCallback(
-    debounce((query: string, tags: string[]) => {
-      searchApplicants(query, tags);
-    }, 300),
-    [searchApplicants]
-  );
-
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    debouncedSearch(value, selectedTags);
+  };
+
+  const handleSearchSubmit = () => {
+    searchApplicants(searchQuery, selectedTags);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearchSubmit();
+    }
   };
 
   const handleTagClick = (tagLabel: string) => {
@@ -289,7 +294,6 @@ export default function CompanyApplicationsPage() {
       : [...selectedTags, tagLabel];
     
     setSelectedTags(newSelectedTags);
-    debouncedSearch(searchQuery, newSelectedTags);
   };
 
   const handleClearFilters = () => {
@@ -312,28 +316,48 @@ export default function CompanyApplicationsPage() {
       <div className="relative w-full flex justify-center flex-row mt-16 gap-7">
         <div className="relative w-full flex justify-center flex-col">
           <div className="flex items-center justify-center gap-2 flex-col">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className={`h-5 w-5 text-[rgba(10,132,255,1)] ${isSearching ? 'animate-pulse' : ''}`} />
-              <span className="text-sm text-gray-400">
-                {isSearching ? 'AI is analyzing candidates...' : 'AI-Powered Search'}
+            <div className="flex flex-col items-center gap-1 mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className={`h-5 w-5 text-[rgba(10,132,255,1)] ${isSearching ? 'animate-pulse' : ''}`} />
+                <span className="text-sm text-gray-400">
+                  {isSearching ? 'AI is analyzing candidates...' : 'AI-Powered Search'}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500">
+                Press Enter or click the search button to search
               </span>
             </div>
-            <Input
-              type="search"
-              placeholder="Try: 'experienced developer with React skills' or 'marketing manager with leadership experience'"
-              className="rounded-full h-[45px] border border-[rgba(209,209,214,1)] text-white bg-[rgba(26,31,43,1)] w-full max-w-2xl"
-              value={searchQuery}
-              onChange={handleSearchInputChange}
-              disabled={isSearching}
-            />
+            <div className="flex items-center gap-2 w-full max-w-2xl">
+              <Input
+                type="search"
+                placeholder="Try: 'experienced developer with React skills' or 'marketing manager with leadership experience'"
+                className="rounded-l-full h-[45px] border border-r-0 border-[rgba(209,209,214,1)] text-white bg-[rgba(26,31,43,1)] flex-1"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                onKeyPress={handleKeyPress}
+                disabled={isSearching}
+              />
+              <Button
+                onClick={handleSearchSubmit}
+                disabled={isSearching || !searchQuery.trim()}
+                className="h-[45px] rounded-r-full px-6 bg-[rgba(10,132,255,1)] hover:bg-[rgba(10,132,255,0.8)] text-white border border-l-0 border-[rgba(10,132,255,1)]"
+              >
+                {isSearching ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
             <div className="flex gap-2 mt-2">
               <span className="text-xs text-gray-500">Examples:</span>
               <button
                 className={`text-xs transition-colors ${isSearching ? 'text-gray-500 cursor-not-allowed' : 'text-[rgba(10,132,255,0.8)] hover:text-[rgba(10,132,255,1)]'}`}
                 onClick={() => {
                   if (!isSearching) {
-                    setSearchQuery("frontend developer with 3+ years experience");
-                    debouncedSearch("frontend developer with 3+ years experience", selectedTags);
+                    const query = "frontend developer with 3+ years experience";
+                    setSearchQuery(query);
+                    searchApplicants(query, selectedTags);
                   }
                 }}
                 disabled={isSearching}
@@ -345,8 +369,9 @@ export default function CompanyApplicationsPage() {
                 className={`text-xs transition-colors ${isSearching ? 'text-gray-500 cursor-not-allowed' : 'text-[rgba(10,132,255,0.8)] hover:text-[rgba(10,132,255,1)]'}`}
                 onClick={() => {
                   if (!isSearching) {
-                    setSearchQuery("data scientist with machine learning background");
-                    debouncedSearch("data scientist with machine learning background", selectedTags);
+                    const query = "data scientist with machine learning background";
+                    setSearchQuery(query);
+                    searchApplicants(query, selectedTags);
                   }
                 }}
                 disabled={isSearching}
@@ -358,8 +383,9 @@ export default function CompanyApplicationsPage() {
                 className={`text-xs transition-colors ${isSearching ? 'text-gray-500 cursor-not-allowed' : 'text-[rgba(10,132,255,0.8)] hover:text-[rgba(10,132,255,1)]'}`}
                 onClick={() => {
                   if (!isSearching) {
-                    setSearchQuery("team leader who has managed remote teams");
-                    debouncedSearch("team leader who has managed remote teams", selectedTags);
+                    const query = "team leader who has managed remote teams";
+                    setSearchQuery(query);
+                    searchApplicants(query, selectedTags);
                   }
                 }}
                 disabled={isSearching}
@@ -393,6 +419,21 @@ export default function CompanyApplicationsPage() {
               </Button>
             )}
           </div>
+          {selectedTags.length > 0 && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <span className="text-xs text-[rgba(10,132,255,0.8)]">
+                {selectedTags.length} tag{selectedTags.length > 1 ? 's' : ''} selected
+              </span>
+              <Button
+                size="sm"
+                onClick={handleSearchSubmit}
+                disabled={isSearching}
+                className="h-7 px-4 text-xs bg-[rgba(10,132,255,1)] hover:bg-[rgba(10,132,255,0.8)] text-white"
+              >
+                Apply Filters
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       {openSchedule && (

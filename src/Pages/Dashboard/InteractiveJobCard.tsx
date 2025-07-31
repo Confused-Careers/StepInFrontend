@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import JobActionModal from "../../components/Modals/JobActionModal";
+import { jobServices } from "@/services/jobServices";
 
 export interface JobCardProps {
   id: string;
@@ -158,6 +159,8 @@ const JobCard = ({
   const [questionShifted, setQuestionShifted] = useState(false);
   const [nextJobData, setNextJobData] = useState<JobCardProps | undefined>(undefined);
   const [modalState, setModalState] = useState<{ open: boolean; action: "save" | "apply" }>({ open: false, action: "save" });
+  const [matchExplanation, setMatchExplanation] = useState<string>(whyYouFit);
+  const [isLoadingMatchExplanation, setIsLoadingMatchExplanation] = useState(false);
 
   const hasValidImage = (imageUrl?: string | null): boolean => {
     return imageUrl !== null && 
@@ -166,9 +169,23 @@ const JobCard = ({
            imageUrl !== " ";
   };
 
-  const handleCardClick = () => {
+  const handleCardClick = async () => {
     setShowPopup(true);
     if (onClick) onClick();
+    
+    // Fetch match explanation if not already loaded
+    if (!matchExplanation && !isLoadingMatchExplanation) {
+      setIsLoadingMatchExplanation(true);
+      try {
+        const explanationData = await jobServices.getMatchExplanation(id);
+        setMatchExplanation(explanationData.explanation || "Based on your profile, this position offers great opportunities for growth and aligns with your skills.");
+      } catch (error) {
+        console.error("Failed to fetch match explanation:", error);
+        setMatchExplanation("Based on your profile, this position offers great opportunities for growth and aligns with your skills.");
+      } finally {
+        setIsLoadingMatchExplanation(false);
+      }
+    }
   };
 
   const handleClosePopup = () => {
@@ -546,7 +563,14 @@ const JobCard = ({
                   <div className="px-6 pb-4">
                     <h3 className="font-bold text-[18px] text-jobcardtext mb-0 ml-3">Why You Fit</h3>
                     <div className="bg-jobcardsummary rounded-lg p-3 border border-gray-400 border-opacity-20" style={{ boxShadow: "0px 4px 20px 0px #0A84FF26" }}>
-                      <p className="text-sm text-jobcardtext m-3">{whyYouFit}</p>
+                      {isLoadingMatchExplanation ? (
+                        <div className="flex items-center justify-center p-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                          <span className="ml-2 text-sm text-jobcardtext">Loading match insights...</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-jobcardtext m-3">{matchExplanation || "Click to see why you're a great fit for this role."}</p>
+                      )}
                     </div>
                   </div>
                 </motion.div>

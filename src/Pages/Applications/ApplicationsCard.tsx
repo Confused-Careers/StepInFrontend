@@ -28,6 +28,16 @@ const statusConfig = {
     badge: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
     buttonText: "Sharpen Your Edge",
     buttonColor: "bg-[#0a84ff] text-white"
+  },
+  accepted: {
+    badge: "bg-[#2ecc71] text-white",
+    buttonText: "View Details",
+    buttonColor: "bg-[#0a84ff] text-white"
+  },
+  not_suitable: {
+    badge: "bg-red-600 text-white",
+    buttonText: "View Feedback",
+    buttonColor: "bg-[#0a84ff] text-white"
   }
 };
 
@@ -59,8 +69,8 @@ export function JobApplicationCard({ job, onActionClick }: JobApplicationCardPro
            imageUrl !== " ";
   };
   
-  const status: keyof typeof statusLabels = job.status as keyof typeof statusLabels || "applied";
-  const config = statusConfig[status] || statusConfig["applied"];
+  const status = job.status as keyof typeof statusLabels || "applied";
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["applied"];
   
   const statusLabels = {
     "rejected": "Rejected",
@@ -68,7 +78,9 @@ export function JobApplicationCard({ job, onActionClick }: JobApplicationCardPro
     "offer": "Offer Received",
     "applied": "Applied",
     "first-round": "First Round",
-    "under-review": "Under Review"
+    "under-review": "Under Review",
+    "accepted": "Accepted",
+    "not_suitable": "Not Suitable"
   };
   
   const hasScheduledInterview = status === "first-round" && job.interviewDate;
